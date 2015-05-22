@@ -55,7 +55,7 @@ extern int Q_strcasecmp ( char * s1 , char * s2 ) ;
 extern int Q_strncasecmp ( char * s1 , char * s2 , int n ) ;
 extern int Q_stricmp ( const char * s1 , const char * s2 ) ;
 extern void Com_PageInMemory ( byte * buffer , int size ) ;
-extern char * COM_Parse ( char * * data_p ) ;
+extern const char* COM_Parse(const char** data_p);
 extern char * va ( char * format , ... ) ;
 extern void Swap_Init ( void ) ;
 extern float FloatNoSwap ( float f ) ;

@@ -2842,17 +2842,13 @@ StartServerActionFunc(void *self)
     M_ForceMenuOff();
 }
 
-static void
-StartServer_MenuInit(void)
-{
-    static const char *dm_coop_names[] =
-    {
+static void StartServer_MenuInit(void){
+    static const char *dm_coop_names[] = {
         "deathmatch",
         "cooperative",
         0
     };
-    static const char *dm_coop_names_rogue[] =
-    {
+    static const char *dm_coop_names_rogue[] = {
         "deathmatch",
         "cooperative",
         "tag",
@@ -2860,7 +2856,6 @@ StartServer_MenuInit(void)
     };
     char *buffer;
     char mapsname[1024];
-    char *s;
     int length;
     int i;
     FILE *fp;
@@ -2887,7 +2882,7 @@ StartServer_MenuInit(void)
             fread(buffer, length, 1, fp);
         }
 
-        s = buffer;
+        const char* s = buffer;
 
         i = 0;
 

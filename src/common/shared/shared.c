@@ -921,17 +921,12 @@ char com_token[MAX_TOKEN_CHARS];
 /*
  * Parse a token out of a string
  */
-char *
-COM_Parse(char **data_p)
-{
+const char* COM_Parse(const char **data_p){
 	int c;
-	int len;
-	char *data;
-
-	data = *data_p;
-	len = 0;
+	int len = 0;
 	com_token[0] = 0;
 
+	const char* data = *data_p;
 	if (!data)
 	{
 		*data_p = NULL;

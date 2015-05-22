@@ -339,13 +339,13 @@ void Cbuf_AddText(const char *text);
 /* as new commands are generated from the console or keybindings, */
 /* the text is added to the end of the command buffer. */
 
-void Cbuf_InsertText(char *text);
+void Cbuf_InsertText(const char *text);
 
 /* when a command wants to issue other commands immediately, the text is */
 /* inserted at the beginning of the buffer, before any remaining unexecuted */
 /* commands. */
 
-void Cbuf_ExecuteText(int exec_when, char *text);
+void Cbuf_ExecuteText(int exec_when, const char *text);
 
 /* this can be used in place of either Cbuf_AddText or Cbuf_InsertText */
 
@@ -409,12 +409,12 @@ char *Cmd_Args(void);
 /* functions. Cmd_Argv () will return an empty string, not a NULL */
 /* if arg > argc, so string operations are always safe. */
 
-void Cmd_TokenizeString(char *text, qboolean macroExpand);
+void Cmd_TokenizeString(const char *text, qboolean macroExpand);
 
 /* Takes a null terminated string.  Does not need to be /n terminated. */
 /* breaks the string up into arg tokens. */
 
-void Cmd_ExecuteString(char *text);
+void Cmd_ExecuteString(const char *text);
 
 /* Parses a single line of text into arguments and tries to execute it */
 /* as if it was typed at the console */

@@ -429,66 +429,43 @@ ED_ParseField(const char *key, const char *value, edict_t *ent)
  * returning the new position ed should be
  * a properly initialized empty edict.
  */
-char *
-ED_ParseEdict(char *data, edict_t *ent)
-{
-	qboolean init;
-	char keyname[256];
-	const char *com_token;
+const char* ED_ParseEdict(const char *data, edict_t *ent){
+    char keyname[256];
+    qboolean init = false;
+    memset(&st, 0, sizeof(st));
+    /* go through all the dictionary pairs */
+    while (1){
+        /* parse key */
+        const char* com_token = COM_Parse(&data);
 
-	init = false;
-	memset(&st, 0, sizeof(st));
-
-	/* go through all the dictionary pairs */
-	while (1)
-	{
-		/* parse key */
-		com_token = COM_Parse(&data);
-
-		if (com_token[0] == '}')
-		{
-			break;
-		}
-
-		if (!data)
-		{
-			gi.error("ED_ParseEntity: EOF without closing brace");
-		}
-
-		Q_strlcpy(keyname, com_token, sizeof(keyname));
-
-		/* parse value */
-		com_token = COM_Parse(&data);
-
-		if (!data)
-		{
-			gi.error("ED_ParseEntity: EOF without closing brace");
-		}
-
-		if (com_token[0] == '}')
-		{
-			gi.error("ED_ParseEntity: closing brace without data");
-		}
-
-		init = true;
-
-		/* keynames with a leading underscore are
-		   used for utility comments, and are
-		   immediately discarded by quake */
-		if (keyname[0] == '_')
-		{
-			continue;
-		}
-
-		ED_ParseField(keyname, com_token, ent);
-	}
-
-	if (!init)
-	{
-		memset(ent, 0, sizeof(*ent));
-	}
-
-	return data;
+        if(com_token[0] == '}'){
+            break;
+        }
+        if(!data){
+            gi.error("ED_ParseEntity: EOF without closing brace");
+        }
+        Q_strlcpy(keyname, com_token, sizeof(keyname));
+        /* parse value */
+        com_token = COM_Parse(&data);
+        if(!data){
+            gi.error("ED_ParseEntity: EOF without closing brace");
+        }
+        if(com_token[0] == '}'){
+            gi.error("ED_ParseEntity: closing brace without data");
+        }
+        init = true;
+        /* keynames with a leading underscore are
+           used for utility comments, and are
+           immediately discarded by quake */
+        if(keyname[0] == '_'){
+            continue;
+        }
+        ED_ParseField(keyname, com_token, ent);
+    }
+    if(!init){
+        memset(ent, 0, sizeof(*ent));
+    }
+    return data;
 }
 
 /*
@@ -564,135 +541,83 @@ G_FindTeams(void)
  * Creates a server's entity / program execution context by
  * parsing textual entity definitions out of an ent file.
  */
-void
-SpawnEntities(const char *mapname, char *entities, const char *spawnpoint)
-{
-	edict_t *ent;
-	int inhibit;
-	const char *com_token;
-	int i;
-	float skill_level;
-
-	if (!mapname || !entities || !spawnpoint)
-	{
-		return;
-	}
-
-	skill_level = floor(skill->value);
-
-	if (skill_level < 0)
-	{
-		skill_level = 0;
-	}
-
-	if (skill_level > 3)
-	{
-		skill_level = 3;
-	}
-
-	if (skill->value != skill_level)
-	{
-		gi.cvar_forceset("skill", va("%f", skill_level));
-	}
-
-	SaveClientData();
-
-	gi.FreeTags(TAG_LEVEL);
-
-	memset(&level, 0, sizeof(level));
-	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
-
-	Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
-	Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
-
-	/* set client fields on player ents */
-	for (i = 0; i < game.maxclients; i++)
-	{
-		g_edicts[i + 1].client = game.clients + i;
-	}
-
-	ent = NULL;
-	inhibit = 0;
-
-	/* parse ents */
-	while (1)
-	{
-		/* parse the opening brace */
-		com_token = COM_Parse(&entities);
-
-		if (!entities)
-		{
-			break;
-		}
-
-		if (com_token[0] != '{')
-		{
-			gi.error("ED_LoadFromFile: found %s when expecting {", com_token);
-		}
-
-		if (!ent)
-		{
-			ent = g_edicts;
-		}
-		else
-		{
-			ent = G_Spawn();
-		}
-
-		entities = ED_ParseEdict(entities, ent);
-
-		/* yet another map hack */
-		if (!Q_stricmp(level.mapname, "command") &&
-			!Q_stricmp(ent->classname, "trigger_once") &&
-		   	!Q_stricmp(ent->model, "*27"))
-		{
-			ent->spawnflags &= ~SPAWNFLAG_NOT_HARD;
-		}
-
-		/* remove things (except the world) from
-		   different skill levels or deathmatch */
-		if (ent != g_edicts)
-		{
-			if (deathmatch->value)
-			{
-				if (ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH)
-				{
-					G_FreeEdict(ent);
-					inhibit++;
-					continue;
-				}
-			}
-			else
-			{
-				if (((skill->value == 0) &&
-					 (ent->spawnflags & SPAWNFLAG_NOT_EASY)) ||
-					((skill->value == 1) &&
-					 (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
-					(((skill->value == 2) ||
-					  (skill->value == 3)) &&
-					 (ent->spawnflags & SPAWNFLAG_NOT_HARD))
-					)
-				{
-					G_FreeEdict(ent);
-					inhibit++;
-					continue;
-				}
-			}
-
-			ent->spawnflags &=
-				~(SPAWNFLAG_NOT_EASY | SPAWNFLAG_NOT_MEDIUM |
-				  SPAWNFLAG_NOT_HARD |
-				  SPAWNFLAG_NOT_COOP | SPAWNFLAG_NOT_DEATHMATCH);
-		}
-
-		ED_CallSpawn(ent);
-	}
-
-	gi.dprintf("%i entities inhibited.\n", inhibit);
-
-	G_FindTeams();
-
-	PlayerTrail_Init();
+void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint){
+    if(!mapname || !entities || !spawnpoint){
+        return;
+    }
+    float skill_level = floor(skill->value);
+    if(skill_level < 0){
+        skill_level = 0;
+    }
+    if(skill_level > 3){
+        skill_level = 3;
+    }
+    if(skill->value != skill_level){
+        gi.cvar_forceset("skill", va("%f", skill_level));
+    }
+    SaveClientData();
+    gi.FreeTags(TAG_LEVEL);
+    memset(&level, 0, sizeof(level));
+    memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
+    Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
+    Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
+    /* set client fields on player ents */
+    int i;
+    for(i = 0; i < game.maxclients; i++){
+        g_edicts[i + 1].client = game.clients + i;
+    }
+    edict_t* ent = NULL;
+    int inhibit = 0;
+    /* parse ents */
+    while(1){
+        /* parse the opening brace */
+        const char* com_token = COM_Parse(&entities);
+        if(!entities){
+            break;
+        }
+        if(com_token[0] != '{'){
+            gi.error("ED_LoadFromFile: found %s when expecting {", com_token);
+        }
+        if(!ent){
+            ent = g_edicts;
+        }else{
+            ent = G_Spawn();
+        }
+        entities = ED_ParseEdict(entities, ent);
+        /* yet another map hack */
+        if(!Q_stricmp(level.mapname, "command") && !Q_stricmp(ent->classname, "trigger_once") && !Q_stricmp(ent->model, "*27")){
+            ent->spawnflags &= ~SPAWNFLAG_NOT_HARD;
+        }
+        /* remove things (except the world) from
+           different skill levels or deathmatch */
+        if(ent != g_edicts){
+            if(deathmatch->value){
+                if(ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH){
+                    G_FreeEdict(ent);
+                    inhibit++;
+                    continue;
+                }
+            }else{
+                if(((skill->value == 0) && (ent->spawnflags & SPAWNFLAG_NOT_EASY)) || ((skill->value == 1) && (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
+                        (((skill->value == 2) ||
+                          (skill->value == 3)) &&
+                         (ent->spawnflags & SPAWNFLAG_NOT_HARD))
+                   ){
+                    G_FreeEdict(ent);
+                    inhibit++;
+                    continue;
+                }
+            }
+            ent->spawnflags &=
+                ~(SPAWNFLAG_NOT_EASY | SPAWNFLAG_NOT_MEDIUM |
+                        SPAWNFLAG_NOT_HARD |
+                        SPAWNFLAG_NOT_COOP | SPAWNFLAG_NOT_DEATHMATCH);
+        }
+        ED_CallSpawn(ent);
+    }
+    gi.dprintf("%i entities inhibited.\n", inhibit);
+    G_FindTeams();
+    PlayerTrail_Init();
 }
 
 /* =================================================================== */

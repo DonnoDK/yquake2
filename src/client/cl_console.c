@@ -43,7 +43,7 @@ DrawString(int x, int y, char *s)
 }
 
 void
-DrawStringScaled(int x, int y, char *s, float factor)
+DrawStringScaled(int x, int y, const char *s, float factor)
 {
 	while (*s)
 	{
@@ -59,15 +59,12 @@ DrawAltString(int x, int y, char *s)
 	DrawAltStringScaled(x, y, s, 1.0f);
 }
 
-void
-DrawAltStringScaled(int x, int y, char *s, float factor)
-{
-	while (*s)
-	{
-		Draw_CharScaled(x, y, *s ^ 0x80, factor);
-		x += 8*factor;
-		s++;
-	}
+void DrawAltStringScaled(int x, int y, const char *s, float factor){
+    while(*s){
+        Draw_CharScaled(x, y, *s ^ 0x80, factor);
+        x += 8*factor;
+        s++;
+    }
 }
 
 void
