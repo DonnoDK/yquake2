@@ -29,70 +29,43 @@
 cvar_t *cvar_vars;
 
 static qboolean
-Cvar_InfoValidate(char *s)
-{
-	if (strstr(s, "\\"))
-	{
-		return false;
-	}
-
-	if (strstr(s, "\""))
-	{
-		return false;
-	}
-
-	if (strstr(s, ";"))
-	{
-		return false;
-	}
-
-	return true;
+Cvar_InfoValidate(const char *s){
+    if(strstr(s, "\\")){
+        return false;
+    }
+    if(strstr(s, "\"")){
+        return false;
+    }
+    if(strstr(s, ";")){
+        return false;
+    }
+    return true;
 }
 
-static cvar_t *
-Cvar_FindVar(const char *var_name)
-{
-	cvar_t *var;
-
-	for (var = cvar_vars; var; var = var->next)
-	{
-		if (!strcmp(var_name, var->name))
-		{
-			return var;
-		}
-	}
-
-	return NULL;
+static cvar_t* Cvar_FindVar(const char *var_name){
+    cvar_t *var;
+    for(var = cvar_vars; var != NULL; var = var->next){
+        if(!strcmp(var_name, var->name)){
+            return var;
+        }
+    }
+    return NULL;
 }
 
-float
-Cvar_VariableValue(char *var_name)
-{
-	cvar_t *var;
-
-	var = Cvar_FindVar(var_name);
-
-	if (!var)
-	{
-		return 0;
-	}
-
-	return strtod(var->string, (char **)NULL);
+float Cvar_VariableValue(char *var_name){
+    cvar_t* var = Cvar_FindVar(var_name);
+    if(!var){
+        return 0;
+    }
+    return strtod(var->string, (char **)NULL);
 }
 
-const char *
-Cvar_VariableString(const char *var_name)
-{
-	cvar_t *var;
-
-	var = Cvar_FindVar(var_name);
-
-	if (!var)
-	{
-		return "";
-	}
-
-	return var->string;
+const char* Cvar_VariableString(const char *var_name){
+    cvar_t* var = Cvar_FindVar(var_name);
+    if(!var){
+        return "";
+    }
+    return var->string;
 }
 
 char *
@@ -133,70 +106,46 @@ Cvar_CompleteVariable(char *partial)
  * If the variable already exists, the value will not be set
  * The flags will be or'ed in if the variable exists.
  */
-cvar_t *
-Cvar_Get(char *var_name, char *var_value, int flags)
-{
-	cvar_t *var;
-	cvar_t **pos;
-
-	if (flags & (CVAR_USERINFO | CVAR_SERVERINFO))
-	{
-		if (!Cvar_InfoValidate(var_name))
-		{
-			Com_Printf("invalid info cvar name\n");
-			return NULL;
-		}
-	}
-
-	var = Cvar_FindVar(var_name);
-
-	if (var)
-	{
-		var->flags |= flags;
-		return var;
-	}
-
-	if (!var_value)
-	{
-		return NULL;
-	}
-
-	if (flags & (CVAR_USERINFO | CVAR_SERVERINFO))
-	{
-		if (!Cvar_InfoValidate(var_value))
-		{
-			Com_Printf("invalid info cvar value\n");
-			return NULL;
-		}
-	}
-
-	var = Z_Malloc(sizeof(*var));
-	var->name = CopyString(var_name);
-	var->string = CopyString(var_value);
-	var->modified = true;
-	var->value = strtod(var->string, (char **)NULL);
-
-	/* link the variable in */
-	pos = &cvar_vars;
-	while (*pos && strcmp((*pos)->name, var->name) < 0)
-	{
-		pos = &(*pos)->next;
-	}
-	var->next = *pos;
-	*pos = var;
-
-	var->flags = flags;
-
-	return var;
+cvar_t * Cvar_Get(const char *var_name, const char *var_value, int flags){
+    if (flags & (CVAR_USERINFO | CVAR_SERVERINFO)){
+        if (!Cvar_InfoValidate(var_name)){
+            Com_Printf("invalid info cvar name\n");
+            return NULL;
+        }
+    }
+    cvar_t* var = Cvar_FindVar(var_name);
+    if(var){
+        var->flags |= flags;
+        return var;
+    }
+    if(!var_value){
+        return NULL;
+    }
+    if(flags & (CVAR_USERINFO | CVAR_SERVERINFO)){
+        if (!Cvar_InfoValidate(var_value)){
+            Com_Printf("invalid info cvar value\n");
+            return NULL;
+        }
+    }
+    var = Z_Malloc(sizeof(*var));
+    var->name = CopyString(var_name);
+    var->string = CopyString(var_value);
+    var->modified = true;
+    var->value = strtod(var->string, (char **)NULL);
+    /* link the variable in */
+    cvar_t** pos = &cvar_vars;
+    while (*pos && strcmp((*pos)->name, var->name) < 0)
+    {
+        pos = &(*pos)->next;
+    }
+    var->next = *pos;
+    *pos = var;
+    var->flags = flags;
+    return var;
 }
 
-cvar_t *
-Cvar_Set2(char *var_name, char *value, qboolean force)
-{
-	cvar_t *var;
-
-	var = Cvar_FindVar(var_name);
-
+static cvar_t* Cvar_Set2(const char *var_name, const char *value, qboolean force){
+	cvar_t* var = Cvar_FindVar(var_name);
 	if (!var)
 	{
 		return Cvar_Get(var_name, value, 0);

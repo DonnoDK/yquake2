@@ -32,6 +32,10 @@
 zhead_t z_chain;
 int z_count, z_bytes;
 
+void Z_Init(){
+	z_chain.next = z_chain.prev = &z_chain;
+}
+
 void
 Z_Free(void *ptr)
 {

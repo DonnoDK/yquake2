@@ -178,27 +178,22 @@ Com_Error_f(void)
 	Com_Error(ERR_FATAL, "%s", Cmd_Argv(1));
 }
 
-void
-Qcommon_Init(int argc, char **argv)
-{
-	char *s;
+void Qcommon_Init(int argc, char **argv){
+    if(setjmp(abortframe)){
+        Sys_Error("Error during initialization");
+    }
 
-	if (setjmp(abortframe))
-	{
-		Sys_Error("Error during initialization");
-	}
+    Z_Init();
 
-	z_chain.next = z_chain.prev = &z_chain;
+    /* prepare enough of the subsystems to handle
+       cvar and command buffer management */
+    COM_InitArgv(argc, argv);
 
-	/* prepare enough of the subsystems to handle
-	   cvar and command buffer management */
-	COM_InitArgv(argc, argv);
+    Swap_Init();
+    Cbuf_Init();
 
-	Swap_Init();
-	Cbuf_Init();
-
-	Cmd_Init();
-	Cvar_Init();
+    Cmd_Init();
+    Cvar_Init();
 
 #ifndef DEDICATED_ONLY
 	Key_Init();
@@ -241,7 +236,7 @@ Qcommon_Init(int argc, char **argv)
 	dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
 #endif
 
-	s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
+	char* s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
 	Cvar_Get("version", s, CVAR_SERVERINFO | CVAR_NOSET);
 
 	if (dedicated->value)

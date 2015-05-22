@@ -95,7 +95,7 @@ typedef struct sizebuf_s
 void SZ_Init(sizebuf_t *buf, byte *data, int length);
 void SZ_Clear(sizebuf_t *buf);
 void *SZ_GetSpace(sizebuf_t *buf, int length);
-void SZ_Write(sizebuf_t *buf, void *data, int length);
+void SZ_Write(sizebuf_t *buf, const void *data, int length);
 void SZ_Print(sizebuf_t *buf, char *data);  /* strcats onto the sizebuf */
 
 /* ================================================================== */
@@ -164,7 +164,7 @@ void COM_AddParm(char *parm);
 void COM_Init(void);
 void COM_InitArgv(int argc, char **argv);
 
-char *CopyString(char *in);
+char *CopyString(const char *in);
 
 /* ================================================================== */
 
@@ -334,7 +334,7 @@ void Cbuf_Init(void);
 
 /* allocates an initial text buffer that will grow as needed */
 
-void Cbuf_AddText(char *text);
+void Cbuf_AddText(const char *text);
 
 /* as new commands are generated from the console or keybindings, */
 /* the text is added to the end of the command buffer. */
@@ -442,7 +442,7 @@ void Cmd_ForwardToServer(void);
 
 extern cvar_t *cvar_vars;
 
-cvar_t *Cvar_Get(char *var_name, char *value, int flags);
+cvar_t *Cvar_Get(const char *var_name, const char *value, int flags);
 
 /* creates the variable if it doesn't exist, or returns the existing one */
 /* if it exists, the value will not be changed, but flags will be ORed in */
@@ -766,6 +766,7 @@ extern int time_after_game;
 extern int time_before_ref;
 extern int time_after_ref;
 
+void Z_Init();
 void Z_Free(void *ptr);
 void *Z_Malloc(int size);           /* returns 0 filled memory */
 void *Z_TagMalloc(int size, int tag);

@@ -36,13 +36,13 @@ WITH_CDA:=yes
 # Enables OGG/Vorbis support. OGG/Vorbis files can be
 # used as a substitute of CD audio playback. Adds
 # dependencies to libogg, libvorbis and libvorbisfile.
-WITH_OGG:=yes
+WITH_OGG:=no
 
 # Enables the optional OpenAL sound system.
 # To use it your system needs libopenal.so.1
 # or openal32.dll (we recommend openal-soft)
 # installed
-WITH_OPENAL:=yes
+WITH_OPENAL:=no
 
 # Use SDL2 instead of SDL1.2. Disables CD audio support,
 # because SDL2 has none. Use OGG/Vorbis music instead :-)
@@ -331,7 +331,7 @@ endif
 # Cleanup
 clean:
 	@echo "===> CLEAN"
-	${Q}rm -Rf build release
+	${Q}rm -Rf build
 
 # ----------
 

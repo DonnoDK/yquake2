@@ -81,7 +81,7 @@ Cbuf_Init(void)
  * Adds command text at the end of the buffer
  */
 void
-Cbuf_AddText(char *text)
+Cbuf_AddText(const char *text)
 {
 	int l;
 
