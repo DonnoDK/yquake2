@@ -31,20 +31,18 @@
 #define MAX_ALIAS_NAME 32
 #define ALIAS_LOOP_COUNT 16
 
-typedef struct cmd_function_s
-{
-	struct cmd_function_s *next;
-	char *name;
-	xcommand_t function;
+typedef struct cmd_function_s{
+    struct cmd_function_s *next;
+    char *name;
+    xcommand_t function;
 } cmd_function_t;
 
 static cmd_function_t *cmd_functions; /* possible commands to execute */
 
-typedef struct cmdalias_s
-{
-	struct cmdalias_s *next;
-	char name[MAX_ALIAS_NAME];
-	char *value;
+typedef struct cmdalias_s{
+    struct cmdalias_s *next;
+    char name[MAX_ALIAS_NAME];
+    char *value;
 } cmdalias_t;
 
 static char retval[256];
@@ -65,7 +63,7 @@ static char defer_text_buf[8192];
  * until next frame.  This allows commands like: bind g "impulse 5 ;
  * +attack ; wait ; -attack ; impulse 2"
  */
-void Cmd_Wait_f(void){
+static void Cmd_Wait_f(void){
     cmd_wait = true;
 }
 
@@ -494,56 +492,26 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function){
     *pos = cmd;
 }
 
-void
-Cmd_RemoveCommand(char *cmd_name)
-{
-	cmd_function_t *cmd, **back;
-
-	back = &cmd_functions;
-
-	while (1)
-	{
-		cmd = *back;
-
-		if (!cmd)
-		{
-			Com_Printf("Cmd_RemoveCommand: %s not added\n", cmd_name);
-			return;
-		}
-
-		if (!strcmp(cmd_name, cmd->name))
-		{
-			*back = cmd->next;
-			Z_Free(cmd);
-			return;
-		}
-
-		back = &cmd->next;
-	}
+void Cmd_RemoveCommand(char *cmd_name){
+    cmd_function_t** back = &cmd_functions;
+    while(1){
+        cmd_function_t* cmd = *back;
+        if(!cmd){
+            Com_Printf("Cmd_RemoveCommand: %s not added\n", cmd_name);
+            return;
+        }
+        if(!strcmp(cmd_name, cmd->name)){
+            *back = cmd->next;
+            Z_Free(cmd);
+            return;
+        }
+        back = &cmd->next;
+    }
 }
 
-qboolean
-Cmd_Exists(char *cmd_name)
-{
-	cmd_function_t *cmd;
-
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(cmd_name, cmd->name))
-		{
-			return true;
-		}
-	}
-
-	return false;
+int qsort_strcomp(const void *s1, const void *s2){
+    return strcmp(*(char **)s1, *(char **)s2);
 }
-
-int
-qsort_strcomp(const void *s1, const void *s2)
-{
-	return strcmp(*(char **)s1, *(char **)s2);
-}
-
 
 static const cmdalias_t* Cmd_AliasNamed(const char* name){
     for(cmdalias_t* alias = cmd_alias; alias; alias = alias->next){
@@ -554,14 +522,11 @@ static const cmdalias_t* Cmd_AliasNamed(const char* name){
     return NULL;
 }
 
-
 const char* Cmd_CompleteCommand(const char *partial){
-    const char *pmatch[1024];
-    int len = strlen(partial);
-    if(!len){
+    if(partial == NULL || strlen(partial) == 0){
         return NULL;
     }
-
+    const char *pmatch[1024];
     /* check for exact match */
     const cmd_function_t* command = Cmd_CommandNamed(partial);
     if(command != NULL){
@@ -580,6 +545,7 @@ const char* Cmd_CompleteCommand(const char *partial){
     memset(pmatch, 0, sizeof(const char*));
     int i = 0;
     /* check for partial match */
+    int len = strlen(partial);
     for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
         if(!strncmp(partial, cmd->name, len)){
             pmatch[i] = cmd->name;
@@ -653,29 +619,24 @@ void Cmd_ExecuteString(const char *text){
         return; /* no tokens */
     }
     /* check functions */
-    cmd_function_t *cmd;
-    for(cmd = cmd_functions; cmd; cmd = cmd->next){
-        if(!Q_strcasecmp(cmd_argv[0], cmd->name)){
-            if(!cmd->function){
-                /* forward to server command */
-                Cmd_ExecuteString(va("cmd %s", text));
-            }else{
-                cmd->function();
-            }
-            return;
+    const cmd_function_t* command = Cmd_CommandNamed(cmd_argv[0]);
+    if(command != NULL){
+        if(command->function != NULL){
+            command->function();
+        }else{
+            Cmd_ExecuteString(va("cmd %s", text));
         }
+        return;
     }
     /* check alias */
-    cmdalias_t *a;
-    for(a = cmd_alias; a; a = a->next){
-        if(!Q_strcasecmp(cmd_argv[0], a->name)){
-            if(++alias_count == ALIAS_LOOP_COUNT){
-                Com_Printf("ALIAS_LOOP_COUNT\n");
-                return;
-            }
-            Cbuf_InsertText(a->value);
+    const cmdalias_t* alias = Cmd_AliasNamed(cmd_argv[0]);
+    if(alias != NULL){
+        if(++alias_count == ALIAS_LOOP_COUNT){
+            Com_Printf("ALIAS_LOOP_COUNT\n");
             return;
         }
+        Cbuf_InsertText(alias->value);
+        return;
     }
     /* check cvars */
     if(Cvar_Command(Cmd_Argv(0), Cmd_Argv(1), Cmd_Argc())){
@@ -687,30 +648,20 @@ void Cmd_ExecuteString(const char *text){
 #endif
 }
 
-void
-Cmd_List_f(void)
-{
-	cmd_function_t *cmd;
-	int i;
-
-	i = 0;
-
-	for (cmd = cmd_functions; cmd; cmd = cmd->next, i++)
-	{
-		Com_Printf("%s\n", cmd->name);
-	}
-
-	Com_Printf("%i commands\n", i);
+void Cmd_List_f(void){
+    cmd_function_t *cmd;
+    int i = 0;
+    for(cmd = cmd_functions; cmd; cmd = cmd->next, i++){
+        Com_Printf("%s\n", cmd->name);
+    }
+    Com_Printf("%i commands\n", i);
 }
 
-void
-Cmd_Init(void)
-{
-	/* register our commands */
-	Cmd_AddCommand("cmdlist", Cmd_List_f);
-	Cmd_AddCommand("exec", Cmd_Exec_f);
-	Cmd_AddCommand("echo", Cmd_Echo_f);
-	Cmd_AddCommand("alias", Cmd_Alias_f);
-	Cmd_AddCommand("wait", Cmd_Wait_f);
+void Cmd_Init(void){
+    /* register our commands */
+    Cmd_AddCommand("cmdlist", Cmd_List_f);
+    Cmd_AddCommand("exec", Cmd_Exec_f);
+    Cmd_AddCommand("echo", Cmd_Echo_f);
+    Cmd_AddCommand("alias", Cmd_Alias_f);
+    Cmd_AddCommand("wait", Cmd_Wait_f);
 }
-

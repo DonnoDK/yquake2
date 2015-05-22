@@ -172,76 +172,57 @@ static cvar_t* Cvar_Set2(const char *var_name, const char *value, qboolean force
     return var;
 }
 
-cvar_t *
-Cvar_ForceSet(char *var_name, char *value)
-{
-	return Cvar_Set2(var_name, value, true);
+cvar_t * Cvar_ForceSet(char *var_name, char *value){
+    return Cvar_Set2(var_name, value, true);
 }
 
 cvar_t* Cvar_Set(const char *var_name, const char *value){
-	return Cvar_Set2(var_name, value, false);
+    return Cvar_Set2(var_name, value, false);
 }
 
 cvar_t* Cvar_FullSet(const char *var_name, const char *value, int flags){
-	cvar_t* var = Cvar_FindVar(var_name);
-	if(!var){
-		return Cvar_Get(var_name, value, flags);
-	}
-	var->modified = true;
-	if(var->flags & CVAR_USERINFO){
-		userinfo_modified = true;
-	}
-	Z_Free(var->string);
-	var->string = CopyString(value);
-	var->value = (float)strtod(var->string, (char **)NULL);
-	var->flags = flags;
-	return var;
+    cvar_t* var = Cvar_FindVar(var_name);
+    if(!var){
+        return Cvar_Get(var_name, value, flags);
+    }
+    var->modified = true;
+    if(var->flags & CVAR_USERINFO){
+        userinfo_modified = true;
+    }
+    Z_Free(var->string);
+    var->string = CopyString(value);
+    var->value = (float)strtod(var->string, (char **)NULL);
+    var->flags = flags;
+    return var;
 }
 
-void
-Cvar_SetValue(char *var_name, float value)
-{
-	char val[32];
-
-	if (value == (int)value)
-	{
-		Com_sprintf(val, sizeof(val), "%i", (int)value);
-	}
-
-	else
-	{
-		Com_sprintf(val, sizeof(val), "%f", value);
-	}
-
-	Cvar_Set(var_name, val);
+void Cvar_SetValue(const char *var_name, float value){
+    char val[32];
+    if(value == (int)value){
+        Com_sprintf(val, sizeof(val), "%i", (int)value);
+    }else{
+        Com_sprintf(val, sizeof(val), "%f", value);
+    }
+    Cvar_Set(var_name, val);
 }
 
 /*
  * Any variables with latched values will now be updated
  */
-void
-Cvar_GetLatchedVars(void)
-{
-	cvar_t *var;
-
-	for (var = cvar_vars; var; var = var->next)
-	{
-		if (!var->latched_string)
-		{
-			continue;
-		}
-
-		Z_Free(var->string);
-		var->string = var->latched_string;
-		var->latched_string = NULL;
-		var->value = strtod(var->string, (char **)NULL);
-
-		if (!strcmp(var->name, "game"))
-		{
-			FS_SetGamedir(var->string);
-			FS_ExecAutoexec();
-		}
-	}
+void Cvar_GetLatchedVars(void){
+    for(cvar_t* var = cvar_vars; var; var = var->next){
+        if(!var->latched_string){
+            continue;
+        }
+        Z_Free(var->string);
+        var->string = var->latched_string;
+        var->latched_string = NULL;
+        var->value = strtod(var->string, (char **)NULL);
+        if(!strcmp(var->name, "game")){
+            FS_SetGamedir(var->string);
+            FS_ExecAutoexec();
+        }
+    }
 }
 
 /*
@@ -303,115 +284,70 @@ void Cvar_WriteVariables(const char *path){
     fclose(f);
 }
 
-void
-Cvar_List_f(void)
-{
-	cvar_t *var;
-	int i;
-
-	i = 0;
-
-	for (var = cvar_vars; var; var = var->next, i++)
-	{
-		if (var->flags & CVAR_ARCHIVE)
-		{
-			Com_Printf("*");
-		}
-
-		else
-		{
-			Com_Printf(" ");
-		}
-
-		if (var->flags & CVAR_USERINFO)
-		{
-			Com_Printf("U");
-		}
-
-		else
-		{
-			Com_Printf(" ");
-		}
-
-		if (var->flags & CVAR_SERVERINFO)
-		{
-			Com_Printf("S");
-		}
-
-		else
-		{
-			Com_Printf(" ");
-		}
-
-		if (var->flags & CVAR_NOSET)
-		{
-			Com_Printf("-");
-		}
-
-		else if (var->flags & CVAR_LATCH)
-		{
-			Com_Printf("L");
-		}
-
-		else
-		{
-			Com_Printf(" ");
-		}
-
-		Com_Printf(" %s \"%s\"\n", var->name, var->string);
-	}
-
-	Com_Printf("%i cvars\n", i);
+void Cvar_List_f(void){
+    int i = 0;
+    for(cvar_t* var = cvar_vars; var; var = var->next, i++){
+        if (var->flags & CVAR_ARCHIVE){
+            Com_Printf("*");
+        }else{
+            Com_Printf(" ");
+        }
+        if(var->flags & CVAR_USERINFO){
+            Com_Printf("U");
+        }else{
+            Com_Printf(" ");
+        }
+        if(var->flags & CVAR_SERVERINFO){
+            Com_Printf("S");
+        }else{
+            Com_Printf(" ");
+        }
+        if(var->flags & CVAR_NOSET){
+            Com_Printf("-");
+        }else if(var->flags & CVAR_LATCH){
+            Com_Printf("L");
+        }else{
+            Com_Printf(" ");
+        }
+        Com_Printf(" %s \"%s\"\n", var->name, var->string);
+    }
+    Com_Printf("%i cvars\n", i);
 }
 
 qboolean userinfo_modified;
 
-char *
-Cvar_BitInfo(int bit)
-{
-	static char info[MAX_INFO_STRING];
-	cvar_t *var;
-
-	info[0] = 0;
-
-	for (var = cvar_vars; var; var = var->next)
-	{
-		if (var->flags & bit)
-		{
-			Info_SetValueForKey(info, var->name, var->string);
-		}
-	}
-
-	return info;
+static char* Cvar_BitInfo(int bit){
+    static char info[MAX_INFO_STRING];
+    info[0] = 0;
+    for(cvar_t* var = cvar_vars; var; var = var->next){
+        if(var->flags & bit){
+            Info_SetValueForKey(info, var->name, var->string);
+        }
+    }
+    return info;
 }
 
 /*
  * returns an info string containing
  * all the CVAR_USERINFO cvars
  */
-char *
-Cvar_Userinfo(void)
-{
-	return Cvar_BitInfo(CVAR_USERINFO);
+const char* Cvar_Userinfo(void){
+    return Cvar_BitInfo(CVAR_USERINFO);
 }
 
 /*
  * returns an info string containing
  * all the CVAR_SERVERINFO cvars
  */
-char *
-Cvar_Serverinfo(void)
-{
-	return Cvar_BitInfo(CVAR_SERVERINFO);
+const char* Cvar_Serverinfo(void){
+    return Cvar_BitInfo(CVAR_SERVERINFO);
 }
 
 /*
  * Reads in all archived cvars
  */
-void
-Cvar_Init(void)
-{
-	Cmd_AddCommand("set", Cvar_Set_f);
-	Cmd_AddCommand("cvarlist", Cvar_List_f);
+void Cvar_Init(void){
+    Cmd_AddCommand("set", Cvar_Set_f);
+    Cmd_AddCommand("cvarlist", Cvar_List_f);
 }
 

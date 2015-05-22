@@ -108,7 +108,7 @@ void MSG_WriteByte(sizebuf_t *sb, int c);
 void MSG_WriteShort(sizebuf_t *sb, int c);
 void MSG_WriteLong(sizebuf_t *sb, int c);
 void MSG_WriteFloat(sizebuf_t *sb, float f);
-void MSG_WriteString(sizebuf_t *sb, char *s);
+void MSG_WriteString(sizebuf_t *sb, const char *s);
 void MSG_WriteCoord(sizebuf_t *sb, float f);
 void MSG_WritePos(sizebuf_t *sb, vec3_t pos);
 void MSG_WriteAngle(sizebuf_t *sb, float f);
@@ -168,7 +168,7 @@ char *CopyString(const char *in);
 
 /* ================================================================== */
 
-void Info_Print(char *s);
+void Info_Print(const char *s);
 
 /* PROTOCOL */
 
@@ -392,7 +392,6 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function);
 /* as a clc_stringcmd instead of executed locally */
 void Cmd_RemoveCommand(char *cmd_name);
 
-qboolean Cmd_Exists(char *cmd_name);
 qboolean Cmd_IsComplete(const char *name);
 
 /* used by the cvar code to check for cvar / command name overlap */
@@ -461,7 +460,7 @@ cvar_t *Cvar_ForceSet(char *var_name, char *value);
 
 cvar_t* Cvar_FullSet(const char *var_name, const char *value, int flags);
 
-void Cvar_SetValue(char *var_name, float value);
+void Cvar_SetValue(const char *var_name, float value);
 
 /* expands value to a string and calls Cvar_Set */
 
@@ -491,11 +490,11 @@ void Cvar_WriteVariables(const char *path);
 
 void Cvar_Init(void);
 
-char *Cvar_Userinfo(void);
+const char* Cvar_Userinfo(void);
 
 /* returns an info string containing all the CVAR_USERINFO cvars */
 
-char *Cvar_Serverinfo(void);
+const char* Cvar_Serverinfo(void);
 
 /* returns an info string containing all the CVAR_SERVERINFO cvars */
 
