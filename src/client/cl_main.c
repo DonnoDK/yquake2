@@ -19,7 +19,7 @@
  *
  * =======================================================================
  *
- * This is the clients main loop as well as some miscelangelous utility
+ * This is the clients main loop as well as some miscellaneous utility
  * and support functions
  *
  * =======================================================================
@@ -35,7 +35,7 @@ void CL_Connect_f(void);
 void CL_Rcon_f(void);
 void CL_CheckForResend(void);
 
-cvar_t *freelook;
+static cvar_t *freelook;
 
 cvar_t *adr0;
 cvar_t *adr1;
@@ -113,209 +113,139 @@ extern cvar_t *allow_download_maps;
 /*
  * Dumps the current net message, prefixed by the length
  */
-void
-CL_WriteDemoMessage(void)
-{
-	int len, swlen;
-
-	/* the first eight bytes are just packet sequencing stuff */
-	len = net_message.cursize - 8;
-	swlen = LittleLong(len);
-	fwrite(&swlen, 4, 1, cls.demofile);
-	fwrite(net_message.data + 8, len, 1, cls.demofile);
+void CL_WriteDemoMessage(void){
+    /* the first eight bytes are just packet sequencing stuff */
+    int len = net_message.cursize - 8;
+    int swlen = LittleLong(len);
+    fwrite(&swlen, 4, 1, cls.demofile);
+    fwrite(net_message.data + 8, len, 1, cls.demofile);
 }
 
 /*
  * stop recording a demo
  */
-void
-CL_Stop_f(void)
-{
-	int len;
-
-	if (!cls.demorecording)
-	{
-		Com_Printf("Not recording a demo.\n");
-		return;
-	}
-
-	len = -1;
-
-	fwrite(&len, 4, 1, cls.demofile);
-	fclose(cls.demofile);
-	cls.demofile = NULL;
-	cls.demorecording = false;
-	Com_Printf("Stopped demo.\n");
+void CL_Stop_f(void){
+    if(!cls.demorecording){
+        Com_Printf("Not recording a demo.\n");
+        return;
+    }
+    int len = -1;
+    fwrite(&len, 4, 1, cls.demofile);
+    fclose(cls.demofile);
+    cls.demofile = NULL;
+    cls.demorecording = false;
+    Com_Printf("Stopped demo.\n");
 }
 
 /*
  * record <demoname>
  * Begins recording a demo from the current position
  */
-void
-CL_Record_f(void)
-{
-	char name[MAX_OSPATH];
-	byte buf_data[MAX_MSGLEN];
-	sizebuf_t buf;
-	int i;
-	int len;
-	entity_state_t *ent;
-	entity_state_t nullstate;
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("record <demoname>\n");
-		return;
-	}
-
-	if (cls.demorecording)
-	{
-		Com_Printf("Already recording.\n");
-		return;
-	}
-
-	if (cls.state != ca_active)
-	{
-		Com_Printf("You must be in a level to record.\n");
-		return;
-	}
-
-	Com_sprintf(name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
-
-	Com_Printf("recording to %s.\n", name);
-	FS_CreatePath(name);
-	cls.demofile = fopen(name, "wb");
-
-	if (!cls.demofile)
-	{
-		Com_Printf("ERROR: couldn't open.\n");
-		return;
-	}
-
-	cls.demorecording = true;
-
-	/* don't start saving messages until a non-delta compressed message is received */
-	cls.demowaiting = true;
-
-	/* write out messages to hold the startup information */
-	SZ_Init(&buf, buf_data, sizeof(buf_data));
-
-	/* send the serverdata */
-	MSG_WriteByte(&buf, svc_serverdata);
-	MSG_WriteLong(&buf, PROTOCOL_VERSION);
-	MSG_WriteLong(&buf, 0x10000 + cl.servercount);
-	MSG_WriteByte(&buf, 1);  /* demos are always attract loops */
-	MSG_WriteString(&buf, cl.gamedir);
-	MSG_WriteShort(&buf, cl.playernum);
-
-	MSG_WriteString(&buf, cl.configstrings[CS_NAME]);
-
-	/* configstrings */
-	for (i = 0; i < MAX_CONFIGSTRINGS; i++)
-	{
-		if (cl.configstrings[i][0])
-		{
-			if (buf.cursize + strlen(cl.configstrings[i]) + 32 > buf.maxsize)
-			{
-				len = LittleLong(buf.cursize);
-				fwrite(&len, 4, 1, cls.demofile);
-				fwrite(buf.data, buf.cursize, 1, cls.demofile);
-				buf.cursize = 0;
-			}
-
-			MSG_WriteByte(&buf, svc_configstring);
-
-			MSG_WriteShort(&buf, i);
-			MSG_WriteString(&buf, cl.configstrings[i]);
-		}
-	}
-
-	/* baselines */
-	memset(&nullstate, 0, sizeof(nullstate));
-
-	for (i = 0; i < MAX_EDICTS; i++)
-	{
-		ent = &cl_entities[i].baseline;
-
-		if (!ent->modelindex)
-		{
-			continue;
-		}
-
-		if (buf.cursize + 64 > buf.maxsize)
-		{
-			len = LittleLong(buf.cursize);
-			fwrite(&len, 4, 1, cls.demofile);
-			fwrite(buf.data, buf.cursize, 1, cls.demofile);
-			buf.cursize = 0;
-		}
-
-		MSG_WriteByte(&buf, svc_spawnbaseline);
-
-		MSG_WriteDeltaEntity(&nullstate, &cl_entities[i].baseline,
-				&buf, true, true);
-	}
-
-	MSG_WriteByte(&buf, svc_stufftext);
-
-	MSG_WriteString(&buf, "precache\n");
-
-	/* write it to the demo file */
-	len = LittleLong(buf.cursize);
-	fwrite(&len, 4, 1, cls.demofile);
-	fwrite(buf.data, buf.cursize, 1, cls.demofile);
+void CL_Record_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("record <demoname>\n");
+        return;
+    }
+    if(cls.demorecording){
+        Com_Printf("Already recording.\n");
+        return;
+    }
+    if(cls.state != ca_active){
+        Com_Printf("You must be in a level to record.\n");
+        return;
+    }
+    char name[MAX_OSPATH];
+    Com_sprintf(name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
+    Com_Printf("recording to %s.\n", name);
+    FS_CreatePath(name);
+    cls.demofile = fopen(name, "wb");
+    if(!cls.demofile){
+        Com_Printf("ERROR: couldn't open.\n");
+        return;
+    }
+    cls.demorecording = true;
+    /* don't start saving messages until a non-delta compressed message is received */
+    cls.demowaiting = true;
+    /* write out messages to hold the startup information */
+    byte buf_data[MAX_MSGLEN];
+    sizebuf_t buf;
+    SZ_Init(&buf, buf_data, sizeof(buf_data));
+    /* send the serverdata */
+    MSG_WriteByte(&buf, svc_serverdata);
+    MSG_WriteLong(&buf, PROTOCOL_VERSION);
+    MSG_WriteLong(&buf, 0x10000 + cl.servercount);
+    MSG_WriteByte(&buf, 1);  /* demos are always attract loops */
+    MSG_WriteString(&buf, cl.gamedir);
+    MSG_WriteShort(&buf, cl.playernum);
+    MSG_WriteString(&buf, cl.configstrings[CS_NAME]);
+    /* configstrings */
+    for(int i = 0; i < MAX_CONFIGSTRINGS; i++){
+        if(cl.configstrings[i][0]){
+            if(buf.cursize + strlen(cl.configstrings[i]) + 32 > buf.maxsize){
+                int len = LittleLong(buf.cursize);
+                fwrite(&len, 4, 1, cls.demofile);
+                fwrite(buf.data, buf.cursize, 1, cls.demofile);
+                buf.cursize = 0;
+            }
+            MSG_WriteByte(&buf, svc_configstring);
+            MSG_WriteShort(&buf, i);
+            MSG_WriteString(&buf, cl.configstrings[i]);
+        }
+    }
+    /* baselines */
+    entity_state_t nullstate;
+    memset(&nullstate, 0, sizeof(nullstate));
+    for(int i = 0; i < MAX_EDICTS; i++){
+        entity_state_t* ent = &cl_entities[i].baseline;
+        if(!ent->modelindex){
+            continue;
+        }
+        if(buf.cursize + 64 > buf.maxsize){
+            int len = LittleLong(buf.cursize);
+            fwrite(&len, 4, 1, cls.demofile);
+            fwrite(buf.data, buf.cursize, 1, cls.demofile);
+            buf.cursize = 0;
+        }
+        MSG_WriteByte(&buf, svc_spawnbaseline);
+        MSG_WriteDeltaEntity(&nullstate, &cl_entities[i].baseline, &buf, true, true);
+    }
+    MSG_WriteByte(&buf, svc_stufftext);
+    MSG_WriteString(&buf, "precache\n");
+    /* write it to the demo file */
+    int len = LittleLong(buf.cursize);
+    fwrite(&len, 4, 1, cls.demofile);
+    fwrite(buf.data, buf.cursize, 1, cls.demofile);
 }
 
-void
-CL_Setenv_f(void)
-{
-	int argc = Cmd_Argc();
-
-	if (argc > 2)
-	{
-		char buffer[1000];
-		int i;
-
-		strcpy(buffer, Cmd_Argv(1));
-		strcat(buffer, "=");
-
-		for (i = 2; i < argc; i++)
-		{
-			strcat(buffer, Cmd_Argv(i));
-			strcat(buffer, " ");
-		}
-
-		putenv(buffer);
-	}
-
-	else if (argc == 2)
-	{
-		char *env = getenv(Cmd_Argv(1));
-
-		if (env)
-		{
-			Com_Printf("%s=%s\n", Cmd_Argv(1), env);
-		}
-
-		else
-		{
-			Com_Printf("%s undefined\n", Cmd_Argv(1), env);
-		}
-	}
+void CL_Setenv_f(void){
+    int argc = Cmd_Argc();
+    if(argc > 2){
+        char buffer[1000];
+        int i;
+        strcpy(buffer, Cmd_Argv(1));
+        strcat(buffer, "=");
+        for(i = 2; i < argc; i++){
+            strcat(buffer, Cmd_Argv(i));
+            strcat(buffer, " ");
+        }
+        putenv(buffer);
+    }else if(argc == 2){
+        char *env = getenv(Cmd_Argv(1));
+        if(env){
+            Com_Printf("%s=%s\n", Cmd_Argv(1), env);
+        }else{
+            Com_Printf("%s undefined\n", Cmd_Argv(1), env);
+        }
+    }
 }
 
-void
-CL_Pause_f(void)
-{
-	/* never pause in multiplayer */
-	if ((Cvar_VariableValue("maxclients") > 1) || !Com_ServerState())
-	{
-		Cvar_SetValue("paused", 0);
-		return;
-	}
-
-	Cvar_SetValue("paused", !cl_paused->value);
+void CL_Pause_f(void){
+    /* never pause in multiplayer */
+    if((Cvar_VariableValue("maxclients") > 1) || !Com_ServerState()){
+        Cvar_SetValue("paused", 0);
+        return;
+    }
+    Cvar_SetValue("paused", !cl_paused->value);
 }
 
 void

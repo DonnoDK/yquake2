@@ -922,87 +922,59 @@ char com_token[MAX_TOKEN_CHARS];
  * Parse a token out of a string
  */
 const char* COM_Parse(const char **data_p){
-	int c;
-	int len = 0;
-	com_token[0] = 0;
-
-	const char* data = *data_p;
-	if (!data)
-	{
-		*data_p = NULL;
-		return "";
-	}
-
+    int c;
+    int len = 0;
+    com_token[0] = 0;
+    const char* data = *data_p;
+    if(!data){
+        *data_p = NULL;
+        return "";
+    }
 skipwhite:
-
-	while ((c = *data) <= ' ')
-	{
-		if (c == 0)
-		{
-			*data_p = NULL;
-			return "";
-		}
-
-		data++;
-	}
-
-	/* skip // comments */
-	if ((c == '/') && (data[1] == '/'))
-	{
-		while (*data && *data != '\n')
-		{
-			data++;
-		}
-
-		goto skipwhite;
-	}
-
-	/* handle quoted strings specially */
-	if (c == '\"')
-	{
-		data++;
-
-		while (1)
-		{
-			c = *data++;
-
-			if ((c == '\"') || !c)
-			{
-				goto done;
-			}
-
-			if (len < MAX_TOKEN_CHARS)
-			{
-				com_token[len] = c;
-				len++;
-			}
-		}
-	}
-
-	/* parse a regular word */
-	do
-	{
-		if (len < MAX_TOKEN_CHARS)
-		{
-			com_token[len] = c;
-			len++;
-		}
-
-		data++;
-		c = *data;
-	}
-	while (c > 32);
-
+    while((c = *data) <= ' '){
+        if(c == 0){
+            *data_p = NULL;
+            return "";
+        }
+        data++;
+    }
+    /* skip // comments */
+    if((c == '/') && (data[1] == '/')){
+        while(*data && *data != '\n'){
+            data++;
+        }
+        goto skipwhite;
+    }
+    /* handle quoted strings specially */
+    if(c == '\"'){
+        data++;
+        while(1){
+            c = *data++;
+            if((c == '\"') || !c){
+                goto done;
+            }
+            if(len < MAX_TOKEN_CHARS){
+                com_token[len] = c;
+                len++;
+            }
+        }
+    }
+    /* parse a regular word */
+    do{
+        if(len < MAX_TOKEN_CHARS){
+            com_token[len] = c;
+            len++;
+        }
+        data++;
+        c = *data;
+    }while (c > 32);
 done:
-	if (len == MAX_TOKEN_CHARS)
-	{
-		len = 0;
-	}
-
-	com_token[len] = 0;
-
-	*data_p = data;
-	return com_token;
+    if(len == MAX_TOKEN_CHARS){
+        len = 0;
+    }
+    com_token[len] = 0;
+    *data_p = data;
+    return com_token;
 }
 
 int paged_total;

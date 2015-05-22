@@ -203,7 +203,7 @@ void Qcommon_Init(int argc, char **argv){
 	   a basedir or cddir needs to be set before execing
 	   config files, but we want other parms to override
 	   the settings of the config files */
-	Cbuf_AddEarlyCommands(false);
+	Cbuf_AddEarlyCommands(COM_Argc(), COM_Args(), false);
 	Cbuf_Execute();
 
 	FS_InitFilesystem();
@@ -212,7 +212,7 @@ void Qcommon_Init(int argc, char **argv){
 	Cbuf_AddText("exec yq2.cfg\n");
 	Cbuf_AddText("exec config.cfg\n");
 
-	Cbuf_AddEarlyCommands(true);
+	Cbuf_AddEarlyCommands(COM_Argc(), COM_Args(), true);
 	Cbuf_Execute();
 
 	/* init commands and vars */

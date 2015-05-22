@@ -344,7 +344,7 @@ void Cbuf_InsertText(const char *text);
 /* inserted at the beginning of the buffer, before any remaining unexecuted */
 /* commands. */
 
-void Cbuf_AddEarlyCommands(qboolean clear);
+void Cbuf_AddEarlyCommands(int argc, const char** argv, qboolean clear);
 
 /* adds all the +set commands from the command line */
 

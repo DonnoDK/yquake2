@@ -2342,61 +2342,37 @@ typedef struct zhead_s
    int size;
 } zhead_t;
 
-void
-func_clock_format_countdown(edict_t *self)
-{
-	if (!self)
-	{
-		return;
-	}
-
-	zhead_t *z = ( zhead_t * )self->message - 1;
-	int size = z->size - sizeof (zhead_t);
-
-	if (size < CLOCK_MESSAGE_SIZE)
-	{
-		gi.TagFree (self->message);
-		self->message = gi.TagMalloc (CLOCK_MESSAGE_SIZE, TAG_LEVEL);
-	}
-
-	if (self->style == 0)
-	{
-		Com_sprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i", self->health);
-		return;
-	}
-
-	if (self->style == 1)
-	{
-		Com_sprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i",
-				self->health / 60, self->health % 60);
-
-		if (self->message[3] == ' ')
-		{
-			self->message[3] = '0';
-		}
-
-		return;
-	}
-
-	if (self->style == 2)
-	{
-		Com_sprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i",
-				self->health / 3600,
-				(self->health - (self->health / 3600) * 3600) / 60,
-				self->health % 60);
-
-		if (self->message[3] == ' ')
-		{
-			self->message[3] = '0';
-		}
-
-		if (self->message[6] == ' ')
-		{
-			self->message[6] = '0';
-		}
-
-		return;
-	}
+void func_clock_format_countdown(edict_t *self){
+    if(!self){
+        return;
+    }
+    zhead_t *z = ( zhead_t * )self->message - 1;
+    int size = z->size - sizeof (zhead_t);
+    if(size < CLOCK_MESSAGE_SIZE){
+        gi.TagFree (self->message);
+        self->message = gi.TagMalloc (CLOCK_MESSAGE_SIZE, TAG_LEVEL);
+    }
+    if(self->style == 0){
+        Com_sprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i", self->health);
+        return;
+    }
+    if(self->style == 1){
+        Com_sprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i", self->health / 60, self->health % 60);
+        if(self->message[3] == ' '){
+            self->message[3] = '0';
+        }
+        return;
+    }
+    if(self->style == 2){
+        Com_sprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", self->health / 3600, (self->health - (self->health / 3600) * 3600) / 60, self->health % 60);
+        if(self->message[3] == ' '){
+            self->message[3] = '0';
+        }
+        if(self->message[6] == ' '){
+            self->message[6] = '0';
+        }
+        return;
+    }
 }
 
 void

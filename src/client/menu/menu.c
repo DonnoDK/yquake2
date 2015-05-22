@@ -1044,6 +1044,7 @@ ControlsSetMenuItemValues(void)
 
     s_options_lookstrafe_box.curvalue = (lookstrafe->value != 0);
 
+    const cvar_t* freelook = Cvar_Get("freelook", "1", CVAR_ARCHIVE);
     s_options_freelook_box.curvalue = (freelook->value != 0);
 
     s_options_crosshair_box.curvalue = ClampCvar(0, 3, crosshair->value);
