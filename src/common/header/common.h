@@ -156,10 +156,9 @@ extern float LittleFloat(float l);
 /* ================================================================== */
 
 int COM_Argc(void);
-char *COM_Argv(int arg);    /* range and null checked */
+const char* COM_Argv(int arg);    /* range and null checked */
+const char** COM_Args();
 void COM_ClearArgv(int arg);
-int COM_CheckParm(char *parm);
-void COM_AddParm(char *parm);
 
 void COM_Init(void);
 void COM_InitArgv(int argc, char **argv);
@@ -345,15 +344,11 @@ void Cbuf_InsertText(const char *text);
 /* inserted at the beginning of the buffer, before any remaining unexecuted */
 /* commands. */
 
-void Cbuf_ExecuteText(int exec_when, const char *text);
-
-/* this can be used in place of either Cbuf_AddText or Cbuf_InsertText */
-
 void Cbuf_AddEarlyCommands(qboolean clear);
 
 /* adds all the +set commands from the command line */
 
-qboolean Cbuf_AddLateCommands(void);
+qboolean Cbuf_AddLateCommands(int argc, const char** argv);
 
 /* adds all the remaining + commands from the command line */
 /* Returns true if any late commands were added, which */

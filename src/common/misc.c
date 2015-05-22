@@ -253,7 +253,7 @@ void Qcommon_Init(int argc, char **argv){
 #endif
 
 	/* add + commands from command line */
-	if (!Cbuf_AddLateCommands())
+	if (!Cbuf_AddLateCommands(COM_Argc(), COM_Args()))
 	{
 		/* if the user didn't give any commands, run default action */
 		if (!dedicated->value)

@@ -118,22 +118,6 @@ void Cbuf_InsertFromDefer(void){
     defer_text_buf[0] = 0;
 }
 
-void Cbuf_ExecuteText(int exec_when, const char *text){
-    switch (exec_when){
-        case EXEC_NOW:
-            Cmd_ExecuteString(text);
-            break;
-        case EXEC_INSERT:
-            Cbuf_InsertText(text);
-            break;
-        case EXEC_APPEND:
-            Cbuf_AddText(text);
-            break;
-        default:
-            Com_Error(ERR_FATAL, "Cbuf_ExecuteText: bad exec_when");
-    }
-}
-
 void Cbuf_Execute(void){
     char line[1024];
     alias_count = 0; /* don't allow infinite alias loops */
@@ -212,12 +196,11 @@ void Cbuf_AddEarlyCommands(qboolean clear){
  * Returns true if any late commands were added, which
  * will keep the demoloop from immediately starting
  */
-qboolean Cbuf_AddLateCommands(void){
+qboolean Cbuf_AddLateCommands(int argc, const char** argv){
     /* build the combined string to parse from */
     int s = 0;
-    int argc = COM_Argc();
     for(int i = 1; i < argc; i++){
-        s += strlen(COM_Argv(i)) + 1;
+        s += strlen(argv[i]) + 1;
     }
     if(s == 0){
         return false;
@@ -225,7 +208,7 @@ qboolean Cbuf_AddLateCommands(void){
     char* text = Z_Malloc(s + 1);
     text[0] = 0;
     for(int i = 1; i < argc; i++){
-        strcat(text, COM_Argv(i));
+        strcat(text, argv[i]);
         if(i != argc - 1){
             strcat(text, " ");
         }

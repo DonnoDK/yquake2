@@ -124,74 +124,51 @@ M_PopMenu(void)
 /*
  * This crappy function maintaines a stack of opened menus.
  * The steps in this horrible mess are:
- *
- * 1. But the game into pause if a menu is opened
- *
+ * 1. Put the game into pause if a menu is opened
  * 2. If the requested menu is already open, close it.
- *
  * 3. If the requested menu is already open but not
  *    on top, close all menus above it and the menu
  *    itself. This is necessary since an instance of
  *    the reqeuested menu is in flight and will be
  *    displayed.
- *
  * 4. Save the previous menu on top (which was in flight)
  *    to the stack and make the requested menu the menu in
  *    flight.
  */
-static void
-M_PushMenu(void (*draw)(void), const char *(*key)(int))
-{
+static void M_PushMenu(void (*draw)(void), const char *(*key)(int)){
     int i;
     int alreadyPresent = 0;
-
-    if ((Cvar_VariableValue("maxclients") == 1) &&
-            Com_ServerState())
-    {
+    if((Cvar_VariableValue("maxclients") == 1) && Com_ServerState()){
         Cvar_Set("paused", "1");
     }
-
     /* if this menu is already open (and on top),
        close it => toggling behaviour */
-    if ((m_drawfunc == draw) && (m_keyfunc == key))
-    {
+    if((m_drawfunc == draw) && (m_keyfunc == key)){
         M_PopMenu();
         return;
     }
-
     /* if this menu is already present, drop back to
        that level to avoid stacking menus by hotkeys */
-    for (i = 0; i < m_menudepth; i++)
-    {
-        if ((m_layers[i].draw == draw) &&
-                (m_layers[i].key == key))
-        {
+    for(i = 0; i < m_menudepth; i++){
+        if((m_layers[i].draw == draw) && (m_layers[i].key == key)){
             alreadyPresent = 1;
             break;
         }
     }
-
     /* menu was already opened further down the stack */
-    while (alreadyPresent && i <= m_menudepth)
-    {
+    while(alreadyPresent && i <= m_menudepth){
         M_PopMenu(); /* decrements m_menudepth */
     }
-
-    if (m_menudepth >= MAX_MENU_DEPTH)
-    {
+    if(m_menudepth >= MAX_MENU_DEPTH){
         Com_Printf("Too many open menus!\n");
         return;
     }
-
     m_layers[m_menudepth].draw = m_drawfunc;
     m_layers[m_menudepth].key = m_keyfunc;
     m_menudepth++;
-
     m_drawfunc = draw;
     m_keyfunc = key;
-
     m_entersound = true;
-
     cls.key_dest = key_menu;
 }
 
@@ -632,9 +609,7 @@ M_Main_Key(int key)
     return NULL;
 }
 
-void
-M_Menu_Main_f(void)
-{
+void M_Menu_Main_f(void){
     M_PushMenu(M_Main_Draw, M_Main_Key);
 }
 
@@ -718,9 +693,7 @@ Multiplayer_MenuKey(int key)
     return Default_MenuKey(&s_multiplayer_menu, key);
 }
 
-static void
-M_Menu_Multiplayer_f(void)
-{
+static void M_Menu_Multiplayer_f(void){
     Multiplayer_MenuInit();
     M_PushMenu(Multiplayer_MenuDraw, Multiplayer_MenuKey);
 }
@@ -927,46 +900,34 @@ Keys_MenuDraw(void)
     Menu_Draw(&s_keys_menu);
 }
 
-static const char *
-Keys_MenuKey(int key)
-{
+static const char* Keys_MenuKey(int key){
     menuaction_s *item = (menuaction_s *)Menu_ItemAtCursor(&s_keys_menu);
-
-    if (bind_grab)
-    {
-        if ((key != K_ESCAPE) && (key != '`'))
-        {
+    if(bind_grab){
+        if((key != K_ESCAPE) && (key != '`')){
             char cmd[1024];
-
-            Com_sprintf(cmd, sizeof(cmd), "bind \"%s\" \"%s\"\n",
-                        Key_KeynumToString(key), bindnames[item->generic.localdata[0]][0]);
+            Com_sprintf(cmd, sizeof(cmd), "bind \"%s\" \"%s\"\n", Key_KeynumToString(key), bindnames[item->generic.localdata[0]][0]);
             Cbuf_InsertText(cmd);
         }
-
         Menu_SetStatusBar(&s_keys_menu, "ENTER to change, BACKSPACE to clear");
         bind_grab = false;
         return menu_out_sound;
     }
-
-    switch (key)
-    {
-    case K_KP_ENTER:
-    case K_ENTER:
-        KeyBindingFunc(item);
-        return menu_in_sound;
-    case K_BACKSPACE: /* delete bindings */
-    case K_DEL: /* delete bindings */
-    case K_KP_DEL:
-        M_UnbindCommand(bindnames[item->generic.localdata[0]][0]);
-        return menu_out_sound;
-    default:
-        return Default_MenuKey(&s_keys_menu, key);
+    switch(key){
+        case K_KP_ENTER:
+        case K_ENTER:
+            KeyBindingFunc(item);
+            return menu_in_sound;
+        case K_BACKSPACE: /* delete bindings */
+        case K_DEL: /* delete bindings */
+        case K_KP_DEL:
+            M_UnbindCommand(bindnames[item->generic.localdata[0]][0]);
+            return menu_out_sound;
+        default:
+            return Default_MenuKey(&s_keys_menu, key);
     }
 }
 
-static void
-M_Menu_Keys_f(void)
-{
+static void M_Menu_Keys_f(void){
     Keys_MenuInit();
     M_PushMenu(Keys_MenuDraw, Keys_MenuKey);
 }
@@ -1004,9 +965,7 @@ CrosshairFunc(void *unused)
     Cvar_SetValue("crosshair", (float)s_options_crosshair_box.curvalue);
 }
 
-static void
-CustomizeControlsFunc(void *unused)
-{
+static void CustomizeControlsFunc(void *unused){
     M_Menu_Keys_f();
 }
 
