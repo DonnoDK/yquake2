@@ -348,29 +348,22 @@ const char* Cmd_Argv(int arg){
 /*
  * Returns a single string containing argv(1) to argv(argc()-1)
  */
-char *
-Cmd_Args(void)
-{
-	return cmd_args;
+char* Cmd_Args(void){
+    return cmd_args;
 }
 
-const char * Cmd_MacroExpandString(const char *text){
-    qboolean inquote;
+const char* Cmd_MacroExpandString(const char *text){
     static char expanded[MAX_STRING_CHARS];
     char temporary[MAX_STRING_CHARS];
     const char* scan = text;
     int len = strlen(scan);
-    if (len >= MAX_STRING_CHARS)
-    {
+    if (len >= MAX_STRING_CHARS){
         Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
         return NULL;
     }
-
     int count = 0;
-
-    inquote = false;
-    int i;
-    for(i = 0; i < len; i++){
+    qboolean inquote = false;
+    for(int i = 0; i < len; i++){
         if (scan[i] == '"'){
             inquote ^= 1;
         }
@@ -470,40 +463,35 @@ void Cmd_TokenizeString(const char *text, qboolean macroExpand){
     }
 }
 
-void
-Cmd_AddCommand(char *cmd_name, xcommand_t function)
-{
-	cmd_function_t *cmd;
-	cmd_function_t **pos;
+static const cmd_function_t* Cmd_CommandNamed(const char* name){
+    for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
+        if(!strcmp(name, cmd->name)){
+            return cmd;
+        }
+    }
+    return NULL;
+}
 
-	/* fail if the command is a variable name */
-	if (Cvar_VariableString(cmd_name)[0])
-	{
-		Cmd_RemoveCommand(cmd_name);
-	}
-
-	/* fail if the command already exists */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(cmd_name, cmd->name))
-		{
-			Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
-			return;
-		}
-	}
-
-	cmd = Z_Malloc(sizeof(cmd_function_t));
-	cmd->name = cmd_name;
-	cmd->function = function;
-
-	/* link the command in */
-	pos = &cmd_functions;
-	while (*pos && strcmp((*pos)->name, cmd->name) < 0)
-	{
-		pos = &(*pos)->next;
-	}
-	cmd->next = *pos;
-	*pos = cmd;
+void Cmd_AddCommand(char *cmd_name, xcommand_t function){
+    /* fail if the command is a variable name */
+    if(Cvar_VariableString(cmd_name)[0]){
+        Cmd_RemoveCommand(cmd_name);
+    }
+    /* fail if the command already exists */
+    if(Cmd_CommandNamed(cmd_name) != NULL){
+        Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
+        return;
+    }
+    cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
+    cmd->name = cmd_name;
+    cmd->function = function;
+    /* link the command in */
+    cmd_function_t** pos = &cmd_functions;
+    while(*pos && strcmp((*pos)->name, cmd->name) < 0){
+        pos = &(*pos)->next;
+    }
+    cmd->next = *pos;
+    *pos = cmd;
 }
 
 void
@@ -556,14 +544,6 @@ qsort_strcomp(const void *s1, const void *s2)
 	return strcmp(*(char **)s1, *(char **)s2);
 }
 
-static const cmd_function_t* Cmd_CommandNamed(const char* name){
-    for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
-        if(!strcmp(name, cmd->name)){
-            return cmd;
-        }
-    }
-    return NULL;
-}
 
 static const cmdalias_t* Cmd_AliasNamed(const char* name){
     for(cmdalias_t* alias = cmd_alias; alias; alias = alias->next){
@@ -698,7 +678,7 @@ void Cmd_ExecuteString(const char *text){
         }
     }
     /* check cvars */
-    if(Cvar_Command()){
+    if(Cvar_Command(Cmd_Argv(0), Cmd_Argv(1), Cmd_Argc())){
         return;
     }
 #ifndef DEDICATED_ONLY

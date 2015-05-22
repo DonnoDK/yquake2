@@ -28,8 +28,7 @@
 
 cvar_t *cvar_vars;
 
-static qboolean
-Cvar_InfoValidate(const char *s){
+static qboolean Cvar_InfoValidate(const char *s){
     if(strstr(s, "\\")){
         return false;
     }
@@ -42,16 +41,6 @@ Cvar_InfoValidate(const char *s){
     return true;
 }
 
-
-const cvar_t* Cvar_VarNamed(const char *name){
-    for(cvar_t* cvar = cvar_vars; cvar != NULL; cvar = cvar->next){
-        if(!strcmp(name, cvar->name)){
-            return cvar;
-        }
-    }
-    return NULL;
-}
-
 static cvar_t* Cvar_FindVar(const char *var_name){
     for(cvar_t* var = cvar_vars; var != NULL; var = var->next){
         if(!strcmp(var_name, var->name)){
@@ -61,8 +50,12 @@ static cvar_t* Cvar_FindVar(const char *var_name){
     return NULL;
 }
 
+const cvar_t* Cvar_VarNamed(const char *name){
+    return Cvar_FindVar(name);
+}
+
 float Cvar_VariableValue(char *var_name){
-    cvar_t* var = Cvar_FindVar(var_name);
+    const cvar_t* var = Cvar_FindVar(var_name);
     if(!var){
         return 0;
     }
@@ -70,35 +63,13 @@ float Cvar_VariableValue(char *var_name){
 }
 
 const char* Cvar_VariableString(const char *var_name){
-    cvar_t* var = Cvar_FindVar(var_name);
+    const cvar_t* var = Cvar_FindVar(var_name);
     if(!var){
         return "";
     }
     return var->string;
 }
 
-char* Cvar_CompleteVariable(char *partial){
-    int len = (int)strlen(partial);
-    if(!len){
-        return NULL;
-    }
-
-    /* check exact match */
-    cvar_t *cvar;
-    for(cvar = cvar_vars; cvar; cvar = cvar->next){
-        if(!strcmp(partial, cvar->name)){
-            return cvar->name;
-        }
-    }
-
-    /* check partial match */
-    for(cvar = cvar_vars; cvar; cvar = cvar->next){
-        if(!strncmp(partial, cvar->name, len)){
-            return cvar->name;
-        }
-    }
-    return NULL;
-}
 
 /*
  * If the variable already exists, the value will not be set
@@ -276,98 +247,60 @@ Cvar_GetLatchedVars(void)
 /*
  * Handles variable inspection and changing from the console
  */
-qboolean
-Cvar_Command(void)
-{
-	cvar_t *v;
-
-	/* check variables */
-	v = Cvar_FindVar(Cmd_Argv(0));
-
-	if (!v)
-	{
-		return false;
-	}
-
-	/* perform a variable print or set */
-	if (Cmd_Argc() == 1)
-	{
-		Com_Printf("\"%s\" is \"%s\"\n", v->name, v->string);
-		return true;
-	}
-
-	Cvar_Set(v->name, Cmd_Argv(1));
-	return true;
+qboolean Cvar_Command(const char* command, const char* argument, int count){
+    /* check variables */
+    cvar_t* v = Cvar_FindVar(command);
+    if(!v){
+        return false;
+    }
+    /* perform a variable print or set */
+    if(count == 1){
+        Com_Printf("\"%s\" is \"%s\"\n", v->name, v->string);
+        return true;
+    }
+    Cvar_Set(v->name, argument);
+    return true;
 }
 
 /*
  * Allows setting and defining of arbitrary cvars from console
  */
-void
-Cvar_Set_f(void)
-{
-	int c;
-	int flags;
-
-	c = Cmd_Argc();
-
-	if ((c != 3) && (c != 4))
-	{
-		Com_Printf("usage: set <variable> <value> [u / s]\n");
-		return;
-	}
-
-	if (c == 4)
-	{
-		if (!strcmp(Cmd_Argv(3), "u"))
-		{
-			flags = CVAR_USERINFO;
-		}
-
-		else if (!strcmp(Cmd_Argv(3), "s"))
-		{
-			flags = CVAR_SERVERINFO;
-		}
-
-		else
-		{
-			Com_Printf("flags can only be 'u' or 's'\n");
-			return;
-		}
-
-		Cvar_FullSet(Cmd_Argv(1), Cmd_Argv(2), flags);
-	}
-
-	else
-	{
-		Cvar_Set(Cmd_Argv(1), Cmd_Argv(2));
-	}
+static void Cvar_Set_f(void){
+    int c = Cmd_Argc();
+    if((c != 3) && (c != 4)){
+        Com_Printf("usage: set <variable> <value> [u / s]\n");
+        return;
+    }
+    if(c == 4){
+        int flags;
+        if(!strcmp(Cmd_Argv(3), "u")){
+            flags = CVAR_USERINFO;
+        }else if(!strcmp(Cmd_Argv(3), "s")){
+            flags = CVAR_SERVERINFO;
+        }else{
+            Com_Printf("flags can only be 'u' or 's'\n");
+            return;
+        }
+        Cvar_FullSet(Cmd_Argv(1), Cmd_Argv(2), flags);
+    }else{
+        Cvar_Set(Cmd_Argv(1), Cmd_Argv(2));
+    }
 }
 
 /*
  * Appends lines containing "set variable value" for all variables
  * with the archive flag set to true.
  */
-void
-Cvar_WriteVariables(char *path)
-{
-	cvar_t *var;
-	char buffer[1024];
-	FILE *f;
-
-	f = fopen(path, "a");
-
-	for (var = cvar_vars; var; var = var->next)
-	{
-		if (var->flags & CVAR_ARCHIVE)
-		{
-			Com_sprintf(buffer, sizeof(buffer), "set %s \"%s\"\n",
-					var->name, var->string);
-			fprintf(f, "%s", buffer);
-		}
-	}
-
-	fclose(f);
+void Cvar_WriteVariables(const char *path){
+    char buffer[1024];
+    FILE* f = fopen(path, "a");
+    for(cvar_t* var = cvar_vars; var; var = var->next){
+        if(var->flags & CVAR_ARCHIVE){
+            Com_sprintf(buffer, sizeof(buffer), "set %s \"%s\"\n", var->name, var->string);
+            fprintf(f, "%s", buffer);
+        }
+    }
+    fclose(f);
 }
 
 void
