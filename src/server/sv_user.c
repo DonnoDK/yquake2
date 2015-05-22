@@ -290,7 +290,6 @@ SV_NextDownload_f(void)
 void
 SV_BeginDownload_f(void)
 {
-	char *name;
 	extern cvar_t *allow_download;
 	extern cvar_t *allow_download_players;
 	extern cvar_t *allow_download_models;
@@ -299,7 +298,7 @@ SV_BeginDownload_f(void)
 	extern int file_from_pak;
 	int offset = 0;
 
-	name = Cmd_Argv(1);
+	const char* name = Cmd_Argv(1);
 
 	if (Cmd_Argc() > 2)
 	{

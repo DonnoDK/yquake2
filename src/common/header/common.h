@@ -96,7 +96,7 @@ void SZ_Init(sizebuf_t *buf, byte *data, int length);
 void SZ_Clear(sizebuf_t *buf);
 void *SZ_GetSpace(sizebuf_t *buf, int length);
 void SZ_Write(sizebuf_t *buf, const void *data, int length);
-void SZ_Print(sizebuf_t *buf, char *data);  /* strcats onto the sizebuf */
+void SZ_Print(sizebuf_t *buf, const char* data);  /* strcats onto the sizebuf */
 
 /* ================================================================== */
 
@@ -393,16 +393,17 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function);
 void Cmd_RemoveCommand(char *cmd_name);
 
 qboolean Cmd_Exists(char *cmd_name);
+qboolean Cmd_IsComplete(const char *name);
 
 /* used by the cvar code to check for cvar / command name overlap */
 
-char *Cmd_CompleteCommand(char *partial);
+const char *Cmd_CompleteCommand(const char *partial);
 
 /* attempts to match a partial command for automatic command line completion */
 /* returns NULL if nothing fits */
 
 int Cmd_Argc(void);
-char *Cmd_Argv(int arg);
+const char* Cmd_Argv(int arg);
 char *Cmd_Args(void);
 
 /* The functions that execute commands get their parameters with these */
@@ -442,13 +443,15 @@ void Cmd_ForwardToServer(void);
 
 extern cvar_t *cvar_vars;
 
+const cvar_t* Cvar_VarNamed(const char* name);
+
 cvar_t *Cvar_Get(const char *var_name, const char *value, int flags);
 
 /* creates the variable if it doesn't exist, or returns the existing one */
 /* if it exists, the value will not be changed, but flags will be ORed in */
 /* that allows variables to be unarchived without needing bitflags */
 
-cvar_t *Cvar_Set(char *var_name, char *value);
+cvar_t *Cvar_Set(const char *var_name, const char *value);
 
 /* will create the variable if it doesn't exist */
 
@@ -456,7 +459,7 @@ cvar_t *Cvar_ForceSet(char *var_name, char *value);
 
 /* will set the variable even if NOSET or LATCH */
 
-cvar_t *Cvar_FullSet(char *var_name, char *value, int flags);
+cvar_t* Cvar_FullSet(const char *var_name, const char *value, int flags);
 
 void Cvar_SetValue(char *var_name, float value);
 
@@ -546,7 +549,7 @@ qboolean NET_CompareAdr(netadr_t a, netadr_t b);
 qboolean NET_CompareBaseAdr(netadr_t a, netadr_t b);
 qboolean NET_IsLocalAddress(netadr_t adr);
 char *NET_AdrToString(netadr_t a);
-qboolean NET_StringToAdr(char *s, netadr_t *a);
+qboolean NET_StringToAdr(const char *s, netadr_t *a);
 void NET_Sleep(int msec);
 
 /*=================================================================== */
@@ -715,7 +718,7 @@ void FS_SetGamedir(char *dir);
 char *FS_Gamedir(void);
 char *FS_NextPath(char *prevpath);
 void FS_ExecAutoexec(void);
-int FS_LoadFile(char *path, void **buffer);
+int FS_LoadFile(const char *path, void **buffer);
 
 /* a null buffer will just return the file length without loading */
 /* a -1 length is not present */

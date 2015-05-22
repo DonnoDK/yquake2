@@ -40,28 +40,18 @@ extern cvar_t *cl_timeout;
  * the server, so when they are typed in at the console, they will need
  * to be forwarded.
  */
-void
-Cmd_ForwardToServer(void)
-{
-	char *cmd;
-
-	cmd = Cmd_Argv(0);
-
-	if ((cls.state <= ca_connected) || (*cmd == '-') || (*cmd == '+'))
-	{
-		Com_Printf("Unknown command \"%s\"\n", cmd);
-		return;
-	}
-
-	MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
-
-	SZ_Print(&cls.netchan.message, cmd);
-
-	if (Cmd_Argc() > 1)
-	{
-		SZ_Print(&cls.netchan.message, " ");
-		SZ_Print(&cls.netchan.message, Cmd_Args());
-	}
+void Cmd_ForwardToServer(void){
+    const char* cmd = Cmd_Argv(0);
+    if((cls.state <= ca_connected) || (*cmd == '-') || (*cmd == '+')){
+        Com_Printf("Unknown command \"%s\"\n", cmd);
+        return;
+    }
+    MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+    SZ_Print(&cls.netchan.message, cmd);
+    if(Cmd_Argc() > 1){
+        SZ_Print(&cls.netchan.message, " ");
+        SZ_Print(&cls.netchan.message, Cmd_Args());
+    }
 }
 
 void
@@ -186,38 +176,23 @@ CL_CheckForResend(void)
 	Netchan_OutOfBandPrint(NS_CLIENT, adr, "getchallenge\n");
 }
 
-void
-CL_Connect_f(void)
-{
-	char *server;
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("usage: connect <server>\n");
-		return;
-	}
-
-	if (Com_ServerState())
-	{
-		/* if running a local server, kill it and reissue
-		   note: this is connect with the save game system */
-		SV_Shutdown(va("Server quit\n", msg), false);
-	}
-
-	else
-	{
-		CL_Disconnect();
-	}
-
-	server = Cmd_Argv(1);
-
-	NET_Config(true); /* allow remote */
-
-	CL_Disconnect();
-
-	cls.state = ca_connecting;
-	Q_strlcpy(cls.servername, server, sizeof(cls.servername));
-	cls.connect_time = -99999; /* HACK: CL_CheckForResend() will fire immediately */
+void CL_Connect_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("usage: connect <server>\n");
+        return;
+    }
+    if(Com_ServerState()){
+        /* if running a local server, kill it and reissue note: this is connect with the save game system */
+        SV_Shutdown(va("Server quit\n", msg), false);
+    }else{
+        CL_Disconnect();
+    }
+    const char* server = Cmd_Argv(1);
+    NET_Config(true); /* allow remote */
+    CL_Disconnect();
+    cls.state = ca_connecting;
+    Q_strlcpy(cls.servername, server, sizeof(cls.servername));
+    cls.connect_time = -99999; /* HACK: CL_CheckForResend() will fire immediately */
 }
 
 /*
@@ -370,58 +345,35 @@ CL_Disconnect_f(void)
  *
  * Contents allows \n escape character
  */
-void
-CL_Packet_f(void)
-{
-	char send[2048];
-	int i, l;
-	char *in, *out;
-	netadr_t adr;
-
-	if (Cmd_Argc() != 3)
-	{
-		Com_Printf("packet <destination> <contents>\n");
-		return;
-	}
-
-	NET_Config(true);  /* allow remote */
-
-	if (!NET_StringToAdr(Cmd_Argv(1), &adr))
-	{
-		Com_Printf("Bad address\n");
-		return;
-	}
-
-	if (!adr.port)
-	{
-		adr.port = BigShort(PORT_SERVER);
-	}
-
-	in = Cmd_Argv(2);
-
-	out = send + 4;
-
-	send[0] = send[1] = send[2] = send[3] = (char)0xff;
-
-	l = strlen(in);
-
-	for (i = 0; i < l; i++)
-	{
-		if ((in[i] == '\\') && (in[i + 1] == 'n'))
-		{
-			*out++ = '\n';
-			i++;
-		}
-
-		else
-		{
-			*out++ = in[i];
-		}
-	}
-
-	*out = 0;
-
-	NET_SendPacket(NS_CLIENT, out - send, send, adr);
+void CL_Packet_f(void){
+    if(Cmd_Argc() != 3){
+        Com_Printf("packet <destination> <contents>\n");
+        return;
+    }
+    NET_Config(true);  /* allow remote */
+    netadr_t adr;
+    if(!NET_StringToAdr(Cmd_Argv(1), &adr)){
+        Com_Printf("Bad address\n");
+        return;
+    }
+    if(!adr.port){
+        adr.port = BigShort(PORT_SERVER);
+    }
+    const char* in = Cmd_Argv(2);
+    char send[2048];
+    char* out = send + 4;
+    send[0] = send[1] = send[2] = send[3] = (char)0xff;
+    int l = strlen(in);
+    for(int i = 0; i < l; i++){
+        if((in[i] == '\\') && (in[i + 1] == 'n')){
+            *out++ = '\n';
+            i++;
+        }else{
+            *out++ = in[i];
+        }
+    }
+    *out = 0;
+    NET_SendPacket(NS_CLIENT, out - send, send, adr);
 }
 
 /*
@@ -557,93 +509,64 @@ CL_PingServers_f(void)
 /*
  * Responses to broadcasts, etc
  */
-void
-CL_ConnectionlessPacket(void)
-{
-	char *s;
-	char *c;
-
-	MSG_BeginReading(&net_message);
-	MSG_ReadLong(&net_message); /* skip the -1 */
-
-	s = MSG_ReadStringLine(&net_message);
-
-	Cmd_TokenizeString(s, false);
-
-	c = Cmd_Argv(0);
-
-	Com_Printf("%s: %s\n", NET_AdrToString(net_from), c);
-
-	/* server connection */
-	if (!strcmp(c, "client_connect"))
-	{
-		if (cls.state == ca_connected)
-		{
-			Com_Printf("Dup connect received.  Ignored.\n");
-			return;
-		}
-
-		Netchan_Setup(NS_CLIENT, &cls.netchan, net_from, cls.quakePort);
-
-		MSG_WriteChar(&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString(&cls.netchan.message, "new");
-		cls.state = ca_connected;
-		return;
-	}
-
-	/* server responding to a status broadcast */
-	if (!strcmp(c, "info"))
-	{
-		CL_ParseStatusMessage();
-		return;
-	}
-
-	/* remote command from gui front end */
-	if (!strcmp(c, "cmd"))
-	{
-		if (!NET_IsLocalAddress(net_from))
-		{
-			Com_Printf("Command packet from remote host.  Ignored.\n");
-			return;
-		}
-
-		s = MSG_ReadString(&net_message);
-		Cbuf_AddText(s);
-		Cbuf_AddText("\n");
-		return;
-	}
-
-	/* print command from somewhere */
-	if (!strcmp(c, "print"))
-	{
-		s = MSG_ReadString(&net_message);
-		Com_Printf("%s", s);
-		return;
-	}
-
-	/* ping from somewhere */
-	if (!strcmp(c, "ping"))
-	{
-		Netchan_OutOfBandPrint(NS_CLIENT, net_from, "ack");
-		return;
-	}
-
-	/* challenge from the server we are connecting to */
-	if (!strcmp(c, "challenge"))
-	{
-		cls.challenge = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
-		CL_SendConnectPacket();
-		return;
-	}
-
-	/* echo request from server */
-	if (!strcmp(c, "echo"))
-	{
-		Netchan_OutOfBandPrint(NS_CLIENT, net_from, "%s", Cmd_Argv(1));
-		return;
-	}
-
-	Com_Printf("Unknown command.\n");
+void CL_ConnectionlessPacket(void){
+    MSG_BeginReading(&net_message);
+    MSG_ReadLong(&net_message); /* skip the -1 */
+    const char* s = MSG_ReadStringLine(&net_message);
+    Cmd_TokenizeString(s, false);
+    const char* c = Cmd_Argv(0);
+    Com_Printf("%s: %s\n", NET_AdrToString(net_from), c);
+    /* server connection */
+    if(!strcmp(c, "client_connect")){
+        if(cls.state == ca_connected){
+            Com_Printf("Dup connect received.  Ignored.\n");
+            return;
+        }
+        Netchan_Setup(NS_CLIENT, &cls.netchan, net_from, cls.quakePort);
+        MSG_WriteChar(&cls.netchan.message, clc_stringcmd);
+        MSG_WriteString(&cls.netchan.message, "new");
+        cls.state = ca_connected;
+        return;
+    }
+    /* server responding to a status broadcast */
+    if(!strcmp(c, "info")){
+        CL_ParseStatusMessage();
+        return;
+    }
+    /* remote command from gui front end */
+    if(!strcmp(c, "cmd")){
+        if(!NET_IsLocalAddress(net_from)){
+            Com_Printf("Command packet from remote host.  Ignored.\n");
+            return;
+        }
+        s = MSG_ReadString(&net_message);
+        Cbuf_AddText(s);
+        Cbuf_AddText("\n");
+        return;
+    }
+    /* print command from somewhere */
+    if(!strcmp(c, "print")){
+        s = MSG_ReadString(&net_message);
+        Com_Printf("%s", s);
+        return;
+    }
+    /* ping from somewhere */
+    if(!strcmp(c, "ping")){
+        Netchan_OutOfBandPrint(NS_CLIENT, net_from, "ack");
+        return;
+    }
+    /* challenge from the server we are connecting to */
+    if(!strcmp(c, "challenge")){
+        cls.challenge = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
+        CL_SendConnectPacket();
+        return;
+    }
+    /* echo request from server */
+    if(!strcmp(c, "echo")){
+        Netchan_OutOfBandPrint(NS_CLIENT, net_from, "%s", Cmd_Argv(1));
+        return;
+    }
+    Com_Printf("Unknown command.\n");
 }
 
 void

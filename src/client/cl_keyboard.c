@@ -52,7 +52,6 @@ qboolean menubound[K_LAST]; /* if true, can't be rebound while in menu */
 int key_repeats[K_LAST]; /* if > 1, it is autorepeating */
 qboolean keydown[K_LAST];
 
-qboolean Cmd_IsComplete(char *cmd);
 
 typedef struct
 {
@@ -170,39 +169,25 @@ keyname_t keynames[] = {
 
 /* ------------------------------------------------------------------ */
 
-void
-CompleteCommand(void)
-{
-	char *cmd, *s;
-
-	s = key_lines[edit_line] + 1;
-
-	if ((*s == '\\') || (*s == '/'))
-	{
-		s++;
-	}
-
-	cmd = Cmd_CompleteCommand(s);
-
-	if (cmd)
-	{
-		key_lines[edit_line][1] = '/';
-		strcpy(key_lines[edit_line] + 2, cmd);
-		key_linepos = strlen(cmd) + 2;
-
-		if (Cmd_IsComplete(cmd))
-		{
-			key_lines[edit_line][key_linepos] = ' ';
-			key_linepos++;
-			key_lines[edit_line][key_linepos] = 0;
-		}
-		else
-		{
-			key_lines[edit_line][key_linepos] = 0;
-		}
-
-		return;
-	}
+void CompleteCommand(void){
+    const char* s = key_lines[edit_line] + 1;
+    if((*s == '\\') || (*s == '/')){
+        s++;
+    }
+    const char* cmd = Cmd_CompleteCommand(s);
+    if(cmd){
+        key_lines[edit_line][1] = '/';
+        strcpy(key_lines[edit_line] + 2, cmd);
+        key_linepos = strlen(cmd) + 2;
+        if(Cmd_IsComplete(cmd)){
+            key_lines[edit_line][key_linepos] = ' ';
+            key_linepos++;
+            key_lines[edit_line][key_linepos] = 0;
+        }else{
+            key_lines[edit_line][key_linepos] = 0;
+        }
+        return;
+    }
 }
 
 /*
@@ -589,30 +574,19 @@ Key_Message(int key)
  * Single ascii characters return themselves, while
  * the K_* names are matched up.
  */
-int
-Key_StringToKeynum(char *str)
-{
-	keyname_t *kn;
-
-	if (!str || !str[0])
-	{
-		return -1;
-	}
-
-	if (!str[1])
-	{
-		return str[0];
-	}
-
-	for (kn = keynames; kn->name; kn++)
-	{
-		if (!Q_stricmp(str, kn->name))
-		{
-			return kn->keynum;
-		}
-	}
-
-	return -1;
+static int Key_StringToKeynum(const char *str){
+    if(!str || !str[0]){
+        return -1;
+    }
+    if(!str[1]){
+        return str[0];
+    }
+    for(keyname_t* kn = keynames; kn->name; kn++){
+        if(!Q_stricmp(str, kn->name)){
+            return kn->keynum;
+        }
+    }
+    return -1;
 }
 
 /*
@@ -674,26 +648,17 @@ Key_SetBinding(int keynum, char *binding)
 	keybindings[keynum] = new;
 }
 
-void
-Key_Unbind_f(void)
-{
-	int b;
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("unbind <key> : remove commands from a key\n");
-		return;
-	}
-
-	b = Key_StringToKeynum(Cmd_Argv(1));
-
-	if (b == -1)
-	{
-		Com_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(1));
-		return;
-	}
-
-	Key_SetBinding(b, "");
+void Key_Unbind_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("unbind <key> : remove commands from a key\n");
+        return;
+    }
+    int b = Key_StringToKeynum(Cmd_Argv(1));
+    if(b == -1){
+        Com_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(1));
+        return;
+    }
+    Key_SetBinding(b, "");
 }
 
 void

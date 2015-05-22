@@ -365,101 +365,70 @@ NET_AdrToString(netadr_t a)
 	return s;
 }
 
-qboolean
-NET_StringToSockaddr(char *s, struct sockaddr_storage *sadr)
-{
-	char copy[128];
-	char *addrs, *space;
-	char *ports = NULL;
-	int err;
-	struct addrinfo hints;
-	struct addrinfo *resultp;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_socktype = SOCK_DGRAM;
-	hints.ai_family = PF_UNSPEC;
-
-	strcpy(copy, s);
-	addrs = space = copy;
-
-	if (*addrs == '[')
-	{
-		addrs++;
-
-		for ( ; *space && *space != ']'; space++)
-		{
-		}
-
-		if (!*space)
-		{
-			Com_Printf("NET_StringToSockaddr: invalid IPv6 address %s\n", s);
-			return 0;
-		}
-
-		*space++ = '\0';
-	}
-
-	for ( ; *space; space++)
-	{
-		if (*space == ':')
-		{
-			*space = '\0';
-			ports = space + 1;
-		}
-	}
-
-	if ((err = getaddrinfo(addrs, ports, &hints, &resultp)))
-	{
-		/* Error */
-		Com_Printf("NET_StringToSockaddr: string %s:\n%s\n", s,
-				gai_strerror(err));
-		return 0;
-	}
-
-	switch (resultp->ai_family)
-	{
-		case AF_INET:
-			/* convert to ipv4 addr */
-			memset(sadr, 0, sizeof(struct sockaddr_storage));
-			memcpy(sadr, resultp->ai_addr, resultp->ai_addrlen);
-			break;
-
-		case AF_INET6:
-			/* convert to ipv6 addr */
-			memset(sadr, 0, sizeof(struct sockaddr_storage));
-			memcpy(sadr, resultp->ai_addr, resultp->ai_addrlen);
-			break;
-
-		default:
-			Com_Printf("NET_StringToSockaddr: string %s:\nprotocol family %d not supported\n",
-				s, resultp->ai_family);
-			return 0;
-	}
-
-	return true;
+static qboolean NET_StringToSockaddr(const char *s, struct sockaddr_storage *sadr){
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_family = PF_UNSPEC;
+    char copy[128];
+    strcpy(copy, s);
+    char* space;
+    char* addrs = space = copy;
+    if(*addrs == '['){
+        addrs++;
+        for( ; *space && *space != ']'; space++){
+        }
+        if(!*space){
+            Com_Printf("NET_StringToSockaddr: invalid IPv6 address %s\n", s);
+            return 0;
+        }
+        *space++ = '\0';
+    }
+    char *ports = NULL;
+    for( ; *space; space++){
+        if(*space == ':'){
+            *space = '\0';
+            ports = space + 1;
+        }
+    }
+    int err;
+    struct addrinfo *resultp;
+    if((err = getaddrinfo(addrs, ports, &hints, &resultp))){
+        /* Error */
+        Com_Printf("NET_StringToSockaddr: string %s:\n%s\n", s, gai_strerror(err));
+        return 0;
+    }
+    switch(resultp->ai_family){
+        case AF_INET:
+            /* convert to ipv4 addr */
+            memset(sadr, 0, sizeof(struct sockaddr_storage));
+            memcpy(sadr, resultp->ai_addr, resultp->ai_addrlen);
+            break;
+        case AF_INET6:
+            /* convert to ipv6 addr */
+            memset(sadr, 0, sizeof(struct sockaddr_storage));
+            memcpy(sadr, resultp->ai_addr, resultp->ai_addrlen);
+            break;
+        default:
+            Com_Printf("NET_StringToSockaddr: string %s:\nprotocol family %d not supported\n",
+                    s, resultp->ai_family);
+            return 0;
+    }
+    return true;
 }
 
-qboolean
-NET_StringToAdr(char *s, netadr_t *a)
-{
-	struct sockaddr_storage sadr;
-
-	memset(a, 0, sizeof(*a));
-
-	if (!strcmp(s, "localhost"))
-	{
-		a->type = NA_LOOPBACK;
-		return true;
-	}
-
-	if (!NET_StringToSockaddr(s, &sadr))
-	{
-		return false;
-	}
-
-	SockadrToNetadr(&sadr, a);
-
-	return true;
+qboolean NET_StringToAdr(const char *s, netadr_t *a){
+    struct sockaddr_storage sadr;
+    memset(a, 0, sizeof(*a));
+    if(!strcmp(s, "localhost")){
+        a->type = NA_LOOPBACK;
+        return true;
+    }
+    if(!NET_StringToSockaddr(s, &sadr)){
+        return false;
+    }
+    SockadrToNetadr(&sadr, a);
+    return true;
 }
 
 qboolean

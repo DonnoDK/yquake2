@@ -86,62 +86,41 @@ SV_SetMaster_f(void)
 /*
  * Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
  */
-qboolean
-SV_SetPlayer(void)
-{
-	client_t *cl;
-	int i;
-	int idnum;
-	char *s;
-
-	if (Cmd_Argc() < 2)
-	{
-		return false;
-	}
-
-	s = Cmd_Argv(1);
-
-	/* numeric values are just slot numbers */
-	if ((s[0] >= '0') && (s[0] <= '9'))
-	{
-		idnum = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
-
-		if ((idnum < 0) || (idnum >= maxclients->value))
-		{
-			Com_Printf("Bad client slot: %i\n", idnum);
-			return false;
-		}
-
-		sv_client = &svs.clients[idnum];
-		sv_player = sv_client->edict;
-
-		if (!sv_client->state)
-		{
-			Com_Printf("Client %i is not active\n", idnum);
-			return false;
-		}
-
-		return true;
-	}
-
-	/* check for a name match */
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
-		if (!cl->state)
-		{
-			continue;
-		}
-
-		if (!strcmp(cl->name, s))
-		{
-			sv_client = cl;
-			sv_player = sv_client->edict;
-			return true;
-		}
-	}
-
-	Com_Printf("Userid %s is not on the server\n", s);
-	return false;
+qboolean SV_SetPlayer(void){
+    if(Cmd_Argc() < 2){
+        return false;
+    }
+    const char* s = Cmd_Argv(1);
+    /* numeric values are just slot numbers */
+    if((s[0] >= '0') && (s[0] <= '9')){
+        int idnum = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
+        if((idnum < 0) || (idnum >= maxclients->value)){
+            Com_Printf("Bad client slot: %i\n", idnum);
+            return false;
+        }
+        sv_client = &svs.clients[idnum];
+        sv_player = sv_client->edict;
+        if(!sv_client->state){
+            Com_Printf("Client %i is not active\n", idnum);
+            return false;
+        }
+        return true;
+    }
+    /* check for a name match */
+    client_t *cl;
+    int i;
+    for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
+        if(!cl->state){
+            continue;
+        }
+        if(!strcmp(cl->name, s)){
+            sv_client = cl;
+            sv_player = sv_client->edict;
+            return true;
+        }
+    }
+    Com_Printf("Userid %s is not on the server\n", s);
+    return false;
 }
 
 /*
@@ -172,107 +151,71 @@ SV_DemoMap_f(void)
  * Clears the archived maps, plays the inter.cin cinematic, then
  * goes to map jail.bsp.
  */
-void
-SV_GameMap_f(void)
-{
-	char *map;
-	int i;
-	client_t *cl;
-	qboolean *savedInuse;
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("USAGE: gamemap <map>\n");
-		return;
-	}
-
-	Com_DPrintf("SV_GameMap(%s)\n", Cmd_Argv(1));
-
-	FS_CreatePath(va("%s/save/current/", FS_Gamedir()));
-
-	/* check for clearing the current savegame */
-	map = Cmd_Argv(1);
-
-	if (map[0] == '*')
-	{
-		/* wipe all the *.sav files */
-		SV_WipeSavegame("current");
-	}
-	else
-	{
-		/* save the map just exited */
-		if (sv.state == ss_game)
-		{
-			/* clear all the client inuse flags before saving so that
-			   when the level is re-entered, the clients will spawn
-			   at spawn points instead of occupying body shells */
-			savedInuse = malloc(maxclients->value * sizeof(qboolean));
-
-			for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-			{
-				savedInuse[i] = cl->edict->inuse;
-				cl->edict->inuse = false;
-			}
-
-			SV_WriteLevelFile();
-
-			/* we must restore these for clients to transfer over correctly */
-			for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-			{
-				cl->edict->inuse = savedInuse[i];
-			}
-
-			free(savedInuse);
-		}
-	}
-
-	/* start up the next map */
-	SV_Map(false, Cmd_Argv(1), false);
-
-	/* archive server state */
-	Q_strlcpy(svs.mapcmd, Cmd_Argv(1), sizeof(svs.mapcmd));
-
-	/* copy off the level to the autosave slot */
-	if (!dedicated->value)
-	{
-		SV_WriteServerFile(true);
-		SV_CopySaveGame("current", "save0");
-	}
+void SV_GameMap_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("USAGE: gamemap <map>\n");
+        return;
+    }
+    Com_DPrintf("SV_GameMap(%s)\n", Cmd_Argv(1));
+    FS_CreatePath(va("%s/save/current/", FS_Gamedir()));
+    /* check for clearing the current savegame */
+    if(Cmd_Argv(1)[0] == '*'){
+        /* wipe all the *.sav files */
+        SV_WipeSavegame("current");
+    }else{
+        /* save the map just exited */
+        if(sv.state == ss_game){
+            /* clear all the client inuse flags before saving so that
+               when the level is re-entered, the clients will spawn
+               at spawn points instead of occupying body shells */
+            qboolean* savedInuse = malloc(maxclients->value * sizeof(qboolean));
+            client_t *cl;
+            int i;
+            for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
+                savedInuse[i] = cl->edict->inuse;
+                cl->edict->inuse = false;
+            }
+            SV_WriteLevelFile();
+            /* we must restore these for clients to transfer over correctly */
+            for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
+                cl->edict->inuse = savedInuse[i];
+            }
+            free(savedInuse);
+        }
+    }
+    /* start up the next map */
+    SV_Map(false, Cmd_Argv(1), false);
+    /* archive server state */
+    Q_strlcpy(svs.mapcmd, Cmd_Argv(1), sizeof(svs.mapcmd));
+    /* copy off the level to the autosave slot */
+    if(!dedicated->value){
+        SV_WriteServerFile(true);
+        SV_CopySaveGame("current", "save0");
+    }
 }
 
 /*
  * Goes directly to a given map without any savegame archiving.
  * For development work
  */
-void
-SV_Map_f(void)
-{
-	char *map;
-	char expanded[MAX_QPATH];
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("USAGE: map <mapname>\n");
-		return;
-	}
-
-	/* if not a pcx, demo, or cinematic, check to make sure the level exists */
-	map = Cmd_Argv(1);
-
-	if (!strstr(map, ".") && !strstr(map, "$") && (*map != '*'))
-	{
-		Com_sprintf(expanded, sizeof(expanded), "maps/%s.bsp", map);
-
-		if (FS_LoadFile(expanded, NULL) == -1)
-		{
-			Com_Printf("Can't find %s\n", expanded);
-			return;
-		}
-	}
-
-	sv.state = ss_dead; /* don't save current level when changing */
-	SV_WipeSavegame("current");
-	SV_GameMap_f();
+void SV_Map_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("USAGE: map <mapname>\n");
+        return;
+    }
+    /* if not a pcx, demo, or cinematic, check to make sure the level exists */
+    const char* map = Cmd_Argv(1);
+    if(!strstr(map, ".") && !strstr(map, "$") && (*map != '*')){
+        char expanded[MAX_QPATH];
+        Com_sprintf(expanded, sizeof(expanded), "maps/%s.bsp", map);
+        if(FS_LoadFile(expanded, NULL) == -1){
+            Com_Printf("Can't find %s\n", expanded);
+            return;
+        }
+    }
+    sv.state = ss_dead; /* don't save current level when changing */
+    SV_WipeSavegame("current");
+    SV_GameMap_f();
 }
 
 /*

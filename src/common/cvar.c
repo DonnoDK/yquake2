@@ -42,9 +42,18 @@ Cvar_InfoValidate(const char *s){
     return true;
 }
 
+
+const cvar_t* Cvar_VarNamed(const char *name){
+    for(cvar_t* cvar = cvar_vars; cvar != NULL; cvar = cvar->next){
+        if(!strcmp(name, cvar->name)){
+            return cvar;
+        }
+    }
+    return NULL;
+}
+
 static cvar_t* Cvar_FindVar(const char *var_name){
-    cvar_t *var;
-    for(var = cvar_vars; var != NULL; var = var->next){
+    for(cvar_t* var = cvar_vars; var != NULL; var = var->next){
         if(!strcmp(var_name, var->name)){
             return var;
         }
@@ -68,38 +77,27 @@ const char* Cvar_VariableString(const char *var_name){
     return var->string;
 }
 
-char *
-Cvar_CompleteVariable(char *partial)
-{
-	cvar_t *cvar;
-	int len;
+char* Cvar_CompleteVariable(char *partial){
+    int len = (int)strlen(partial);
+    if(!len){
+        return NULL;
+    }
 
-	len = (int)strlen(partial);
+    /* check exact match */
+    cvar_t *cvar;
+    for(cvar = cvar_vars; cvar; cvar = cvar->next){
+        if(!strcmp(partial, cvar->name)){
+            return cvar->name;
+        }
+    }
 
-	if (!len)
-	{
-		return NULL;
-	}
-
-	/* check exact match */
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strcmp(partial, cvar->name))
-		{
-			return cvar->name;
-		}
-	}
-
-	/* check partial match */
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strncmp(partial, cvar->name, len))
-		{
-			return cvar->name;
-		}
-	}
-
-	return NULL;
+    /* check partial match */
+    for(cvar = cvar_vars; cvar; cvar = cvar->next){
+        if(!strncmp(partial, cvar->name, len)){
+            return cvar->name;
+        }
+    }
+    return NULL;
 }
 
 /*
@@ -145,98 +143,62 @@ cvar_t * Cvar_Get(const char *var_name, const char *var_value, int flags){
 }
 
 static cvar_t* Cvar_Set2(const char *var_name, const char *value, qboolean force){
-	cvar_t* var = Cvar_FindVar(var_name);
-	if (!var)
-	{
-		return Cvar_Get(var_name, value, 0);
-	}
-
-	if (var->flags & (CVAR_USERINFO | CVAR_SERVERINFO))
-	{
-		if (!Cvar_InfoValidate(value))
-		{
-			Com_Printf("invalid info cvar value\n");
-			return var;
-		}
-	}
-
-	if (!force)
-	{
-		if (var->flags & CVAR_NOSET)
-		{
-			Com_Printf("%s is write protected.\n", var_name);
-			return var;
-		}
-
-		if (var->flags & CVAR_LATCH)
-		{
-			if (var->latched_string)
-			{
-				if (strcmp(value, var->latched_string) == 0)
-				{
-					return var;
-				}
-
-				Z_Free(var->latched_string);
-			}
-
-			else
-			{
-				if (strcmp(value, var->string) == 0)
-				{
-					return var;
-				}
-			}
-
-			if (Com_ServerState())
-			{
-				Com_Printf("%s will be changed for next game.\n", var_name);
-				var->latched_string = CopyString(value);
-			}
-
-			else
-			{
-				var->string = CopyString(value);
-				var->value = (float)strtod(var->string, (char **)NULL);
-
-				if (!strcmp(var->name, "game"))
-				{
-					FS_SetGamedir(var->string);
-					FS_ExecAutoexec();
-				}
-			}
-
-			return var;
-		}
-	}
-
-	else
-	{
-		if (var->latched_string)
-		{
-			Z_Free(var->latched_string);
-			var->latched_string = NULL;
-		}
-	}
-
-	if (!strcmp(value, var->string))
-	{
-		return var;
-	}
-
-	var->modified = true;
-
-	if (var->flags & CVAR_USERINFO)
-	{
-		userinfo_modified = true;
-	}
-
-	Z_Free(var->string);
-
-	var->string = CopyString(value);
-	var->value = strtod(var->string, (char **)NULL);
-
-	return var;
+    cvar_t* var = Cvar_FindVar(var_name);
+    if(!var){
+        return Cvar_Get(var_name, value, 0);
+    }
+    if(var->flags & (CVAR_USERINFO | CVAR_SERVERINFO)){
+        if(!Cvar_InfoValidate(value)){
+            Com_Printf("invalid info cvar value\n");
+            return var;
+        }
+    }
+    if(!force){
+        if(var->flags & CVAR_NOSET){
+            Com_Printf("%s is write protected.\n", var_name);
+            return var;
+        }
+        if(var->flags & CVAR_LATCH){
+            if(var->latched_string){
+                if(strcmp(value, var->latched_string) == 0){
+                    return var;
+                }
+                Z_Free(var->latched_string);
+            }else{
+                if(strcmp(value, var->string) == 0){
+                    return var;
+                }
+            }
+            if(Com_ServerState()){
+                Com_Printf("%s will be changed for next game.\n", var_name);
+                var->latched_string = CopyString(value);
+            }else{
+                var->string = CopyString(value);
+                var->value = (float)strtod(var->string, (char **)NULL);
+                if(!strcmp(var->name, "game")){
+                    FS_SetGamedir(var->string);
+                    FS_ExecAutoexec();
+                }
+            }
+            return var;
+        }
+    }else{
+        if(var->latched_string){
+            Z_Free(var->latched_string);
+            var->latched_string = NULL;
+        }
+    }
+    if(!strcmp(value, var->string)){
+        return var;
+    }
+    var->modified = true;
+    if(var->flags & CVAR_USERINFO){
+        userinfo_modified = true;
+    }
+    Z_Free(var->string);
+    var->string = CopyString(value);
+    var->value = strtod(var->string, (char **)NULL);
+    return var;
 }
 
 cvar_t *
@@ -245,38 +207,23 @@ Cvar_ForceSet(char *var_name, char *value)
 	return Cvar_Set2(var_name, value, true);
 }
 
-cvar_t *
-Cvar_Set(char *var_name, char *value)
-{
+cvar_t* Cvar_Set(const char *var_name, const char *value){
 	return Cvar_Set2(var_name, value, false);
 }
 
-cvar_t *
-Cvar_FullSet(char *var_name, char *value, int flags)
-{
-	cvar_t *var;
-
-	var = Cvar_FindVar(var_name);
-
-	if (!var)
-	{
+cvar_t* Cvar_FullSet(const char *var_name, const char *value, int flags){
+	cvar_t* var = Cvar_FindVar(var_name);
+	if(!var){
 		return Cvar_Get(var_name, value, flags);
 	}
-
 	var->modified = true;
-
-	if (var->flags & CVAR_USERINFO)
-	{
+	if(var->flags & CVAR_USERINFO){
 		userinfo_modified = true;
 	}
-
 	Z_Free(var->string);
-
 	var->string = CopyString(value);
 	var->value = (float)strtod(var->string, (char **)NULL);
-
 	var->flags = flags;
-
 	return var;
 }
 

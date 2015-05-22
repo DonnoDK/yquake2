@@ -1051,39 +1051,24 @@ FS_DeleteFile(const char *path)
  * Filename are reletive to the quake search path. A null buffer will just
  * return the file length without loading.
  */
-int
-FS_LoadFile(char *path, void **buffer)
-{
-	byte *buf; /* Buffer. */
-	int size; /* File size. */
-	fileHandle_t f; /* File handle. */
-
-	buf = NULL;
-	size = FS_FOpenFile(path, &f, FS_READ);
-
-	if (size <= 0)
-	{
-		if (buffer)
-		{
-			*buffer = NULL;
-		}
-
-		return size;
-	}
-
-	if (buffer == NULL)
-	{
-		FS_FCloseFile(f);
-		return size;
-	}
-
-	buf = Z_Malloc(size);
-	*buffer = buf;
-
-	FS_Read(buf, size, f);
-	FS_FCloseFile(f);
-
-	return size;
+int FS_LoadFile(const char *path, void **buffer){
+    fileHandle_t f; /* File handle. */
+    int size = FS_FOpenFile(path, &f, FS_READ); /* filesize */
+    if(size <= 0){
+        if(buffer){
+            *buffer = NULL;
+        }
+        return size;
+    }
+    if(buffer == NULL){
+        FS_FCloseFile(f);
+        return size;
+    }
+    byte* buf = Z_Malloc(size);
+    *buffer = buf;
+    FS_Read(buf, size, f);
+    FS_FCloseFile(f);
+    return size;
 }
 
 void

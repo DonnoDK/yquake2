@@ -190,32 +190,20 @@ void Cbuf_Execute(void){
  *
  * Other commands are added late, after all initialization is complete.
  */
-void
-Cbuf_AddEarlyCommands(qboolean clear)
-{
-	int i;
-	char *s;
-
-	for (i = 0; i < COM_Argc(); i++)
-	{
-		s = COM_Argv(i);
-
-		if (strcmp(s, "+set"))
-		{
-			continue;
-		}
-
-		Cbuf_AddText(va("set %s %s\n", COM_Argv(i + 1), COM_Argv(i + 2)));
-
-		if (clear)
-		{
-			COM_ClearArgv(i);
-			COM_ClearArgv(i + 1);
-			COM_ClearArgv(i + 2);
-		}
-
-		i += 2;
-	}
+void Cbuf_AddEarlyCommands(qboolean clear){
+    for(int i = 0; i < COM_Argc(); i++){
+        const char* s = COM_Argv(i);
+        if(strcmp(s, "+set")){
+            continue;
+        }
+        Cbuf_AddText(va("set %s %s\n", COM_Argv(i + 1), COM_Argv(i + 2)));
+        if(clear){
+            COM_ClearArgv(i);
+            COM_ClearArgv(i + 1);
+            COM_ClearArgv(i + 2);
+        }
+        i += 2;
+    }
 }
 
 /*
@@ -226,213 +214,135 @@ Cbuf_AddEarlyCommands(qboolean clear)
  * Returns true if any late commands were added, which
  * will keep the demoloop from immediately starting
  */
-qboolean
-Cbuf_AddLateCommands(void)
-{
-	int i, j;
-	int s;
-	char *text, *build, c;
-	int argc;
-	qboolean ret;
-
-	/* build the combined string to parse from */
-	s = 0;
-	argc = COM_Argc();
-
-	for (i = 1; i < argc; i++)
-	{
-		s += strlen(COM_Argv(i)) + 1;
-	}
-
-	if (!s)
-	{
-		return false;
-	}
-
-	text = Z_Malloc(s + 1);
-	text[0] = 0;
-
-	for (i = 1; i < argc; i++)
-	{
-		strcat(text, COM_Argv(i));
-
-		if (i != argc - 1)
-		{
-			strcat(text, " ");
-		}
-	}
-
-	/* pull out the commands */
-	build = Z_Malloc(s + 1);
-	build[0] = 0;
-
-	for (i = 0; i < s - 1; i++)
-	{
-		if (text[i] == '+')
-		{
-			i++;
-
-			for (j = i; (text[j] != '+') && (text[j] != '-') && (text[j] != 0); j++)
-			{
-			}
-
-			c = text[j];
-			text[j] = 0;
-
-			strcat(build, text + i);
-			strcat(build, "\n");
-			text[j] = c;
-			i = j - 1;
-		}
-	}
-
-	ret = (build[0] != 0);
-
-	if (ret)
-	{
-		Cbuf_AddText(build);
-	}
-
-	Z_Free(text);
-	Z_Free(build);
-
-	return ret;
+qboolean Cbuf_AddLateCommands(void){
+    /* build the combined string to parse from */
+    int s = 0;
+    int argc = COM_Argc();
+    for(int i = 1; i < argc; i++){
+        s += strlen(COM_Argv(i)) + 1;
+    }
+    if(s == 0){
+        return false;
+    }
+    char* text = Z_Malloc(s + 1);
+    text[0] = 0;
+    for(int i = 1; i < argc; i++){
+        strcat(text, COM_Argv(i));
+        if(i != argc - 1){
+            strcat(text, " ");
+        }
+    }
+    /* pull out the commands */
+    char* build = Z_Malloc(s + 1);
+    build[0] = 0;
+    for(int i = 0; i < s - 1; i++){
+        if(text[i] == '+'){
+            i++;
+            int j;
+            for(j = i; (text[j] != '+') && (text[j] != '-') && (text[j] != 0); j++) {
+            }
+            char c = text[j];
+            text[j] = 0;
+            strcat(build, text + i);
+            strcat(build, "\n");
+            text[j] = c;
+            i = j - 1;
+        }
+    }
+    qboolean ret = (build[0] != 0);
+    if(ret){
+        Cbuf_AddText(build);
+    }
+    Z_Free(text);
+    Z_Free(build);
+    return ret;
 }
 
-void
-Cmd_Exec_f(void)
-{
-	char *f, *f2;
-	int len;
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("exec <filename> : execute a script file\n");
-		return;
-	}
-
-	len = FS_LoadFile(Cmd_Argv(1), (void **)&f);
-
-	if (!f)
-	{
-		Com_Printf("couldn't exec %s\n", Cmd_Argv(1));
-		return;
-	}
-
-	Com_Printf("execing %s\n", Cmd_Argv(1));
-
-	/* the file doesn't have a trailing 0, so we need to copy it off */
-	f2 = Z_Malloc(len + 1);
-	memcpy(f2, f, len);
-	f2[len] = 0;
-
-	Cbuf_InsertText(f2);
-
-	Z_Free(f2);
-	FS_FreeFile(f);
+void Cmd_Exec_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("exec <filename> : execute a script file\n");
+        return;
+    }
+    char* f;
+    int len = FS_LoadFile(Cmd_Argv(1), (void **)&f);
+    if(!f){
+        Com_Printf("couldn't exec %s\n", Cmd_Argv(1));
+        return;
+    }
+    Com_Printf("execing %s\n", Cmd_Argv(1));
+    /* the file doesn't have a trailing 0, so we need to copy it off */
+    char* f2 = Z_Malloc(len + 1);
+    memcpy(f2, f, len);
+    f2[len] = 0;
+    Cbuf_InsertText(f2);
+    Z_Free(f2);
+    FS_FreeFile(f);
 }
 
 /*
  * Just prints the rest of the line to the console
  */
-void
-Cmd_Echo_f(void)
-{
-	int i;
-
-	for (i = 1; i < Cmd_Argc(); i++)
-	{
-		Com_Printf("%s ", Cmd_Argv(i));
-	}
-
-	Com_Printf("\n");
+void Cmd_Echo_f(void){
+    for(int i = 1; i < Cmd_Argc(); i++){
+        Com_Printf("%s ", Cmd_Argv(i));
+    }
+    Com_Printf("\n");
 }
 
 /*
  * Creates a new command that executes
  * a command string (possibly ; seperated)
  */
-void
-Cmd_Alias_f(void)
-{
-	cmdalias_t *a;
-	char cmd[1024];
-	int i, c;
-	char *s;
-
-	if (Cmd_Argc() == 1)
-	{
-		Com_Printf("Current alias commands:\n");
-
-		for (a = cmd_alias; a; a = a->next)
-		{
-			Com_Printf("%s : %s\n", a->name, a->value);
-		}
-
-		return;
-	}
-
-	s = Cmd_Argv(1);
-
-	if (strlen(s) >= MAX_ALIAS_NAME)
-	{
-		Com_Printf("Alias name is too long\n");
-		return;
-	}
-
-	/* if the alias already exists, reuse it */
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strcmp(s, a->name))
-		{
-			Z_Free(a->value);
-			break;
-		}
-	}
-
-	if (!a)
-	{
-		a = Z_Malloc(sizeof(cmdalias_t));
-		a->next = cmd_alias;
-		cmd_alias = a;
-	}
-
-	strcpy(a->name, s);
-
-	/* copy the rest of the command line */
-	cmd[0] = 0; /* start out with a null string */
-	c = Cmd_Argc();
-
-	for (i = 2; i < c; i++)
-	{
-		strcat(cmd, Cmd_Argv(i));
-
-		if (i != (c - 1))
-		{
-			strcat(cmd, " ");
-		}
-	}
-
-	strcat(cmd, "\n");
-
-	a->value = CopyString(cmd);
+void Cmd_Alias_f(void){
+    if(Cmd_Argc() == 1){
+        Com_Printf("Current alias commands:\n");
+        for(cmdalias_t* a = cmd_alias; a; a = a->next){
+            Com_Printf("%s : %s\n", a->name, a->value);
+        }
+        return;
+    }
+    const char* s = Cmd_Argv(1);
+    if(strlen(s) >= MAX_ALIAS_NAME){
+        Com_Printf("Alias name is too long\n");
+        return;
+    }
+    /* if the alias already exists, reuse it */
+    cmdalias_t *a;
+    for(a = cmd_alias; a; a = a->next){
+        if(!strcmp(s, a->name)){
+            Z_Free(a->value);
+            break;
+        }
+    }
+    if(!a){
+        a = Z_Malloc(sizeof(cmdalias_t));
+        a->next = cmd_alias;
+        cmd_alias = a;
+    }
+    strcpy(a->name, s);
+    /* copy the rest of the command line */
+    char cmd[1024];
+    cmd[0] = 0; /* start out with a null string */
+    int c = Cmd_Argc();
+    for(int i = 2; i < c; i++){
+        strcat(cmd, Cmd_Argv(i));
+        if(i != (c - 1)){
+            strcat(cmd, " ");
+        }
+    }
+    strcat(cmd, "\n");
+    a->value = CopyString(cmd);
 }
 
-int
-Cmd_Argc(void)
-{
-	return cmd_argc;
+int Cmd_Argc(void){
+    return cmd_argc;
 }
 
-char *
-Cmd_Argv(int arg)
-{
-	if ((unsigned)arg >= cmd_argc)
-	{
-		return cmd_null_string;
-	}
-
-	return cmd_argv[arg];
+const char* Cmd_Argv(int arg){
+    if((unsigned)arg >= cmd_argc){
+        return cmd_null_string;
+    }
+    return cmd_argv[arg];
 }
 
 /*
@@ -646,163 +556,111 @@ qsort_strcomp(const void *s1, const void *s2)
 	return strcmp(*(char **)s1, *(char **)s2);
 }
 
-char *
-Cmd_CompleteCommand(char *partial)
-{
-	cmd_function_t *cmd;
-	int len, i, o, p;
-	cmdalias_t *a;
-	cvar_t *cvar;
-	char *pmatch[1024];
-	qboolean diff = false;
-
-	len = strlen(partial);
-
-	if (!len)
-	{
-		return NULL;
-	}
-
-	/* check for exact match */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(partial, cmd->name))
-		{
-			return cmd->name;
-		}
-	}
-
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strcmp(partial, a->name))
-		{
-			return a->name;
-		}
-	}
-
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strcmp(partial, cvar->name))
-		{
-			return cvar->name;
-		}
-	}
-
-	for (i = 0; i < 1024; i++)
-	{
-		pmatch[i] = NULL;
-	}
-
-	i = 0;
-
-	/* check for partial match */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strncmp(partial, cmd->name, len))
-		{
-			pmatch[i] = cmd->name;
-			i++;
-		}
-	}
-
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strncmp(partial, a->name, len))
-		{
-			pmatch[i] = a->name;
-			i++;
-		}
-	}
-
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strncmp(partial, cvar->name, len))
-		{
-			pmatch[i] = cvar->name;
-			i++;
-		}
-	}
-
-	if (i)
-	{
-		if (i == 1)
-		{
-			return pmatch[0];
-		}
-
-		/* Sort it */
-		qsort(pmatch, i, sizeof(pmatch[0]), qsort_strcomp);
-
-		Com_Printf("\n\n", partial);
-
-		for (o = 0; o < i; o++)
-		{
-			Com_Printf("  %s\n", pmatch[o]);
-		}
-
-		strcpy(retval, "");
-		p = 0;
-
-		while (!diff && p < 256)
-		{
-			retval[p] = pmatch[0][p];
-
-			for (o = 0; o < i; o++)
-			{
-				if (p > strlen(pmatch[o]))
-				{
-					continue;
-				}
-
-				if (retval[p] != pmatch[o][p])
-				{
-					retval[p] = 0;
-					diff = true;
-				}
-			}
-
-			p++;
-		}
-
-		return retval;
-	}
-
-	return NULL;
+static const cmd_function_t* Cmd_CommandNamed(const char* name){
+    for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
+        if(!strcmp(name, cmd->name)){
+            return cmd;
+        }
+    }
+    return NULL;
 }
 
-qboolean
-Cmd_IsComplete(char *command)
-{
-	cmd_function_t *cmd;
-	cmdalias_t *a;
-	cvar_t *cvar;
+static const cmdalias_t* Cmd_AliasNamed(const char* name){
+    for(cmdalias_t* alias = cmd_alias; alias; alias = alias->next){
+        if(!strcmp(name, alias->name)){
+            return alias;
+        }
+    }
+    return NULL;
+}
 
-	/* check for exact match */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(command, cmd->name))
-		{
-			return true;
-		}
-	}
 
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strcmp(command, a->name))
-		{
-			return true;
-		}
-	}
+const char* Cmd_CompleteCommand(const char *partial){
+    const char *pmatch[1024];
+    int len = strlen(partial);
+    if(!len){
+        return NULL;
+    }
 
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strcmp(command, cvar->name))
-		{
-			return true;
-		}
-	}
+    /* check for exact match */
+    const cmd_function_t* command = Cmd_CommandNamed(partial);
+    if(command != NULL){
+        return command->name;
+    }
 
-	return false;
+    const cmdalias_t *alias = Cmd_AliasNamed(partial);
+    if(alias != NULL){
+        return alias->name;
+    }
+
+    const cvar_t *cvar = Cvar_VarNamed(partial);
+    if(cvar != NULL){
+        return cvar->name;
+    }
+    memset(pmatch, 0, sizeof(const char*));
+    int i = 0;
+    /* check for partial match */
+    for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
+        if(!strncmp(partial, cmd->name, len)){
+            pmatch[i] = cmd->name;
+            i++;
+        }
+    }
+    for(alias = cmd_alias; alias; alias = alias->next){
+        if(!strncmp(partial, alias->name, len)){
+            pmatch[i] = alias->name;
+            i++;
+        }
+    }
+    for(cvar = cvar_vars; cvar; cvar = cvar->next){
+        if(!strncmp(partial, cvar->name, len)){
+            pmatch[i] = cvar->name;
+            i++;
+        }
+    }
+    if(i){
+        if(i == 1){
+            return pmatch[0];
+        }
+        /* Sort it */
+        qsort(pmatch, i, sizeof(pmatch[0]), qsort_strcomp);
+        Com_Printf("\n\n", partial);
+        for(int o = 0; o < i; o++){
+            Com_Printf("  %s\n", pmatch[o]);
+        }
+        strcpy(retval, "");
+        int p = 0;
+        qboolean diff = false;
+        while(!diff && p < 256){
+            retval[p] = pmatch[0][p];
+            for(int o = 0; o < i; o++){
+                if(p > strlen(pmatch[o])){
+                    continue;
+                }
+                if(retval[p] != pmatch[o][p]){
+                    retval[p] = 0;
+                    diff = true;
+                }
+            }
+            p++;
+        }
+        return retval;
+    }
+    return NULL;
+}
+
+qboolean Cmd_IsComplete(const char *command){
+    /* check for exact match */
+    if(Cmd_CommandNamed(command) != NULL){
+        return true;
+    }
+    if(Cmd_AliasNamed(command) != NULL){
+        return true;
+    }
+    if(Cvar_VarNamed(command) != NULL){
+        return true;
+    }
+    return false;
 }
 
 /*

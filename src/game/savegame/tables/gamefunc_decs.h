@@ -913,7 +913,7 @@ extern void Drop_General ( edict_t * ent , gitem_t * item ) ;
 extern qboolean Pickup_Powerup ( edict_t * ent , edict_t * other ) ;
 extern void SetRespawn ( edict_t * ent , float delay ) ;
 extern void DoRespawn ( edict_t * ent ) ;
-extern gitem_t * FindItem ( char * pickup_name ) ;
+extern gitem_t* FindItem(const char* pickup_name);
 extern gitem_t * FindItemByClassname ( char * classname ) ;
 extern gitem_t * GetItemByIndex ( int index ) ;
 extern void SP_func_killbox ( edict_t * ent ) ;

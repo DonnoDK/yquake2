@@ -578,7 +578,7 @@ void Cmd_Help_f(edict_t *ent);
 void PrecacheItem(gitem_t *it);
 void InitItems(void);
 void SetItemNames(void);
-gitem_t *FindItem(char *pickup_name);
+gitem_t *FindItem(const char *pickup_name);
 gitem_t *FindItemByClassname(char *classname);
 
 #define ITEM_INDEX(x) ((x) - itemlist)

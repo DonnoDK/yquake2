@@ -412,99 +412,68 @@ SV_InitGame(void)
  *
  *  map tram.cin+jail_e3
  */
-void
-SV_Map(qboolean attractloop, char *levelstring, qboolean loadgame)
-{
-	char level[MAX_QPATH];
-	char *ch;
-	int l;
-	char spawnpoint[MAX_QPATH];
-
-	sv.loadgame = loadgame;
-	sv.attractloop = attractloop;
-
-	if ((sv.state == ss_dead) && !sv.loadgame)
-	{
-		SV_InitGame(); /* the game is just starting */
-	}
-
-	strcpy(level, levelstring);
-
-	/* if there is a + in the map, set nextserver to the remainder */
-	ch = strstr(level, "+");
-
-	if (ch)
-	{
-		*ch = 0;
-		Cvar_Set("nextserver", va("gamemap \"%s\"", ch + 1));
-	}
-	else
-	{
-		Cvar_Set("nextserver", "");
-	}
-
-	/* hack for end game screen in coop mode */
-	if (Cvar_VariableValue("coop") && !Q_stricmp(level, "victory.pcx"))
-	{
-		Cvar_Set("nextserver", "gamemap \"*base1\"");
-	}
-
-	/* if there is a $, use the remainder as a spawnpoint */
-	ch = strstr(level, "$");
-
-	if (ch)
-	{
-		*ch = 0;
-		strcpy(spawnpoint, ch + 1);
-	}
-	else
-	{
-		spawnpoint[0] = 0;
-	}
-
-	/* skip the end-of-unit flag if necessary */
-	if (level[0] == '*')
-	{
-		memmove(level, level + 1, strlen(level) + 1);
-	}
-
-	l = strlen(level);
-
-	if ((l > 4) && !strcmp(level + l - 4, ".cin"))
-	{
+void SV_Map(qboolean attractloop, const char *levelstring, qboolean loadgame){
+    sv.loadgame = loadgame;
+    sv.attractloop = attractloop;
+    if((sv.state == ss_dead) && !sv.loadgame){
+        SV_InitGame(); /* the game is just starting */
+    }
+    char level[MAX_QPATH];
+    strcpy(level, levelstring);
+    /* if there is a + in the map, set nextserver to the remainder */
+    char* ch = strstr(level, "+");
+    if(ch){
+        *ch = 0;
+        Cvar_Set("nextserver", va("gamemap \"%s\"", ch + 1));
+    }else{
+        Cvar_Set("nextserver", "");
+    }
+    /* hack for end game screen in coop mode */
+    if(Cvar_VariableValue("coop") && !Q_stricmp(level, "victory.pcx")){
+        Cvar_Set("nextserver", "gamemap \"*base1\"");
+    }
+    /* if there is a $, use the remainder as a spawnpoint */
+    ch = strstr(level, "$");
+    char spawnpoint[MAX_QPATH];
+    if(ch){
+        *ch = 0;
+        strcpy(spawnpoint, ch + 1);
+    }else{
+        spawnpoint[0] = 0;
+    }
+    /* skip the end-of-unit flag if necessary */
+    if(level[0] == '*'){
+        memmove(level, level + 1, strlen(level) + 1);
+    }
+    int l = strlen(level);
+    if((l > 4) && !strcmp(level + l - 4, ".cin")){
 #ifndef DEDICATED_ONLY
-		SCR_BeginLoadingPlaque(); /* for local system */
+        SCR_BeginLoadingPlaque(); /* for local system */
 #endif
-		SV_BroadcastCommand("changing\n");
-		SV_SpawnServer(level, spawnpoint, ss_cinematic, attractloop, loadgame);
-	}
-	else if ((l > 4) && !strcmp(level + l - 4, ".dm2"))
-	{
+        SV_BroadcastCommand("changing\n");
+        SV_SpawnServer(level, spawnpoint, ss_cinematic, attractloop, loadgame);
+    }else if((l > 4) && !strcmp(level + l - 4, ".dm2")){
 #ifndef DEDICATED_ONLY
-		SCR_BeginLoadingPlaque(); /* for local system */
+        SCR_BeginLoadingPlaque(); /* for local system */
 #endif
-		SV_BroadcastCommand("changing\n");
-		SV_SpawnServer(level, spawnpoint, ss_demo, attractloop, loadgame);
-	}
-	else if ((l > 4) && !strcmp(level + l - 4, ".pcx"))
-	{
+        SV_BroadcastCommand("changing\n");
+        SV_SpawnServer(level, spawnpoint, ss_demo, attractloop, loadgame);
+    }else if((l > 4) && !strcmp(level + l - 4, ".pcx")){
 #ifndef DEDICATED_ONLY
-		SCR_BeginLoadingPlaque(); /* for local system */
+        SCR_BeginLoadingPlaque(); /* for local system */
 #endif
-		SV_BroadcastCommand("changing\n");
-		SV_SpawnServer(level, spawnpoint, ss_pic, attractloop, loadgame);
-	}
-	else
-	{
+        SV_BroadcastCommand("changing\n");
+        SV_SpawnServer(level, spawnpoint, ss_pic, attractloop, loadgame);
+    }else{
 #ifndef DEDICATED_ONLY
-		SCR_BeginLoadingPlaque(); /* for local system */
+        SCR_BeginLoadingPlaque(); /* for local system */
 #endif
-		SV_BroadcastCommand("changing\n");
-		SV_SendClientMessages();
-		SV_SpawnServer(level, spawnpoint, ss_game, attractloop, loadgame);
-		Cbuf_CopyToDefer();
-	}
+        SV_BroadcastCommand("changing\n");
+        SV_SendClientMessages();
+        SV_SpawnServer(level, spawnpoint, ss_game, attractloop, loadgame);
+        Cbuf_CopyToDefer();
+    }
 
-	SV_BroadcastCommand("reconnect\n");
+    SV_BroadcastCommand("reconnect\n");
 }
 

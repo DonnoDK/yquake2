@@ -31,44 +31,27 @@ void CM_ReadPortalState(fileHandle_t f);
 /*
  * Delete save/<XXX>/
  */
-void
-SV_WipeSavegame(char *savename)
-{
-	char name[MAX_OSPATH];
-	char *s;
-
-	Com_DPrintf("SV_WipeSaveGame(%s)\n", savename);
-
-	Com_sprintf(name, sizeof(name), "%s/save/%s/server.ssv",
-				FS_Gamedir(), savename);
-	
-	remove(name);
-
-	Com_sprintf(name, sizeof(name), "%s/save/%s/game.ssv",
-				FS_Gamedir(), savename);
-	
-	remove(name);
-
-	Com_sprintf(name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), savename);
-	s = Sys_FindFirst(name, 0, 0);
-
-	while (s)
-	{
-		remove(s);
-		s = Sys_FindNext(0, 0);
-	}
-
-	Sys_FindClose();
-	Com_sprintf(name, sizeof(name), "%s/save/%s/*.sv2", FS_Gamedir(), savename);
-	s = Sys_FindFirst(name, 0, 0);
-
-	while (s)
-	{
-		remove(s);
-		s = Sys_FindNext(0, 0);
-	}
-
-	Sys_FindClose();
+void SV_WipeSavegame(const char *savename){
+    char name[MAX_OSPATH];
+    Com_DPrintf("SV_WipeSaveGame(%s)\n", savename);
+    Com_sprintf(name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), savename);
+    remove(name);
+    Com_sprintf(name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), savename);
+    remove(name);
+    Com_sprintf(name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), savename);
+    const char* s = Sys_FindFirst(name, 0, 0);
+    while(s){
+        remove(s);
+        s = Sys_FindNext(0, 0);
+    }
+    Sys_FindClose();
+    Com_sprintf(name, sizeof(name), "%s/save/%s/*.sv2", FS_Gamedir(), savename);
+    s = Sys_FindFirst(name, 0, 0);
+    while(s){
+        remove(s);
+        s = Sys_FindNext(0, 0);
+    }
+    Sys_FindClose();
 }
 
 void
@@ -111,51 +94,35 @@ CopyFile(char *src, char *dst)
 	fclose(f2);
 }
 
-void
-SV_CopySaveGame(char *src, char *dst)
-{
-	char name[MAX_OSPATH], name2[MAX_OSPATH];
-	size_t l, len;
-	char *found;
-
-	Com_DPrintf("SV_CopySaveGame(%s, %s)\n", src, dst);
-
-	SV_WipeSavegame(dst);
-
-	/* copy the savegame over */
-	Com_sprintf(name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), src);
-	Com_sprintf(name2, sizeof(name2), "%s/save/%s/server.ssv", FS_Gamedir(), dst);
-	FS_CreatePath(name2);
-	CopyFile(name, name2);
-
-	Com_sprintf(name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), src);
-	Com_sprintf(name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
-	CopyFile(name, name2);
-
-	Com_sprintf(name, sizeof(name), "%s/save/%s/", FS_Gamedir(), src);
-	len = strlen(name);
-	Com_sprintf(name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
-	found = Sys_FindFirst(name, 0, 0);
-
-	while (found)
-	{
-		strcpy(name + len, found + len);
-
-		Com_sprintf(name2, sizeof(name2), "%s/save/%s/%s",
-					FS_Gamedir(), dst, found + len);
-		CopyFile(name, name2);
-
-		/* change sav to sv2 */
-		l = strlen(name);
-		strcpy(name + l - 3, "sv2");
-		l = strlen(name2);
-		strcpy(name2 + l - 3, "sv2");
-		CopyFile(name, name2);
-
-		found = Sys_FindNext(0, 0);
-	}
-
-	Sys_FindClose();
+void SV_CopySaveGame(const char *src, const char *dst){
+    char name[MAX_OSPATH], name2[MAX_OSPATH];
+    Com_DPrintf("SV_CopySaveGame(%s, %s)\n", src, dst);
+    SV_WipeSavegame(dst);
+    /* copy the savegame over */
+    Com_sprintf(name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), src);
+    Com_sprintf(name2, sizeof(name2), "%s/save/%s/server.ssv", FS_Gamedir(), dst);
+    FS_CreatePath(name2);
+    CopyFile(name, name2);
+    Com_sprintf(name, sizeof(name), "%s/save/%s/game.ssv", FS_Gamedir(), src);
+    Com_sprintf(name2, sizeof(name2), "%s/save/%s/game.ssv", FS_Gamedir(), dst);
+    CopyFile(name, name2);
+    Com_sprintf(name, sizeof(name), "%s/save/%s/", FS_Gamedir(), src);
+    size_t len = strlen(name);
+    Com_sprintf(name, sizeof(name), "%s/save/%s/*.sav", FS_Gamedir(), src);
+    const char* found = Sys_FindFirst(name, 0, 0);
+    while(found){
+        strcpy(name + len, found + len);
+        Com_sprintf(name2, sizeof(name2), "%s/save/%s/%s", FS_Gamedir(), dst, found + len);
+        CopyFile(name, name2);
+        /* change sav to sv2 */
+        size_t l = strlen(name);
+        strcpy(name + l - 3, "sv2");
+        l = strlen(name2);
+        strcpy(name2 + l - 3, "sv2");
+        CopyFile(name, name2);
+        found = Sys_FindNext(0, 0);
+    }
+    Sys_FindClose();
 }
 
 void
@@ -341,106 +308,66 @@ SV_ReadServerFile(void)
 	ge->ReadGame(name);
 }
 
-void
-SV_Loadgame_f(void)
-{
-	char name[MAX_OSPATH];
-	FILE *f;
-	char *dir;
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("USAGE: loadgame <directory>\n");
-		return;
-	}
-
-	Com_Printf("Loading game...\n");
-
-	dir = Cmd_Argv(1);
-
-	if (strstr(dir, "..") || strstr(dir, "/") || strstr(dir, "\\"))
-	{
-		Com_Printf("Bad savedir.\n");
-	}
-
-	/* make sure the server.ssv file exists */
-	Com_sprintf(name, sizeof(name), "%s/save/%s/server.ssv",
-				FS_Gamedir(), Cmd_Argv(1));
-	f = fopen(name, "rb");
-
-	if (!f)
-	{
-		Com_Printf("No such savegame: %s\n", name);
-		return;
-	}
-
-	fclose(f);
-
-	SV_CopySaveGame(Cmd_Argv(1), "current");
-
-	SV_ReadServerFile();
-
-	/* go to the map */
-	sv.state = ss_dead; /* don't save current level when changing */
-	SV_Map(false, svs.mapcmd, true);
+void SV_Loadgame_f(void){
+    if(Cmd_Argc() != 2){
+        Com_Printf("USAGE: loadgame <directory>\n");
+        return;
+    }
+    Com_Printf("Loading game...\n");
+    const char* dir = Cmd_Argv(1);
+    if(strstr(dir, "..") || strstr(dir, "/") || strstr(dir, "\\")){
+        Com_Printf("Bad savedir.\n");
+    }
+    /* make sure the server.ssv file exists */
+    char name[MAX_OSPATH];
+    Com_sprintf(name, sizeof(name), "%s/save/%s/server.ssv", FS_Gamedir(), Cmd_Argv(1));
+    FILE* f = fopen(name, "rb");
+    if(!f){
+        Com_Printf("No such savegame: %s\n", name);
+        return;
+    }
+    fclose(f);
+    SV_CopySaveGame(Cmd_Argv(1), "current");
+    SV_ReadServerFile();
+    /* go to the map */
+    sv.state = ss_dead; /* don't save current level when changing */
+    SV_Map(false, svs.mapcmd, true);
 }
 
-void
-SV_Savegame_f(void)
-{
-	char *dir;
-
-	if (sv.state != ss_game)
-	{
-		Com_Printf("You must be in a game to save.\n");
-		return;
-	}
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("USAGE: savegame <directory>\n");
-		return;
-	}
-
-	if (Cvar_VariableValue("deathmatch"))
-	{
-		Com_Printf("Can't savegame in a deathmatch\n");
-		return;
-	}
-
-	if (!strcmp(Cmd_Argv(1), "current"))
-	{
-		Com_Printf("Can't save to 'current'\n");
-		return;
-	}
-
-	if ((maxclients->value == 1) &&
-		(svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0))
-	{
-		Com_Printf("\nCan't savegame while dead!\n");
-		return;
-	}
-
-	dir = Cmd_Argv(1);
-
-	if (strstr(dir, "..") || strstr(dir, "/") || strstr(dir, "\\"))
-	{
-		Com_Printf("Bad savedir.\n");
-	}
-
-	Com_Printf("Saving game...\n");
-
-	/* archive current level, including all client edicts.
-	   when the level is reloaded, they will be shells awaiting
-	   a connecting client */
-	SV_WriteLevelFile();
-
-	/* save server state */
-	SV_WriteServerFile(false);
-
-	/* copy it off */
-	SV_CopySaveGame("current", dir);
-
-	Com_Printf("Done.\n");
+void SV_Savegame_f(void){
+    if(sv.state != ss_game){
+        Com_Printf("You must be in a game to save.\n");
+        return;
+    }
+    if(Cmd_Argc() != 2){
+        Com_Printf("USAGE: savegame <directory>\n");
+        return;
+    }
+    if(Cvar_VariableValue("deathmatch")){
+        Com_Printf("Can't savegame in a deathmatch\n");
+        return;
+    }
+    if(!strcmp(Cmd_Argv(1), "current")){
+        Com_Printf("Can't save to 'current'\n");
+        return;
+    }
+    if((maxclients->value == 1) && (svs.clients[0].edict->client->ps.stats[STAT_HEALTH] <= 0)){
+        Com_Printf("\nCan't savegame while dead!\n");
+        return;
+    }
+    const char* dir = Cmd_Argv(1);
+    if(strstr(dir, "..") || strstr(dir, "/") || strstr(dir, "\\")){
+        Com_Printf("Bad savedir.\n");
+    }
+    Com_Printf("Saving game...\n");
+    /* archive current level, including all client edicts.
+       when the level is reloaded, they will be shells awaiting
+       a connecting client */
+    SV_WriteLevelFile();
+    /* save server state */
+    SV_WriteServerFile(false);
+    /* copy it off */
+    SV_CopySaveGame("current", dir);
+    Com_Printf("Done.\n");
 }
 

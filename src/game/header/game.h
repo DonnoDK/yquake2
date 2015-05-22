@@ -168,12 +168,12 @@ typedef struct
 
 	/* console variable interaction */
 	cvar_t *(*cvar)(const char *var_name, const char *value, int flags);
-	cvar_t *(*cvar_set)(char *var_name, char *value);
+	cvar_t *(*cvar_set)(const char *var_name, const char *value);
 	cvar_t *(*cvar_forceset)(char *var_name, char *value);
 
 	/* ClientCommand and ServerCommand parameter access */
 	int (*argc)(void);
-	char *(*argv)(int n);
+	const char *(*argv)(int n);
 	char *(*args)(void); /* concatenation of all argv >= 1 */
 
 	/* add commands to the server console as if

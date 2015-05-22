@@ -80,60 +80,39 @@ typedef struct
 ipfilter_t ipfilters[MAX_IPFILTERS];
 int numipfilters;
 
-qboolean
-StringToFilter(char *s, ipfilter_t *f)
-{
-	char num[128];
-	int i, j;
-	byte b[4];
-	byte m[4];
-
-	if (!s || !f)
-	{
-		return false;
-	}
-
-	for (i = 0; i < 4; i++)
-	{
-		b[i] = 0;
-		m[i] = 0;
-	}
-
-	for (i = 0; i < 4; i++)
-	{
-		if ((*s < '0') || (*s > '9'))
-		{
-			gi.cprintf(NULL, PRINT_HIGH, "Bad filter address: %s\n", s);
-			return false;
-		}
-
-		j = 0;
-
-		while (*s >= '0' && *s <= '9')
-		{
-			num[j++] = *s++;
-		}
-
-		num[j] = 0;
-		b[i] = (int)strtol(num, (char **)NULL, 10);
-
-		if (b[i] != 0)
-		{
-			m[i] = 255;
-		}
-
-		if (!*s)
-		{
-			break;
-		}
-
-		s++;
-	}
-
-	f->mask = *(unsigned *)m;
-	f->compare = *(unsigned *)b;
-
-	return true;
+static qboolean StringToFilter(const char *s, ipfilter_t *f){
+    char num[128];
+    byte b[4];
+    byte m[4];
+    if(!s || !f){
+        return false;
+    }
+    for(int i = 0; i < 4; i++){
+        b[i] = 0;
+        m[i] = 0;
+    }
+    for(int i = 0; i < 4; i++){
+        if((*s < '0') || (*s > '9')){
+            gi.cprintf(NULL, PRINT_HIGH, "Bad filter address: %s\n", s);
+            return false;
+        }
+        int j = 0;
+        while(*s >= '0' && *s <= '9'){
+            num[j++] = *s++;
+        }
+        num[j] = 0;
+        b[i] = (int)strtol(num, (char **)NULL, 10);
+        if(b[i] != 0){
+            m[i] = 255;
+        }
+        if(!*s){
+            break;
+        }
+        s++;
+    }
+    f->mask = *(unsigned *)m;
+    f->compare = *(unsigned *)b;
+    return true;
 }
 
 qboolean
@@ -183,40 +162,27 @@ SV_FilterPacket(char *from)
 	return (int)!filterban->value;
 }
 
-void
-SVCmd_AddIP_f(void)
-{
-	int i;
-
-	if (gi.argc() < 3)
-	{
-		gi.cprintf(NULL, PRINT_HIGH, "Usage:  addip <ip-mask>\n");
-		return;
-	}
-
-	for (i = 0; i < numipfilters; i++)
-	{
-		if (ipfilters[i].compare == 0xffffffff)
-		{
-			break; /* free spot */
-		}
-	}
-
-	if (i == numipfilters)
-	{
-		if (numipfilters == MAX_IPFILTERS)
-		{
-			gi.cprintf(NULL, PRINT_HIGH, "IP filter list is full\n");
-			return;
-		}
-
-		numipfilters++;
-	}
-
-	if (!StringToFilter(gi.argv(2), &ipfilters[i]))
-	{
-		ipfilters[i].compare = 0xffffffff;
-	}
+void SVCmd_AddIP_f(void){
+    if(gi.argc() < 3){
+        gi.cprintf(NULL, PRINT_HIGH, "Usage:  addip <ip-mask>\n");
+        return;
+    }
+    int i;
+    for(i = 0; i < numipfilters; i++){
+        if(ipfilters[i].compare == 0xffffffff){
+            break; /* free spot */
+        }
+    }
+    if(i == numipfilters){
+        if(numipfilters == MAX_IPFILTERS){
+            gi.cprintf(NULL, PRINT_HIGH, "IP filter list is full\n");
+            return;
+        }
+        numipfilters++;
+    }
+    if(!StringToFilter(gi.argv(2), &ipfilters[i])){
+        ipfilters[i].compare = 0xffffffff;
+    }
 }
 
 void
@@ -317,35 +283,19 @@ SVCmd_WriteIP_f(void)
  * The game can issue gi.argc() / gi.argv() commands to get the rest
  * of the parameters
  */
-void
-ServerCommand(void)
-{
-	char *cmd;
-
-	cmd = gi.argv(1);
-
-	if (Q_stricmp(cmd, "test") == 0)
-	{
-		Svcmd_Test_f();
-	}
-	else if (Q_stricmp(cmd, "addip") == 0)
-	{
-		SVCmd_AddIP_f();
-	}
-	else if (Q_stricmp(cmd, "removeip") == 0)
-	{
-		SVCmd_RemoveIP_f();
-	}
-	else if (Q_stricmp(cmd, "listip") == 0)
-	{
-		SVCmd_ListIP_f();
-	}
-	else if (Q_stricmp(cmd, "writeip") == 0)
-	{
-		SVCmd_WriteIP_f();
-	}
-	else
-	{
-		gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
-	}
+void ServerCommand(void){
+    const char* cmd = gi.argv(1);
+    if(Q_stricmp(cmd, "test") == 0){
+        Svcmd_Test_f();
+    }else if(Q_stricmp(cmd, "addip") == 0){
+        SVCmd_AddIP_f();
+    }else if(Q_stricmp(cmd, "removeip") == 0){
+        SVCmd_RemoveIP_f();
+    }else if(Q_stricmp(cmd, "listip") == 0){
+        SVCmd_ListIP_f();
+    }else if(Q_stricmp(cmd, "writeip") == 0){
+        SVCmd_WriteIP_f();
+    }else{
+        gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
+    }
 }

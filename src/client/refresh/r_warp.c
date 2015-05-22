@@ -693,38 +693,23 @@ R_DrawSkyBox(void)
 	glPopMatrix();
 }
 
-void
-R_SetSky(char *name, float rotate, vec3_t axis)
-{
-	int i;
-	char pathname[MAX_QPATH];
-
-	Q_strlcpy(skyname, name, sizeof(skyname));
-	skyrotate = rotate;
-	VectorCopy(axis, skyaxis);
-
-	for (i = 0; i < 6; i++)
-	{
-		if (qglColorTableEXT && gl_ext_palettedtexture->value)
-		{
-			Com_sprintf(pathname, sizeof(pathname), "env/%s%s.pcx",
-					skyname, suf[i]);
-		}
-		else
-		{
-			Com_sprintf(pathname, sizeof(pathname), "env/%s%s.tga",
-					skyname, suf[i]);
-		}
-
-		sky_images[i] = R_FindImage(pathname, it_sky);
-
-		if (!sky_images[i])
-		{
-			sky_images[i] = r_notexture;
-		}
-
-		sky_min = 1.0 / 512;
-		sky_max = 511.0 / 512;
-	}
+void R_SetSky(const char *name, float rotate, vec3_t axis){
+    Q_strlcpy(skyname, name, sizeof(skyname));
+    skyrotate = rotate;
+    VectorCopy(axis, skyaxis);
+    char pathname[MAX_QPATH];
+    for(int i = 0; i < 6; i++){
+        if(qglColorTableEXT && gl_ext_palettedtexture->value){
+            Com_sprintf(pathname, sizeof(pathname), "env/%s%s.pcx", skyname, suf[i]);
+        }else{
+            Com_sprintf(pathname, sizeof(pathname), "env/%s%s.tga", skyname, suf[i]);
+        }
+        sky_images[i] = R_FindImage(pathname, it_sky);
+        if(!sky_images[i]){
+            sky_images[i] = r_notexture;
+        }
+        sky_min = 1.0 / 512;
+        sky_max = 511.0 / 512;
+    }
 }
 

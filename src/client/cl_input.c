@@ -64,125 +64,71 @@ kbutton_t in_up, in_down;
 
 int in_impulse;
 
-void
-KeyDown(kbutton_t *b)
-{
-	int k;
-	char *c;
-
-	c = Cmd_Argv(1);
-
-	if (c[0])
-	{
-		k = (int)strtol(c, (char **)NULL, 10);
-	}
-
-	else
-	{
-		k = -1; /* typed manually at the console for continuous down */
-	}
-
-	if ((k == b->down[0]) || (k == b->down[1]))
-	{
-		return; /* repeating key */
-	}
-
-	if (!b->down[0])
-	{
-		b->down[0] = k;
-	}
-
-	else if (!b->down[1])
-	{
-		b->down[1] = k;
-	}
-
-	else
-	{
-		Com_Printf("Three keys down for a button!\n");
-		return;
-	}
-
-	if (b->state & 1)
-	{
-		return; /* still down */
-	}
-
-	/* save timestamp */
-	c = Cmd_Argv(2);
-	b->downtime = (int)strtol(c, (char **)NULL, 10);
-
-	if (!b->downtime)
-	{
-		b->downtime = sys_frame_time - 100;
-	}
-
-	b->state |= 1 + 2; /* down + impulse down */
+static void KeyDown(kbutton_t *b){
+    int k;
+    const char* c = Cmd_Argv(1);
+    if(c[0]){
+        k = (int)strtol(c, (char **)NULL, 10);
+    }else{
+        k = -1; /* typed manually at the console for continuous down */
+    }
+    if((k == b->down[0]) || (k == b->down[1])){
+        return; /* repeating key */
+    }
+    if(!b->down[0]){
+        b->down[0] = k;
+    }else if(!b->down[1]){
+        b->down[1] = k;
+    }else{
+        Com_Printf("Three keys down for a button!\n");
+        return;
+    }
+    if(b->state & 1){
+        return; /* still down */
+    }
+    /* save timestamp */
+    c = Cmd_Argv(2);
+    b->downtime = (int)strtol(c, (char **)NULL, 10);
+    if(!b->downtime){
+        b->downtime = sys_frame_time - 100;
+    }
+    b->state |= 1 + 2; /* down + impulse down */
 }
 
-void
-KeyUp(kbutton_t *b)
-{
-	int k;
-	char *c;
-	unsigned uptime;
-
-	c = Cmd_Argv(1);
-
-	if (c[0])
-	{
-		k = (int)strtol(c, (char **)NULL, 10);
-	}
-
-	else
-	{
-		/* typed manually at the console, assume for unsticking, so clear all */
-		b->down[0] = b->down[1] = 0;
-		b->state = 4; /* impulse up */
-		return;
-	}
-
-	if (b->down[0] == k)
-	{
-		b->down[0] = 0;
-	}
-
-	else if (b->down[1] == k)
-	{
-		b->down[1] = 0;
-	}
-
-	else
-	{
-		return; /* key up without coresponding down (menu pass through) */
-	}
-
-	if (b->down[0] || b->down[1])
-	{
-		return; /* some other key is still holding it down */
-	}
-
-	if (!(b->state & 1))
-	{
-		return; /* still up (this should not happen) */
-	}
-
-	/* save timestamp */
-	c = Cmd_Argv(2);
-	uptime = (int)strtol(c, (char **)NULL, 10);
-
-	if (uptime)
-	{
-		b->msec += uptime - b->downtime;
-	}
-
-	else
-	{
-		b->msec += 10;
-	}
-
-	b->state &= ~1; /* now up */
-	b->state |= 4; /* impulse up */
+void KeyUp(kbutton_t *b){
+    int k;
+    const char* c = Cmd_Argv(1);
+    if(c[0]){
+        k = (int)strtol(c, (char **)NULL, 10);
+    }else{
+        /* typed manually at the console, assume for unsticking, so clear all */
+        b->down[0] = b->down[1] = 0;
+        b->state = 4; /* impulse up */
+        return;
+    }
+    if(b->down[0] == k){
+        b->down[0] = 0;
+    }else if(b->down[1] == k){
+        b->down[1] = 0;
+    }else{
+        return; /* key up without coresponding down (menu pass through) */
+    }
+    if(b->down[0] || b->down[1]){
+        return; /* some other key is still holding it down */
+    }
+    if(!(b->state & 1)){
+        return; /* still up (this should not happen) */
+    }
+    /* save timestamp */
+    c = Cmd_Argv(2);
+    unsigned int uptime = (int)strtol(c, (char **)NULL, 10);
+    if(uptime){
+        b->msec += uptime - b->downtime;
+    }else{
+        b->msec += 10;
+    }
+    b->state &= ~1; /* now up */
+    b->state |= 4; /* impulse up */
 }
 
 void

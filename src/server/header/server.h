@@ -209,7 +209,7 @@ void Master_Heartbeat(void);
 void Master_Packet(void);
 
 void SV_InitGame(void);
-void SV_Map(qboolean attractloop, char *levelstring, qboolean loadgame);
+void SV_Map(qboolean attractloop, const char *levelstring, qboolean loadgame);
 
 void SV_PrepWorldFrame(void);
 
@@ -249,8 +249,8 @@ void SV_ShutdownGameProgs(void);
 void SV_InitEdict(edict_t *e);
 
 /* server side savegame stuff */
-void SV_WipeSavegame(char *savename);
-void SV_CopySaveGame(char *src, char *dst);
+void SV_WipeSavegame(const char *savename);
+void SV_CopySaveGame(const char *src, const char *dst);
 void SV_WriteLevelFile(void);
 void SV_WriteServerFile(qboolean autosave);
 void SV_Loadgame_f(void);

@@ -1514,11 +1514,3 @@ R_DrawBeam(entity_t *e)
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 }
-
-/*void
-R_GetRefAPI(void)
-{
-	Swap_Init();
-}*/
-
-

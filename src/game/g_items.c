@@ -100,33 +100,20 @@ FindItemByClassname(char *classname)
 	return NULL;
 }
 
-gitem_t *
-FindItem(char *pickup_name)
-{
-	int i;
-	gitem_t *it;
-
-	if (!pickup_name)
-	{
-		return NULL;
-	}
-
-	it = itemlist;
-
-	for (i = 0; i < game.num_items; i++, it++)
-	{
-		if (!it->pickup_name)
-		{
-			continue;
-		}
-
-		if (!Q_stricmp(it->pickup_name, pickup_name))
-		{
-			return it;
-		}
-	}
-
-	return NULL;
+gitem_t* FindItem(const char *pickup_name){
+    if(!pickup_name){
+        return NULL;
+    }
+    gitem_t* it = itemlist;
+    for(int i = 0; i < game.num_items; i++, it++){
+        if(!it->pickup_name){
+            continue;
+        }
+        if(!Q_stricmp(it->pickup_name, pickup_name)){
+            return it;
+        }
+    }
+    return NULL;
 }
 
 /* ====================================================================== */
