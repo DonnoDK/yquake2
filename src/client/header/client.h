@@ -457,7 +457,7 @@ void CL_Record_f (void);
 
 extern	char *svc_strings[256];
 
-void CL_ParseServerMessage (void);
+void CL_ParseServerMessage(sizebuf_t* message);
 void CL_LoadClientinfo (clientinfo_t *ci, char *s);
 void SHOWNET(char *s);
 void CL_ParseClientinfo (int player);

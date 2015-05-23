@@ -605,7 +605,7 @@ CL_ReadPackets(void)
 			continue; /* wasn't accepted for some reason */
 		}
 
-		CL_ParseServerMessage();
+		CL_ParseServerMessage(&net_message);
 	}
 
 	/* check timeout */

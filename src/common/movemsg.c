@@ -751,44 +751,26 @@ MSG_BeginReading(sizebuf_t *msg)
 	msg->readcount = 0;
 }
 
-int
-MSG_ReadChar(sizebuf_t *msg_read)
-{
-	int c;
-
-	if (msg_read->readcount + 1 > msg_read->cursize)
-	{
-		c = -1;
-	}
-
-	else
-	{
-		c = (signed char)msg_read->data[msg_read->readcount];
-	}
-
-	msg_read->readcount++;
-
-	return c;
+int MSG_ReadChar(sizebuf_t *msg_read){
+    int c;
+    if(msg_read->readcount + 1 > msg_read->cursize){
+        c = -1;
+    }else{
+        c = (signed char)msg_read->data[msg_read->readcount];
+    }
+    msg_read->readcount++;
+    return c;
 }
 
-int
-MSG_ReadByte(sizebuf_t *msg_read)
-{
-	int c;
-
-	if (msg_read->readcount + 1 > msg_read->cursize)
-	{
-		c = -1;
-	}
-
-	else
-	{
-		c = (unsigned char)msg_read->data[msg_read->readcount];
-	}
-
-	msg_read->readcount++;
-
-	return c;
+int MSG_ReadByte(sizebuf_t *msg_read){
+    int c;
+    if(msg_read->readcount + 1 > msg_read->cursize){
+        c = -1;
+    }else{
+        c = (unsigned char)msg_read->data[msg_read->readcount];
+    }
+    msg_read->readcount++;
+    return c;
 }
 
 int
@@ -865,31 +847,19 @@ MSG_ReadFloat(sizebuf_t *msg_read)
 	return dat.f;
 }
 
-char *
-MSG_ReadString(sizebuf_t *msg_read)
-{
-	static char string[2048];
-	int l, c;
-
-	l = 0;
-
-	do
-	{
-		c = MSG_ReadChar(msg_read);
-
-		if ((c == -1) || (c == 0))
-		{
-			break;
-		}
-
-		string[l] = c;
-		l++;
-	}
-	while (l < sizeof(string) - 1);
-
-	string[l] = 0;
-
-	return string;
+char* MSG_ReadString(sizebuf_t *msg_read){
+    static char string[2048];
+    int l = 0;
+    do{
+        int c = MSG_ReadChar(msg_read);
+        if((c == -1) || (c == 0)){
+            break;
+        }
+        string[l] = c;
+        l++;
+    }while (l < sizeof(string) - 1);
+    string[l] = 0;
+    return string;
 }
 
 char *

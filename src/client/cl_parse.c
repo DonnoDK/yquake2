@@ -1232,166 +1232,117 @@ SHOWNET(char *s)
 	}
 }
 
-void
-CL_ParseServerMessage(void)
-{
-	int cmd;
-	char *s;
-	int i;
-
-	/* if recording demos, copy the message out */
-	if (cl_shownet->value == 1)
-	{
-		Com_Printf("%i ", net_message.cursize);
-	}
-
-	else if (cl_shownet->value >= 2)
-	{
-		Com_Printf("------------------\n");
-	}
-
-	/* parse the message */
-	while (1)
-	{
-		if (net_message.readcount > net_message.cursize)
-		{
-			Com_Error(ERR_DROP, "CL_ParseServerMessage: Bad server message");
-			break;
-		}
-
-		cmd = MSG_ReadByte(&net_message);
-
-		if (cmd == -1)
-		{
-			SHOWNET("END OF MESSAGE");
-			break;
-		}
-
-		if (cl_shownet->value >= 2)
-		{
-			if (!svc_strings[cmd])
-			{
-				Com_Printf("%3i:BAD CMD %i\n", net_message.readcount - 1, cmd);
-			}
-
-			else
-			{
-				SHOWNET(svc_strings[cmd]);
-			}
-		}
-
-		/* other commands */
-		switch (cmd)
-		{
-			default:
-				Com_Error(ERR_DROP, "CL_ParseServerMessage: Illegible server message\n");
-				break;
-
-			case svc_nop:
-				break;
-
-			case svc_disconnect:
-				Com_Error(ERR_DISCONNECT, "Server disconnected\n");
-				break;
-
-			case svc_reconnect:
-				Com_Printf("Server disconnected, reconnecting\n");
-
-				if (cls.download)
-				{
-					/* close download */
-					fclose(cls.download);
-					cls.download = NULL;
-				}
-
-				cls.state = ca_connecting;
-				cls.connect_time = -99999; /* CL_CheckForResend() will fire immediately */
-				break;
-
-			case svc_print:
-				i = MSG_ReadByte(&net_message);
-
-				if (i == PRINT_CHAT)
-				{
-					S_StartLocalSound("misc/talk.wav");
-					con.ormask = 128;
-				}
-
-				Com_Printf("%s", MSG_ReadString(&net_message));
-				con.ormask = 0;
-				break;
-
-			case svc_centerprint:
-				SCR_CenterPrint(MSG_ReadString(&net_message));
-				break;
-
-			case svc_stufftext:
-				s = MSG_ReadString(&net_message);
-				Com_DPrintf("stufftext: %s\n", s);
-				Cbuf_AddText(s);
-				break;
-
-			case svc_serverdata:
-				Cbuf_Execute();  /* make sure any stuffed commands are done */
-				CL_ParseServerData();
-				break;
-
-			case svc_configstring:
-				CL_ParseConfigString();
-				break;
-
-			case svc_sound:
-				CL_ParseStartSoundPacket();
-				break;
-
-			case svc_spawnbaseline:
-				CL_ParseBaseline();
-				break;
-
-			case svc_temp_entity:
-				CL_ParseTEnt();
-				break;
-
-			case svc_muzzleflash:
-				CL_AddMuzzleFlash();
-				break;
-
-			case svc_muzzleflash2:
-				CL_AddMuzzleFlash2();
-				break;
-
-			case svc_download:
-				CL_ParseDownload();
-				break;
-
-			case svc_frame:
-				CL_ParseFrame();
-				break;
-
-			case svc_inventory:
-				CL_ParseInventory();
-				break;
-
-			case svc_layout:
-				s = MSG_ReadString(&net_message);
-				Q_strlcpy(cl.layout, s, sizeof(cl.layout));
-				break;
-
-			case svc_playerinfo:
-			case svc_packetentities:
-			case svc_deltapacketentities:
-				Com_Error(ERR_DROP, "Out of place frame data");
-				break;
-		}
-	}
-
-	CL_AddNetgraph();
-
-	/* we don't know if it is ok to save a demo message
-	   until after we have parsed the frame */
-	if (cls.demorecording && !cls.demowaiting)
-	{
-		CL_WriteDemoMessage();
-	}
+void CL_ParseServerMessage(sizebuf_t* message){
+    /* if recording demos, copy the message out */
+    if(cl_shownet->value == 1){
+        Com_Printf("%i ", message->cursize);
+    }else if(cl_shownet->value >= 2){
+        Com_Printf("------------------\n");
+    }
+    /* parse the message */
+    while(1){
+        if(message->readcount > message->cursize){
+            Com_Error(ERR_DROP, "CL_ParseServerMessage: Bad server message");
+            break;
+        }
+        int cmd = MSG_ReadByte(message);
+        if(cmd == -1){
+            SHOWNET("END OF MESSAGE");
+            break;
+        }
+        if(cl_shownet->value >= 2){
+            if(!svc_strings[cmd]){
+                Com_Printf("%3i:BAD CMD %i\n", message->readcount - 1, cmd);
+            }else{
+                SHOWNET(svc_strings[cmd]);
+            }
+        }
+        /* other commands */
+        int i;
+        const char* s;
+        switch(cmd){
+            default:
+                Com_Error(ERR_DROP, "CL_ParseServerMessage: Illegible server message\n");
+                break;
+            case svc_nop:
+                break;
+            case svc_disconnect:
+                Com_Error(ERR_DISCONNECT, "Server disconnected\n");
+                break;
+            case svc_reconnect:
+                Com_Printf("Server disconnected, reconnecting\n");
+                if(cls.download){
+                    /* close download */
+                    fclose(cls.download);
+                    cls.download = NULL;
+                }
+                cls.state = ca_connecting;
+                cls.connect_time = -99999; /* CL_CheckForResend() will fire immediately */
+                break;
+            case svc_print:
+                i = MSG_ReadByte(message);
+                if(i == PRINT_CHAT){
+                    S_StartLocalSound("misc/talk.wav");
+                    con.ormask = 128;
+                }
+                Com_Printf("%s", MSG_ReadString(message));
+                con.ormask = 0;
+                break;
+            case svc_centerprint:
+                SCR_CenterPrint(MSG_ReadString(message));
+                break;
+            case svc_stufftext:
+                s = MSG_ReadString(message);
+                Com_DPrintf("stufftext: %s\n", s);
+                Cbuf_AddText(s);
+                break;
+            case svc_serverdata:
+                Cbuf_Execute();  /* make sure any stuffed commands are done */
+                CL_ParseServerData();
+                break;
+            case svc_configstring:
+                CL_ParseConfigString();
+                break;
+            case svc_sound:
+                CL_ParseStartSoundPacket();
+                break;
+            case svc_spawnbaseline:
+                CL_ParseBaseline();
+                break;
+            case svc_temp_entity:
+                CL_ParseTEnt();
+                break;
+            case svc_muzzleflash:
+                CL_AddMuzzleFlash();
+                break;
+            case svc_muzzleflash2:
+                CL_AddMuzzleFlash2();
+                break;
+            case svc_download:
+                CL_ParseDownload();
+                break;
+            case svc_frame:
+                CL_ParseFrame();
+                break;
+            case svc_inventory:
+                CL_ParseInventory();
+                break;
+            case svc_layout:
+                s = MSG_ReadString(message);
+                Q_strlcpy(cl.layout, s, sizeof(cl.layout));
+                break;
+            case svc_playerinfo:
+            case svc_packetentities:
+            case svc_deltapacketentities:
+                Com_Error(ERR_DROP, "Out of place frame data");
+                break;
+        }
+    }
+    CL_AddNetgraph();
+    /* we don't know if it is ok to save a demo message
+       until after we have parsed the frame */
+    if(cls.demorecording && !cls.demowaiting){
+        CL_WriteDemoMessage();
+    }
 }
 
