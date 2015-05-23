@@ -306,98 +306,67 @@ SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate,
 /*
  * A brand new game has been started
  */
-void
-SV_InitGame(void)
-{
-	int i;
-	edict_t *ent;
-	char idmaster[32];
-
-	if (svs.initialized)
-	{
-		/* cause any connected clients to reconnect */
-		SV_Shutdown("Server restarted\n", true);
-	}
-
+void SV_InitGame(void){
+    char idmaster[32];
+    if(svs.initialized){
+        /* cause any connected clients to reconnect */
+        SV_Shutdown("Server restarted\n", true);
+    }
 #ifndef DEDICATED_ONLY
-	else
-	{
-		/* make sure the client is down */
-		CL_Drop();
-		SCR_BeginLoadingPlaque();
-	}
+    else{
+        /* make sure the client is down */
+        CL_Drop();
+        SCR_BeginLoadingPlaque();
+    }
 #endif
-
-	/* get any latched variable changes (maxclients, etc) */
-	Cvar_GetLatchedVars();
-
-	svs.initialized = true;
-
-	if (Cvar_VariableValue("coop") && Cvar_VariableValue("deathmatch"))
-	{
-		Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
-		Cvar_FullSet("coop", "0", CVAR_SERVERINFO | CVAR_LATCH);
-	}
-
-	/* dedicated servers can't be single player and are usually DM
-	   so unless they explicity set coop, force it to deathmatch */
-	if (dedicated->value)
-	{
-		if (!Cvar_VariableValue("coop"))
-		{
-			Cvar_FullSet("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);
-		}
-	}
-
-	/* init clients */
-	if (Cvar_VariableValue("deathmatch"))
-	{
-		if (maxclients->value <= 1)
-		{
-			Cvar_FullSet("maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
-		}
-		else if (maxclients->value > MAX_CLIENTS)
-		{
-			Cvar_FullSet("maxclients", va("%i",
-						MAX_CLIENTS), CVAR_SERVERINFO | CVAR_LATCH);
-		}
-	}
-	else if (Cvar_VariableValue("coop"))
-	{
-		if ((maxclients->value <= 1) || (maxclients->value > 4))
-		{
-			Cvar_FullSet("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
-		}
-	}
-	else /* non-deathmatch, non-coop is one player */
-	{
-		Cvar_FullSet("maxclients", "1", CVAR_SERVERINFO | CVAR_LATCH);
-	}
-
-	svs.spawncount = randk();
-	svs.clients = Z_Malloc(sizeof(client_t) * maxclients->value);
-	svs.num_client_entities = maxclients->value * UPDATE_BACKUP * 64;
-	svs.client_entities = 
-		Z_Malloc( sizeof(entity_state_t) * svs.num_client_entities);
-
-	/* init network stuff */
-	NET_Config((maxclients->value > 1));
-
-	/* heartbeats will always be sent to the id master */
-	svs.last_heartbeat = -99999; /* send immediately */
-	Com_sprintf(idmaster, sizeof(idmaster), "192.246.40.37:%i", PORT_MASTER);
-	NET_StringToAdr(idmaster, &master_adr[0]);
-
-	/* init game */
-	SV_InitGameProgs();
-
-	for (i = 0; i < maxclients->value; i++)
-	{
-		ent = EDICT_NUM(i + 1);
-		ent->s.number = i + 1;
-		svs.clients[i].edict = ent;
-		memset(&svs.clients[i].lastcmd, 0, sizeof(svs.clients[i].lastcmd));
-	}
+    /* get any latched variable changes (maxclients, etc) */
+    Cvar_GetLatchedVars();
+    svs.initialized = true;
+    if(Cvar_VariableValue("coop") && Cvar_VariableValue("deathmatch")){
+        Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
+        Cvar_FullSet("coop", "0", CVAR_SERVERINFO | CVAR_LATCH);
+    }
+    /* dedicated servers can't be single player and are usually DM
+       so unless they explicity set coop, force it to deathmatch */
+    if(dedicated->value){
+        if(!Cvar_VariableValue("coop")){
+            Cvar_FullSet("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);
+        }
+    }
+    /* init clients */
+    if(Cvar_VariableValue("deathmatch")){
+        if(maxclients->value <= 1){
+            Cvar_FullSet("maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);
+        }else if(maxclients->value > MAX_CLIENTS){
+            Cvar_FullSet("maxclients", va("%i",
+                        MAX_CLIENTS), CVAR_SERVERINFO | CVAR_LATCH);
+        }
+    }else if(Cvar_VariableValue("coop")){
+        if((maxclients->value <= 1) || (maxclients->value > 4)){
+            Cvar_FullSet("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
+        }
+    }else /* non-deathmatch, non-coop is one player */
+    {
+        Cvar_FullSet("maxclients", "1", CVAR_SERVERINFO | CVAR_LATCH);
+    }
+    svs.spawncount = randk();
+    svs.clients = Z_Malloc(sizeof(client_t) * maxclients->value);
+    svs.num_client_entities = maxclients->value * UPDATE_BACKUP * 64;
+    svs.client_entities = Z_Malloc( sizeof(entity_state_t) * svs.num_client_entities);
+    /* init network stuff */
+    NET_Config((maxclients->value > 1));
+    /* heartbeats will always be sent to the id master */
+    svs.last_heartbeat = -99999; /* send immediately */
+    Com_sprintf(idmaster, sizeof(idmaster), "192.246.40.37:%i", PORT_MASTER);
+    NET_StringToAdr(idmaster, &master_adr[0]);
+    /* init game */
+    SV_InitGameProgs();
+    for(int i = 0; i < maxclients->value; i++){
+        edict_t* ent = EDICT_NUM(i + 1);
+        ent->s.number = i + 1;
+        svs.clients[i].edict = ent;
+        memset(&svs.clients[i].lastcmd, 0, sizeof(svs.clients[i].lastcmd));
+    }
 }
 
 /*

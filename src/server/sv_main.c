@@ -101,46 +101,28 @@ char* SV_StatusString(void) {
 /*
  * Updates the cl->ping variables
  */
-void
-SV_CalcPings(void)
-{
-	int i, j;
-	client_t *cl;
-	int total, count;
-
-	for (i = 0; i < maxclients->value; i++)
-	{
-		cl = &svs.clients[i];
-
-		if (cl->state != cs_spawned)
-		{
-			continue;
-		}
-
-		total = 0;
-		count = 0;
-
-		for (j = 0; j < LATENCY_COUNTS; j++)
-		{
-			if (cl->frame_latency[j] > 0)
-			{
-				count++;
-				total += cl->frame_latency[j];
-			}
-		}
-
-		if (!count)
-		{
-			cl->ping = 0;
-		}
-		else
-		{
-			cl->ping = total / count;
-		}
-
-		/* let the game dll know about the ping */
-		cl->edict->client->ping = cl->ping;
-	}
+void SV_CalcPings(void){
+    for (int i = 0; i < maxclients->value; i++){
+        client_t* cl = &svs.clients[i];
+        if(cl->state != cs_spawned){
+            continue;
+        }
+        int total = 0;
+        int count = 0;
+        for(int j = 0; j < LATENCY_COUNTS; j++){
+            if(cl->frame_latency[j] > 0){
+                count++;
+                total += cl->frame_latency[j];
+            }
+        }
+        if(!count){
+            cl->ping = 0;
+        }else{
+            cl->ping = total / count;
+        }
+        /* let the game dll know about the ping */
+        cl->edict->client->ping = cl->ping;
+    }
 }
 
 /*
@@ -268,49 +250,33 @@ SV_PrepWorldFrame(void)
 	}
 }
 
-void
-SV_RunGameFrame(void)
-{
+void SV_RunGameFrame(void){
 #ifndef DEDICATED_ONLY
-
-	if (host_speeds->value)
-	{
-		time_before_game = Sys_Milliseconds();
-	}
-
+    if(host_speeds->value){
+        time_before_game = Sys_Milliseconds();
+    }
 #endif
-
-	/* we always need to bump framenum, even if we
-	   don't run the world, otherwise the delta
-	   compression can get confused when a client
-	   has the "current" frame */
-	sv.framenum++;
-	sv.time = sv.framenum * 100;
-
-	/* don't run if paused */
-	if (!sv_paused->value || (maxclients->value > 1))
-	{
-		ge->RunFrame();
-
-		/* never get more than one tic behind */
-		if (sv.time < svs.realtime)
-		{
-			if (sv_showclamp->value)
-			{
-				Com_Printf("sv highclamp\n");
-			}
-
-			svs.realtime = sv.time;
-		}
-	}
-
+    /* we always need to bump framenum, even if we
+       don't run the world, otherwise the delta
+       compression can get confused when a client
+       has the "current" frame */
+    sv.framenum++;
+    sv.time = sv.framenum * 100;
+    /* don't run if paused */
+    if(!sv_paused->value || (maxclients->value > 1)){
+        ge->RunFrame();
+        /* never get more than one tic behind */
+        if(sv.time < svs.realtime){
+            if(sv_showclamp->value){
+                Com_Printf("sv highclamp\n");
+            }
+            svs.realtime = sv.time;
+        }
+    }
 #ifndef DEDICATED_ONLY
-
-	if (host_speeds->value)
-	{
-		time_after_game = Sys_Milliseconds();
-	}
-
+    if(host_speeds->value){
+        time_after_game = Sys_Milliseconds();
+    }
 #endif
 }
 

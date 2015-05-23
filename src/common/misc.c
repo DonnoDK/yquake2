@@ -302,13 +302,11 @@ void Qcommon_Frame(int msec){
         c_pointcontents = 0;
     }
 #endif
-    const char* s;
-    do{
+    const char* s = Sys_ConsoleInput();
+    while(s != NULL){
+        Cbuf_AddText(va("%s\n", s));
         s = Sys_ConsoleInput();
-        if(s){
-            Cbuf_AddText(va("%s\n", s));
-        }
-    }while(s);
+    }
     Cbuf_Execute();
 #ifndef DEDICATED_ONLY
     if(host_speeds->value){
@@ -331,8 +329,7 @@ void Qcommon_Frame(int msec){
         rf = time_after_ref - time_before_ref;
         sv -= gm;
         cl -= rf;
-        Com_Printf("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
-                all, sv, gm, cl, rf);
+        Com_Printf("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n", all, sv, gm, cl, rf);
     }
 #endif
 }
