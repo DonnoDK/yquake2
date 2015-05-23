@@ -154,8 +154,6 @@ SV_GiveMsec(void)
 }
 
 void SV_ReadPackets(void){
-    int i;
-    client_t *cl;
     while(NET_GetPacket(NS_SERVER, &net_from, &net_message)){
         /* check for connectionless packet (0xffffffff) first */
         if(*(int *)net_message.data == -1){
@@ -169,6 +167,8 @@ void SV_ReadPackets(void){
         MSG_ReadLong(&net_message); /* sequence number */
         int qport = MSG_ReadShort(&net_message) & 0xffff;
         /* check for packets from connected clients */
+        client_t *cl;
+        int i;
         for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
             if(cl->state == cs_free){
                 continue;

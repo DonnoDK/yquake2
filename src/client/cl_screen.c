@@ -1411,140 +1411,87 @@ SCR_DrawLayout(void)
  * This is called every frame, and can also be called
  * explicitly to flush text to the screen.
  */
-void
-SCR_UpdateScreen(void)
-{
-	int numframes;
-	int i;
-	float separation[2] = {0, 0};
-	float scale = SCR_GetMenuScale();
-
+void SCR_UpdateScreen(void){
 	/* if the screen is disabled (loading plaque is
 	   up, or vid mode changing) do nothing at all */
-	if (cls.disable_screen)
-	{
-		if (Sys_Milliseconds() - cls.disable_screen > 120000)
-		{
+	if(cls.disable_screen){
+		if(Sys_Milliseconds() - cls.disable_screen > 120000){
 			cls.disable_screen = 0;
 			Com_Printf("Loading plaque timed out.\n");
 		}
-
 		return;
 	}
-
-	if (!scr_initialized || !con.initialized)
-	{
+	if(!scr_initialized || !con.initialized){
 		return; /* not initialized yet */
 	}
-
-	separation[0] = 0;
-	separation[1] = 0;
-	numframes = 1;
-
-	for (i = 0; i < numframes; i++)
-	{
+	float separation[2] = {0, 0};
+	int numframes = 1;
+	float scale = SCR_GetMenuScale();
+	for(int i = 0; i < numframes; i++){
 		R_BeginFrame(separation[i]);
-
-		if (scr_draw_loading == 2)
-		{
+		if(scr_draw_loading == 2){
 			/* loading plaque over black screen */
 			int w, h;
-
 			R_SetPalette(NULL);
 			scr_draw_loading = false;
 			Draw_GetPicSize(&w, &h, "loading");
 			Draw_PicScaled((viddef.width - w * scale) / 2, (viddef.height - h * scale) / 2, "loading", scale);
 		}
-
 		/* if a cinematic is supposed to be running,
 		   handle menus and console specially */
-		else if (cl.cinematictime > 0)
-		{
-			if (cls.key_dest == key_menu)
-			{
-				if (cl.cinematicpalette_active)
-				{
+		else if(cl.cinematictime > 0){
+			if(cls.key_dest == key_menu){
+				if(cl.cinematicpalette_active){
 					R_SetPalette(NULL);
 					cl.cinematicpalette_active = false;
 				}
-
 				M_Draw();
-			}
-			else if (cls.key_dest == key_console)
-			{
-				if (cl.cinematicpalette_active)
-				{
+			}else if(cls.key_dest == key_console){
+				if(cl.cinematicpalette_active){
 					R_SetPalette(NULL);
 					cl.cinematicpalette_active = false;
 				}
-
 				SCR_DrawConsole();
-			}
-			else
-			{
+			}else{
 				SCR_DrawCinematic();
 			}
-		}
-		else
-		{
+		}else{
 			/* make sure the game palette is active */
-			if (cl.cinematicpalette_active)
-			{
+			if(cl.cinematicpalette_active){
 				R_SetPalette(NULL);
 				cl.cinematicpalette_active = false;
 			}
-
 			/* do 3D refresh drawing, and then update the screen */
 			SCR_CalcVrect();
-
 			/* clear any dirty part of the background */
 			SCR_TileClear();
-
 			V_RenderView(separation[i]);
-
 			SCR_DrawStats();
-
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-			{
+			if(cl.frame.playerstate.stats[STAT_LAYOUTS] & 1){
 				SCR_DrawLayout();
 			}
-
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
-			{
+			if(cl.frame.playerstate.stats[STAT_LAYOUTS] & 2){
 				CL_DrawInventory();
 			}
-
 			SCR_DrawNet();
 			SCR_CheckDrawCenterString();
-
-			if (cl_drawfps->value)
-			{
+			if(cl_drawfps->value){
 				char s[8];
 				sprintf(s, "%3.0ffps", 1 / cls.frametime);
 				DrawString(viddef.width - 64, 0, s);
 			}
-
-			if (scr_timegraph->value)
-			{
+			if(scr_timegraph->value){
 				SCR_DebugGraph(cls.frametime * 300, 0);
 			}
-
-			if (scr_debuggraph->value || scr_timegraph->value ||
-				scr_netgraph->value)
-			{
+			if(scr_debuggraph->value || scr_timegraph->value || scr_netgraph->value){
 				SCR_DrawDebugGraph();
 			}
-
 			SCR_DrawPause();
-
 			SCR_DrawConsole();
-
 			M_Draw();
-
 			SCR_DrawLoading();
 		}
 	}
-
 	GLimp_EndFrame();
 }
 
