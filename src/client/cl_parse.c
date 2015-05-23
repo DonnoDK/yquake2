@@ -811,416 +811,288 @@ CL_ParseFrame(void)
 	}
 }
 
-void
-CL_ParseServerData(void)
-{
-	extern cvar_t *fs_gamedirvar;
-	char *str;
-	int i;
+struct serverdataPacket_t{
+    int server_protocol;
+    int server_count;
+    int attractloop;
+    const char* gamedir;
+    int player_number;
+    const char* levelname;
+};
 
-	Com_DPrintf("Serverdata packet received.\n");
-
-	/* wipe the client_state_t struct */
-	CL_ClearState();
-	cls.state = ca_connected;
-
-	/* parse protocol version number */
-	i = MSG_ReadLong(&net_message);
-	cls.serverProtocol = i;
-
-	/* another demo hack */
-	if (Com_ServerState() && (PROTOCOL_VERSION == 34))
-	{
-	}
-	else if (i != PROTOCOL_VERSION)
-	{
-		Com_Error(ERR_DROP, "Server returned version %i, not %i",
-				i, PROTOCOL_VERSION);
-	}
-
-	cl.servercount = MSG_ReadLong(&net_message);
-	cl.attractloop = MSG_ReadByte(&net_message);
-
-	/* game directory */
-	str = MSG_ReadString(&net_message);
-	Q_strlcpy(cl.gamedir, str, sizeof(cl.gamedir));
-
-	/* set gamedir */
-	if ((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string ||
-		  strcmp(fs_gamedirvar->string, str))) ||
-		(!*str && (fs_gamedirvar->string || *fs_gamedirvar->string)))
-	{
-		Cvar_Set("game", str);
-	}
-
-	/* parse player entity number */
-	cl.playernum = MSG_ReadShort(&net_message);
-
-	/* get the full level name */
-	str = MSG_ReadString(&net_message);
-
-	if (cl.playernum == -1)
-	{
-		/* playing a cinematic or showing a pic, not a level */
-		SCR_PlayCinematic(str);
-	}
-	else
-	{
-		/* seperate the printfs so the server
-		 * message can have a color */
-		Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
-		Com_Printf("%c%s\n", 2, str);
-
-		/* need to prep refresh at next oportunity */
-		cl.refresh_prepped = false;
-	}
+struct serverdataPacket_t CL_ServerPacketForMessage(sizebuf_t* message){
+    struct serverdataPacket_t p = {
+        .server_protocol = MSG_ReadLong(message),
+        .server_count = MSG_ReadLong(message),
+        .attractloop = MSG_ReadByte(message),
+        .gamedir = MSG_ReadString(message),
+        .player_number = MSG_ReadShort(message),
+        .levelname = MSG_ReadString(message)};
+    return p;
 }
 
-void
-CL_ParseBaseline(void)
-{
-	entity_state_t *es;
-	unsigned bits;
-	int newnum;
-	entity_state_t nullstate;
+static void CL_ParseServerData(const struct serverdataPacket_t* packet){
+    Com_DPrintf("Serverdata packet received.\n");
+    /* wipe the client_state_t struct */
+    CL_ClearState();
+    cls.state = ca_connected;
+    /* parse protocol version number */
+    cls.serverProtocol = packet->server_protocol;
+    /* another demo hack */
+    if(Com_ServerState() && (PROTOCOL_VERSION == 34)){
+    }else if (cls.serverProtocol != PROTOCOL_VERSION){
+        Com_Error(ERR_DROP, "Server returned version %i, not %i", cls.serverProtocol, PROTOCOL_VERSION);
+    }
+    cl.servercount = packet->server_count;
+    cl.attractloop = packet->attractloop;
+    /* game directory */
+    const char* str = packet->gamedir;
+    Q_strlcpy(cl.gamedir, str, sizeof(cl.gamedir));
+    /* set gamedir */
+    extern cvar_t *fs_gamedirvar;
+    if((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string || strcmp(fs_gamedirvar->string, str))) || (!*str && (fs_gamedirvar->string || *fs_gamedirvar->string))) {
+        Cvar_Set("game", str);
+    }
+    /* parse player entity number */
+    cl.playernum = packet->player_number;
+    /* get the full level name */
+    str = packet->levelname;
+    if(cl.playernum == -1){
+        /* playing a cinematic or showing a pic, not a level */
+        SCR_PlayCinematic(str);
+    }else{
+        /* seperate the printfs so the server
+         * message can have a color */
+        Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
+        Com_Printf("%c%s\n", 2, str);
 
-	memset(&nullstate, 0, sizeof(nullstate));
-
-	newnum = CL_ParseEntityBits(&bits);
-	es = &cl_entities[newnum].baseline;
-	CL_ParseDelta(&nullstate, es, newnum, bits);
+        /* need to prep refresh at next oportunity */
+        cl.refresh_prepped = false;
+    }
 }
 
-void
-CL_LoadClientinfo(clientinfo_t *ci, char *s)
-{
-	int i;
-	char *t;
-	char model_name[MAX_QPATH];
-	char skin_name[MAX_QPATH];
-	char model_filename[MAX_QPATH];
-	char skin_filename[MAX_QPATH];
-	char weapon_filename[MAX_QPATH];
+void CL_ParseBaseline(void){
+    entity_state_t nullstate;
+    memset(&nullstate, 0, sizeof(nullstate));
+    unsigned bits;
+    int newnum = CL_ParseEntityBits(&bits);
+    entity_state_t* es = &cl_entities[newnum].baseline;
+    CL_ParseDelta(&nullstate, es, newnum, bits);
+}
 
-	Q_strlcpy(ci->cinfo, s, sizeof(ci->cinfo));
-
-	/* isolate the player's name */
-	Q_strlcpy(ci->name, s, sizeof(ci->name));
-	t = strstr(s, "\\");
-
-	if (t)
-	{
-		ci->name[t - s] = 0;
-		s = t + 1;
-	}
-
-	if (cl_noskins->value || (*s == 0))
-	{
-		strcpy(model_filename, "players/male/tris.md2");
-		strcpy(weapon_filename, "players/male/weapon.md2");
-		strcpy(skin_filename, "players/male/grunt.pcx");
-		strcpy(ci->iconname, "/players/male/grunt_i.pcx");
-		ci->model = R_RegisterModel(model_filename);
-		memset(ci->weaponmodel, 0, sizeof(ci->weaponmodel));
-		ci->weaponmodel[0] = R_RegisterModel(weapon_filename);
-		ci->skin = R_RegisterSkin(skin_filename);
-		ci->icon = Draw_FindPic(ci->iconname);
-	}
-	else
-	{
-		/* isolate the model name */
-		strcpy(model_name, s);
-		t = strstr(model_name, "/");
-
-		if (!t)
-		{
-			t = strstr(model_name, "\\");
-		}
-
-		if (!t)
-		{
-			t = model_name;
-		}
-
-		*t = 0;
-
-		/* isolate the skin name */
-		strcpy(skin_name, s + strlen(model_name) + 1);
-
-		/* model file */
-		Com_sprintf(model_filename, sizeof(model_filename),
-				"players/%s/tris.md2", model_name);
-		ci->model = R_RegisterModel(model_filename);
-
-		if (!ci->model)
-		{
-			strcpy(model_name, "male");
-			Com_sprintf(model_filename, sizeof(model_filename),
-					"players/male/tris.md2");
-			ci->model = R_RegisterModel(model_filename);
-		}
-
-		/* skin file */
-		Com_sprintf(skin_filename, sizeof(skin_filename),
-				"players/%s/%s.pcx", model_name, skin_name);
-		ci->skin = R_RegisterSkin(skin_filename);
-
-		/* if we don't have the skin and the model wasn't male,
-		 * see if the male has it (this is for CTF's skins) */
-		if (!ci->skin && Q_stricmp(model_name, "male"))
-		{
-			/* change model to male */
-			strcpy(model_name, "male");
-			Com_sprintf(model_filename, sizeof(model_filename),
-					"players/male/tris.md2");
-			ci->model = R_RegisterModel(model_filename);
-
-			/* see if the skin exists for the male model */
-			Com_sprintf(skin_filename, sizeof(skin_filename),
-					"players/%s/%s.pcx", model_name, skin_name);
-			ci->skin = R_RegisterSkin(skin_filename);
-		}
-
-		/* if we still don't have a skin, it means that the male model didn't have
-		 * it, so default to grunt */
-		if (!ci->skin)
-		{
-			/* see if the skin exists for the male model */
-			Com_sprintf(skin_filename, sizeof(skin_filename),
-					"players/%s/grunt.pcx", model_name, skin_name);
-			ci->skin = R_RegisterSkin(skin_filename);
-		}
-
-		/* weapon file */
-		for (i = 0; i < num_cl_weaponmodels; i++)
-		{
-			Com_sprintf(weapon_filename, sizeof(weapon_filename),
-					"players/%s/%s", model_name, cl_weaponmodels[i]);
-			ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
-
-			if (!ci->weaponmodel[i] && (strcmp(model_name, "cyborg") == 0))
-			{
-				/* try male */
-				Com_sprintf(weapon_filename, sizeof(weapon_filename),
-						"players/male/%s", cl_weaponmodels[i]);
-				ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
-			}
-
-			if (!cl_vwep->value)
-			{
-				break; /* only one when vwep is off */
-			}
-		}
-
-		/* icon file */
-		Com_sprintf(ci->iconname, sizeof(ci->iconname),
-				"/players/%s/%s_i.pcx", model_name, skin_name);
-		ci->icon = Draw_FindPic(ci->iconname);
-	}
-
-	/* must have loaded all data types to be valid */
-	if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0])
-	{
-		ci->skin = NULL;
-		ci->icon = NULL;
-		ci->model = NULL;
-		ci->weaponmodel[0] = NULL;
-		return;
-	}
+void CL_LoadClientinfo(clientinfo_t *ci, const char *s){
+    Q_strlcpy(ci->cinfo, s, sizeof(ci->cinfo));
+    /* isolate the player's name */
+    Q_strlcpy(ci->name, s, sizeof(ci->name));
+    char* t = strstr(s, "\\");
+    if(t){
+        ci->name[t - s] = 0;
+        s = t + 1;
+    }
+    char model_filename[MAX_QPATH];
+    char skin_filename[MAX_QPATH];
+    char weapon_filename[MAX_QPATH];
+    if(cl_noskins->value || (*s == 0)){
+        strcpy(model_filename, "players/male/tris.md2");
+        strcpy(weapon_filename, "players/male/weapon.md2");
+        strcpy(skin_filename, "players/male/grunt.pcx");
+        strcpy(ci->iconname, "/players/male/grunt_i.pcx");
+        ci->model = R_RegisterModel(model_filename);
+        memset(ci->weaponmodel, 0, sizeof(ci->weaponmodel));
+        ci->weaponmodel[0] = R_RegisterModel(weapon_filename);
+        ci->skin = R_RegisterSkin(skin_filename);
+        ci->icon = Draw_FindPic(ci->iconname);
+    }else{
+        /* isolate the model name */
+        char model_name[MAX_QPATH];
+        strcpy(model_name, s);
+        t = strstr(model_name, "/");
+        if(!t){
+            t = strstr(model_name, "\\");
+        }
+        if(!t){
+            t = model_name;
+        }
+        *t = 0;
+        /* isolate the skin name */
+        char skin_name[MAX_QPATH];
+        strcpy(skin_name, s + strlen(model_name) + 1);
+        /* model file */
+        Com_sprintf(model_filename, sizeof(model_filename),
+                "players/%s/tris.md2", model_name);
+        ci->model = R_RegisterModel(model_filename);
+        if(!ci->model){
+            strcpy(model_name, "male");
+            Com_sprintf(model_filename, sizeof(model_filename),
+                    "players/male/tris.md2");
+            ci->model = R_RegisterModel(model_filename);
+        }
+        /* skin file */
+        Com_sprintf(skin_filename, sizeof(skin_filename),
+                "players/%s/%s.pcx", model_name, skin_name);
+        ci->skin = R_RegisterSkin(skin_filename);
+        /* if we don't have the skin and the model wasn't male,
+         * see if the male has it (this is for CTF's skins) */
+        if(!ci->skin && Q_stricmp(model_name, "male")){
+            /* change model to male */
+            strcpy(model_name, "male");
+            Com_sprintf(model_filename, sizeof(model_filename),
+                    "players/male/tris.md2");
+            ci->model = R_RegisterModel(model_filename);
+            /* see if the skin exists for the male model */
+            Com_sprintf(skin_filename, sizeof(skin_filename),
+                    "players/%s/%s.pcx", model_name, skin_name);
+            ci->skin = R_RegisterSkin(skin_filename);
+        }
+        /* if we still don't have a skin, it means that the male model didn't have
+         * it, so default to grunt */
+        if(!ci->skin){
+            /* see if the skin exists for the male model */
+            Com_sprintf(skin_filename, sizeof(skin_filename),
+                    "players/%s/grunt.pcx", model_name, skin_name);
+            ci->skin = R_RegisterSkin(skin_filename);
+        }
+        /* weapon file */
+        for(int i = 0; i < num_cl_weaponmodels; i++){
+            Com_sprintf(weapon_filename, sizeof(weapon_filename),
+                    "players/%s/%s", model_name, cl_weaponmodels[i]);
+            ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
+            if(!ci->weaponmodel[i] && (strcmp(model_name, "cyborg") == 0)){
+                /* try male */
+                Com_sprintf(weapon_filename, sizeof(weapon_filename),
+                        "players/male/%s", cl_weaponmodels[i]);
+                ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
+            }
+            if(!cl_vwep->value){
+                break; /* only one when vwep is off */
+            }
+        }
+        /* icon file */
+        Com_sprintf(ci->iconname, sizeof(ci->iconname),
+                "/players/%s/%s_i.pcx", model_name, skin_name);
+        ci->icon = Draw_FindPic(ci->iconname);
+    }
+    /* must have loaded all data types to be valid */
+    if(!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0]){
+        ci->skin = NULL;
+        ci->icon = NULL;
+        ci->model = NULL;
+        ci->weaponmodel[0] = NULL;
+        return;
+    }
 }
 
 /*
  * Load the skin, icon, and model for a client
  */
-void
-CL_ParseClientinfo(int player)
-{
-	char *s;
-	clientinfo_t *ci;
-
-	s = cl.configstrings[player + CS_PLAYERSKINS];
-
-	ci = &cl.clientinfo[player];
-
+void CL_ParseClientinfo(int player){
+	const char* s = cl.configstrings[player + CS_PLAYERSKINS];
+	clientinfo_t* ci = &cl.clientinfo[player];
 	CL_LoadClientinfo(ci, s);
 }
 
-void
-CL_ParseConfigString(void)
-{
-	int i;
-	char *s;
-	char olds[MAX_QPATH];
-
-	i = MSG_ReadShort(&net_message);
-
-	if ((i < 0) || (i >= MAX_CONFIGSTRINGS))
-	{
-		Com_Error(ERR_DROP, "configstring > MAX_CONFIGSTRINGS");
-	}
-
-	s = MSG_ReadString(&net_message);
-
-	Q_strlcpy(olds, cl.configstrings[i], sizeof(olds));
-
-	strcpy(cl.configstrings[i], s);
-
-	/* do something apropriate */
-	if ((i >= CS_LIGHTS) && (i < CS_LIGHTS + MAX_LIGHTSTYLES))
-	{
-		CL_SetLightstyle(i - CS_LIGHTS);
-	}
-
-	else if (i == CS_CDTRACK)
-	{
-		if (cl.refresh_prepped)
-		{
+static void CL_ParseConfigString(int i, const char* s){
+    if((i < 0) || (i >= MAX_CONFIGSTRINGS)){
+        Com_Error(ERR_DROP, "configstring > MAX_CONFIGSTRINGS");
+    }
+    char olds[MAX_QPATH];
+    Q_strlcpy(olds, cl.configstrings[i], sizeof(olds));
+    strcpy(cl.configstrings[i], s);
+    /* do something apropriate */
+    if((i >= CS_LIGHTS) && (i < CS_LIGHTS + MAX_LIGHTSTYLES)){
+        CL_SetLightstyle(i - CS_LIGHTS);
+    }else if (i == CS_CDTRACK){
+        if (cl.refresh_prepped){
 #ifdef CDA
-			CDAudio_Play((int)strtol(cl.configstrings[CS_CDTRACK],
-							(char **)NULL, 10), true);
+            CDAudio_Play((int)strtol(cl.configstrings[CS_CDTRACK], (char **)NULL, 10), true);
 #endif
-
 #ifdef OGG
-
-			/* OGG/Vorbis */
-			if ((int)strtol(cl.configstrings[CS_CDTRACK], (char **)NULL, 10) < 10)
-			{
-				char tmp[3] = "0";
-				OGG_ParseCmd(strcat(tmp, cl.configstrings[CS_CDTRACK]));
-			}
-			else
-			{
-				OGG_ParseCmd(cl.configstrings[CS_CDTRACK]);
-			}
-
+            /* OGG/Vorbis */
+            if((int)strtol(cl.configstrings[CS_CDTRACK], (char **)NULL, 10) < 10){
+                char tmp[3] = "0";
+                OGG_ParseCmd(strcat(tmp, cl.configstrings[CS_CDTRACK]));
+            }else{
+                OGG_ParseCmd(cl.configstrings[CS_CDTRACK]);
+            }
 #endif
-		}
-	}
-	else if ((i >= CS_MODELS) && (i < CS_MODELS + MAX_MODELS))
-	{
-		if (cl.refresh_prepped)
-		{
-			cl.model_draw[i - CS_MODELS] = R_RegisterModel(cl.configstrings[i]);
-
-			if (cl.configstrings[i][0] == '*')
-			{
-				cl.model_clip[i - CS_MODELS] = CM_InlineModel(cl.configstrings[i]);
-			}
-
-			else
-			{
-				cl.model_clip[i - CS_MODELS] = NULL;
-			}
-		}
-	}
-	else if ((i >= CS_SOUNDS) && (i < CS_SOUNDS + MAX_MODELS))
-	{
-		if (cl.refresh_prepped)
-		{
-			cl.sound_precache[i - CS_SOUNDS] =
-				S_RegisterSound(cl.configstrings[i]);
-		}
-	}
-	else if ((i >= CS_IMAGES) && (i < CS_IMAGES + MAX_MODELS))
-	{
-		if (cl.refresh_prepped)
-		{
-			cl.image_precache[i - CS_IMAGES] = Draw_FindPic(cl.configstrings[i]);
-		}
-	}
-	else if ((i >= CS_PLAYERSKINS) && (i < CS_PLAYERSKINS + MAX_CLIENTS))
-	{
-		if (cl.refresh_prepped && strcmp(olds, s))
-		{
-			CL_ParseClientinfo(i - CS_PLAYERSKINS);
-		}
-	}
+        }
+    }else if((i >= CS_MODELS) && (i < CS_MODELS + MAX_MODELS)){
+        if(cl.refresh_prepped){
+            cl.model_draw[i - CS_MODELS] = R_RegisterModel(cl.configstrings[i]);
+            if(cl.configstrings[i][0] == '*'){
+                cl.model_clip[i - CS_MODELS] = CM_InlineModel(cl.configstrings[i]);
+            }else{
+                cl.model_clip[i - CS_MODELS] = NULL;
+            }
+        }
+    }else if((i >= CS_SOUNDS) && (i < CS_SOUNDS + MAX_MODELS)){
+        if(cl.refresh_prepped){
+            cl.sound_precache[i - CS_SOUNDS] = S_RegisterSound(cl.configstrings[i]);
+        }
+    }else if((i >= CS_IMAGES) && (i < CS_IMAGES + MAX_MODELS)){
+        if(cl.refresh_prepped){
+            cl.image_precache[i - CS_IMAGES] = Draw_FindPic(cl.configstrings[i]);
+        }
+    }else if((i >= CS_PLAYERSKINS) && (i < CS_PLAYERSKINS + MAX_CLIENTS)){
+        if(cl.refresh_prepped && strcmp(olds, s)){
+            CL_ParseClientinfo(i - CS_PLAYERSKINS);
+        }
+    }
 }
 
-void
-CL_ParseStartSoundPacket(void)
-{
-	vec3_t pos_v;
-	float *pos;
-	int channel, ent;
-	int sound_num;
-	float volume;
-	float attenuation;
-	int flags;
-	float ofs;
+struct serversoundPacket_t{
+};
 
-	flags = MSG_ReadByte(&net_message);
-	sound_num = MSG_ReadByte(&net_message);
+void CL_ParseStartSoundPacket(void){
 
-	if (flags & SND_VOLUME)
-	{
-		volume = MSG_ReadByte(&net_message) / 255.0f;
-	}
-
-	else
-	{
-		volume = DEFAULT_SOUND_PACKET_VOLUME;
-	}
-
-	if (flags & SND_ATTENUATION)
-	{
-		attenuation = MSG_ReadByte(&net_message) / 64.0f;
-	}
-
-	else
-	{
-		attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
-	}
-
-	if (flags & SND_OFFSET)
-	{
-		ofs = MSG_ReadByte(&net_message) / 1000.0f;
-	}
-
-	else
-	{
-		ofs = 0;
-	}
-
-	if (flags & SND_ENT)
-	{
-		/* entity reletive */
-		channel = MSG_ReadShort(&net_message);
-		ent = channel >> 3;
-
-		if (ent > MAX_EDICTS)
-		{
-			Com_Error(ERR_DROP, "CL_ParseStartSoundPacket: ent = %i", ent);
-		}
-
-		channel &= 7;
-	}
-	else
-	{
-		ent = 0;
-		channel = 0;
-	}
-
-	if (flags & SND_POS)
-	{
-		/* positioned in space */
-		MSG_ReadPos(&net_message, pos_v);
-
-		pos = pos_v;
-	}
-	else
-	{
-		/* use entity number */
-		pos = NULL;
-	}
-
-	if (!cl.sound_precache[sound_num])
-	{
-		return;
-	}
-
-	S_StartSound(pos, ent, channel, cl.sound_precache[sound_num],
-			volume, attenuation, ofs);
+    int flags = MSG_ReadByte(&net_message);
+    int sound_num = MSG_ReadByte(&net_message);
+    float volume;
+    if(flags & SND_VOLUME){
+        volume = MSG_ReadByte(&net_message) / 255.0f;
+    }else{
+        volume = DEFAULT_SOUND_PACKET_VOLUME;
+    }
+    float attenuation;
+    if(flags & SND_ATTENUATION){
+        attenuation = MSG_ReadByte(&net_message) / 64.0f;
+    }else{
+        attenuation = DEFAULT_SOUND_PACKET_ATTENUATION;
+    }
+    float ofs;
+    if(flags & SND_OFFSET){
+        ofs = MSG_ReadByte(&net_message) / 1000.0f;
+    }else{
+        ofs = 0;
+    }
+    int channel;
+    int ent;
+    if(flags & SND_ENT){
+        /* entity reletive */
+        channel = MSG_ReadShort(&net_message);
+        ent = channel >> 3;
+        if(ent > MAX_EDICTS){
+            Com_Error(ERR_DROP, "CL_ParseStartSoundPacket: ent = %i", ent);
+        }
+        channel &= 7;
+    }else{
+        ent = 0;
+        channel = 0;
+    }
+    float *pos;
+    vec3_t pos_v;
+    if(flags & SND_POS){
+        /* positioned in space */
+        MSG_ReadPos(&net_message, pos_v);
+        pos = pos_v;
+    }else{
+        /* use entity number */
+        pos = NULL;
+    }
+    if(!cl.sound_precache[sound_num]){
+        return;
+    }
+    S_StartSound(pos, ent, channel, cl.sound_precache[sound_num], volume, attenuation, ofs);
 }
 
 void
@@ -1298,10 +1170,13 @@ void CL_ParseServerMessage(sizebuf_t* message){
                 break;
             case svc_serverdata:
                 Cbuf_Execute();  /* make sure any stuffed commands are done */
-                CL_ParseServerData();
+                struct serverdataPacket_t packet = CL_ServerPacketForMessage(message);
+                CL_ParseServerData(&packet);
                 break;
             case svc_configstring:
-                CL_ParseConfigString();
+                i = MSG_ReadShort(message);
+                s = MSG_ReadString(message);
+                CL_ParseConfigString(i, s);
                 break;
             case svc_sound:
                 CL_ParseStartSoundPacket();

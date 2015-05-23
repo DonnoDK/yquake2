@@ -569,13 +569,8 @@ SCR_DrawCinematic(void)
 	return true;
 }
 
-void
-SCR_PlayCinematic(char *arg)
-{
-	int width, height;
-	byte *palette;
+void SCR_PlayCinematic(const char *arg){
 	char name[MAX_OSPATH], *dot;
-
 	/* make sure background music is not playing */
 #ifdef CDA
 	CDAudio_Stop();
@@ -583,62 +578,47 @@ SCR_PlayCinematic(char *arg)
 #ifdef OGG
 	OGG_Stop();
 #endif
-
 	cl.cinematicframe = 0;
 	dot = strstr(arg, ".");
-
 	/* static pcx image */
-	if (dot && !strcmp(dot, ".pcx"))
-	{
+	if(dot && !strcmp(dot, ".pcx")){
 		Com_sprintf(name, sizeof(name), "pics/%s", arg);
+        byte *palette;
 		SCR_LoadPCX(name, &cin.pic, &palette, &cin.width, &cin.height);
 		cl.cinematicframe = -1;
 		cl.cinematictime = 1;
 		SCR_EndLoadingPlaque();
 		cls.state = ca_active;
-
-		if (!cin.pic)
-		{
+		if(!cin.pic){
 			Com_Printf("%s not found.\n", name);
 			cl.cinematictime = 0;
-		}
-		else
-		{
+		}else{
 			memcpy(cl.cinematicpalette, palette, sizeof(cl.cinematicpalette));
 			Z_Free(palette);
 		}
-
 		return;
 	}
-
 	Com_sprintf(name, sizeof(name), "video/%s", arg);
 	FS_FOpenFile(name, &cl.cinematic_file, FS_READ);
-
-	if (!cl.cinematic_file)
-	{
+	if(!cl.cinematic_file){
 		SCR_FinishCinematic();
 		cl.cinematictime = 0; /* done */
 		return;
 	}
-
 	SCR_EndLoadingPlaque();
-
 	cls.state = ca_active;
-
+	int width, height;
 	FS_Read(&width, 4, cl.cinematic_file);
 	FS_Read(&height, 4, cl.cinematic_file);
 	cin.width = LittleLong(width);
 	cin.height = LittleLong(height);
-
 	FS_Read(&cin.s_rate, 4, cl.cinematic_file);
 	cin.s_rate = LittleLong(cin.s_rate);
 	FS_Read(&cin.s_width, 4, cl.cinematic_file);
 	cin.s_width = LittleLong(cin.s_width);
 	FS_Read(&cin.s_channels, 4, cl.cinematic_file);
 	cin.s_channels = LittleLong(cin.s_channels);
-
 	Huff1TableInit();
-
 	cl.cinematicframe = 0;
 	cin.pic = SCR_ReadNextFrame();
 	cl.cinematictime = Sys_Milliseconds();

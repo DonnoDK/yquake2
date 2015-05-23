@@ -44,48 +44,29 @@ qboolean ai_checkattack(edict_t *self);
  * In coop games, sight_client will cycle
  * between the clients.
  */
-void
-AI_SetSightClient(void)
-{
-	edict_t *ent;
-	int start, check;
-
-	if (level.sight_client == NULL)
-	{
-		start = 1;
-	}
-	else
-	{
-		start = level.sight_client - g_edicts;
-	}
-
-	check = start;
-
-	while (1)
-	{
-		check++;
-
-		if (check > game.maxclients)
-		{
-			check = 1;
-		}
-
-		ent = &g_edicts[check];
-
-		if (ent->inuse &&
-			(ent->health > 0) &&
-			!(ent->flags & FL_NOTARGET))
-		{
-			level.sight_client = ent;
-			return; /* got one */
-		}
-
-		if (check == start)
-		{
-			level.sight_client = NULL;
-			return; /* nobody to see */
-		}
-	}
+void AI_SetSightClient(void){
+    int start;
+    if(level.sight_client == NULL){
+        start = 1;
+    }else{
+        start = level.sight_client - g_edicts;
+    }
+    int check = start;
+    while(1){
+        check++;
+        if(check > game.maxclients){
+            check = 1;
+        }
+        edict_t* ent = &g_edicts[check];
+        if(ent->inuse && (ent->health > 0) && !(ent->flags & FL_NOTARGET)){
+            level.sight_client = ent;
+            return; /* got one */
+        }
+        if(check == start){
+            level.sight_client = NULL;
+            return; /* nobody to see */
+        }
+    }
 }
 
 /*

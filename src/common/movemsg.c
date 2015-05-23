@@ -895,12 +895,10 @@ MSG_ReadCoord(sizebuf_t *msg_read)
 	return MSG_ReadShort(msg_read) * (0.125f);
 }
 
-void
-MSG_ReadPos(sizebuf_t *msg_read, vec3_t pos)
-{
-	pos[0] = MSG_ReadShort(msg_read) * (0.125f);
-	pos[1] = MSG_ReadShort(msg_read) * (0.125f);
-	pos[2] = MSG_ReadShort(msg_read) * (0.125f);
+void MSG_ReadPos(sizebuf_t *msg_read, vec3_t pos){
+    pos[0] = MSG_ReadShort(msg_read) * (0.125f);
+    pos[1] = MSG_ReadShort(msg_read) * (0.125f);
+    pos[2] = MSG_ReadShort(msg_read) * (0.125f);
 }
 
 float

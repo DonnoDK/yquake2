@@ -387,7 +387,6 @@ void CL_ParseDelta (entity_state_t *from, entity_state_t *to, int number, int bi
 void CL_ParseFrame (void);
 
 void CL_ParseTEnt (void);
-void CL_ParseConfigString (void);
 void CL_AddMuzzleFlash (void);
 void CL_AddMuzzleFlash2 (void);
 void SmokeAndFlash(vec3_t origin);
@@ -458,7 +457,7 @@ void CL_Record_f (void);
 extern	char *svc_strings[256];
 
 void CL_ParseServerMessage(sizebuf_t* message);
-void CL_LoadClientinfo (clientinfo_t *ci, char *s);
+void CL_LoadClientinfo (clientinfo_t *ci, const char *s);
 void SHOWNET(char *s);
 void CL_ParseClientinfo (int player);
 void CL_Download_f (void);

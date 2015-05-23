@@ -539,9 +539,7 @@ NET_SendLoopPacket(netsrc_t sock, int length, void *data, netadr_t to)
 
 /* ============================================================================= */
 
-qboolean
-NET_GetPacket(netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
-{
+qboolean NET_GetPacket(netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message){
 	int ret;
 	struct sockaddr_storage from;
 	socklen_t fromlen;
