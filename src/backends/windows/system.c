@@ -181,7 +181,7 @@ Sys_Init(void)
 	}
 }
 
-char *
+const char *
 Sys_ConsoleInput(void)
 {
 	INPUT_RECORD recs[1024];

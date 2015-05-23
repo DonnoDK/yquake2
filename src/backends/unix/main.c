@@ -116,19 +116,16 @@ main(int argc, char **argv)
 	oldtime = Sys_Milliseconds();
 
 	/* The legendary Quake II mainloop */
-	while (1)
-	{
-		/* find time spent rendering last frame */
-		do
-		{
-			newtime = Sys_Milliseconds();
-			time = newtime - oldtime;
-		}
-		while (time < 1);
+    while(1){
+        /* find time spent rendering last frame */
+        do{
+            newtime = Sys_Milliseconds();
+            time = newtime - oldtime;
+        }while (time < 1);
 
-		Qcommon_Frame(time);
-		oldtime = newtime;
-	}
+        Qcommon_Frame(time);
+        oldtime = newtime;
+    }
 
 	return 0;
 }

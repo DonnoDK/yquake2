@@ -172,231 +172,168 @@ void SCR_EndLoadingPlaque(void);
  * Just throw a fatal error to
  * test error shutdown procedures
  */
-void
-Com_Error_f(void)
-{
-	Com_Error(ERR_FATAL, "%s", Cmd_Argv(1));
+void Com_Error_f(void){
+    Com_Error(ERR_FATAL, "%s", Cmd_Argv(1));
 }
 
 void Qcommon_Init(int argc, char **argv){
     if(setjmp(abortframe)){
         Sys_Error("Error during initialization");
     }
-
     Z_Init();
-
     /* prepare enough of the subsystems to handle
        cvar and command buffer management */
     COM_InitArgv(argc, argv);
-
     Swap_Init();
     Cbuf_Init();
-
     Cmd_Init();
     Cvar_Init();
-
 #ifndef DEDICATED_ONLY
-	Key_Init();
+    Key_Init();
 #endif
-
-	/* we need to add the early commands twice, because
-	   a basedir or cddir needs to be set before execing
-	   config files, but we want other parms to override
-	   the settings of the config files */
-	Cbuf_AddEarlyCommands(COM_Argc(), COM_Args(), false);
-	Cbuf_Execute();
-
-	FS_InitFilesystem();
-
-	Cbuf_AddText("exec default.cfg\n");
-	Cbuf_AddText("exec yq2.cfg\n");
-	Cbuf_AddText("exec config.cfg\n");
-
-	Cbuf_AddEarlyCommands(COM_Argc(), COM_Args(), true);
-	Cbuf_Execute();
-
-	/* init commands and vars */
-	Cmd_AddCommand("z_stats", Z_Stats_f);
-	Cmd_AddCommand("error", Com_Error_f);
-
-	host_speeds = Cvar_Get("host_speeds", "0", 0);
-	log_stats = Cvar_Get("log_stats", "0", 0);
-	developer = Cvar_Get("developer", "0", 0);
-	modder = Cvar_Get("modder", "0", 0);
-	timescale = Cvar_Get("timescale", "1", 0);
-	fixedtime = Cvar_Get("fixedtime", "0", 0);
-	logfile_active = Cvar_Get("logfile", "1", CVAR_ARCHIVE);
+    /* we need to add the early commands twice, because
+       a basedir or cddir needs to be set before execing
+       config files, but we want other parms to override
+       the settings of the config files */
+    Cbuf_AddEarlyCommands(COM_Argc(), COM_Args(), false);
+    Cbuf_Execute();
+    FS_InitFilesystem();
+    Cbuf_AddText("exec default.cfg\n");
+    Cbuf_AddText("exec yq2.cfg\n");
+    Cbuf_AddText("exec config.cfg\n");
+    Cbuf_AddEarlyCommands(COM_Argc(), COM_Args(), true);
+    Cbuf_Execute();
+    /* init commands and vars */
+    Cmd_AddCommand("z_stats", Z_Stats_f);
+    Cmd_AddCommand("error", Com_Error_f);
+    host_speeds = Cvar_Get("host_speeds", "0", 0);
+    log_stats = Cvar_Get("log_stats", "0", 0);
+    developer = Cvar_Get("developer", "0", 0);
+    modder = Cvar_Get("modder", "0", 0);
+    timescale = Cvar_Get("timescale", "1", 0);
+    fixedtime = Cvar_Get("fixedtime", "0", 0);
+    logfile_active = Cvar_Get("logfile", "1", CVAR_ARCHIVE);
 #ifndef DEDICATED_ONLY
-	showtrace = Cvar_Get("showtrace", "0", 0);
+    showtrace = Cvar_Get("showtrace", "0", 0);
 #endif
 
 #ifdef DEDICATED_ONLY
-	dedicated = Cvar_Get("dedicated", "1", CVAR_NOSET);
+    dedicated = Cvar_Get("dedicated", "1", CVAR_NOSET);
 #else
-	dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
+    dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
 #endif
-
-	char* s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
-	Cvar_Get("version", s, CVAR_SERVERINFO | CVAR_NOSET);
-
-	if (dedicated->value)
-	{
-		Cmd_AddCommand("quit", Com_Quit);
-	}
-
-	Sys_Init();
-	NET_Init();
-	Netchan_Init();
-	SV_Init();
+    char* s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
+    Cvar_Get("version", s, CVAR_SERVERINFO | CVAR_NOSET);
+    if(dedicated->value){
+        Cmd_AddCommand("quit", Com_Quit);
+    }
+    /* NOTE: only applicable on windows platform */
+    Sys_Init();
+    /* NOTE: only applicable on windows platform */
+    NET_Init();
+    Netchan_Init();
+    SV_Init();
 #ifndef DEDICATED_ONLY
-	CL_Init();
+    CL_Init();
 #endif
-
-	/* add + commands from command line */
-	if (!Cbuf_AddLateCommands(COM_Argc(), COM_Args()))
-	{
-		/* if the user didn't give any commands, run default action */
-		if (!dedicated->value)
-		{
-			Cbuf_AddText("d1\n");
-		}
-		else
-		{
-			Cbuf_AddText("dedicated_start\n");
-		}
-
-		Cbuf_Execute();
-	}
+    /* add + commands from command line */
+    if(!Cbuf_AddLateCommands(COM_Argc(), COM_Args())){
+        /* if the user didn't give any commands, run default action */
+        if(!dedicated->value){
+            Cbuf_AddText("d1\n");
+        }else{
+            Cbuf_AddText("dedicated_start\n");
+        }
+        Cbuf_Execute();
+    }
 #ifndef DEDICATED_ONLY
-	else
-	{
-		/* the user asked for something explicit
-		   so drop the loading plaque */
-		SCR_EndLoadingPlaque();
-	}
+    else{
+        /* the user asked for something explicit
+           so drop the loading plaque */
+        SCR_EndLoadingPlaque();
+    }
 #endif
-
-	Com_Printf("==== Yamagi Quake II Initialized ====\n\n");
-	Com_Printf("*************************************\n\n");
+    Com_Printf("==== Yamagi Quake II Initialized ====\n\n");
+    Com_Printf("*************************************\n\n");
 }
 
-void
-Qcommon_Frame(int msec)
-{
-	char *s;
-
+void Qcommon_Frame(int msec){
 #ifndef DEDICATED_ONLY
-	int time_before = 0;
-	int time_between = 0;
-	int time_after;
+    int time_before = 0;
+    int time_between = 0;
+    int time_after;
 #endif
-
-	if (setjmp(abortframe))
-	{
-		return; /* an ERR_DROP was thrown */
-	}
-
-	if (log_stats->modified)
-	{
-		log_stats->modified = false;
-
-		if (log_stats->value)
-		{
-			if (log_stats_file)
-			{
-				fclose(log_stats_file);
-				log_stats_file = 0;
-			}
-
-			log_stats_file = fopen("stats.log", "w");
-
-			if (log_stats_file)
-			{
-				fprintf(log_stats_file, "entities,dlights,parts,frame time\n");
-			}
-		}
-		else
-		{
-			if (log_stats_file)
-			{
-				fclose(log_stats_file);
-				log_stats_file = 0;
-			}
-		}
-	}
-
-	if (fixedtime->value)
-	{
-		msec = fixedtime->value;
-	}
-	else if (timescale->value)
-	{
-		msec *= timescale->value;
-
-		if (msec < 1)
-		{
-			msec = 1;
-		}
-	}
-
+    if(setjmp(abortframe)){
+        return; /* an ERR_DROP was thrown */
+    }
+    if(log_stats->modified){
+        log_stats->modified = false;
+        if(log_stats->value){
+            if(log_stats_file){
+                fclose(log_stats_file);
+                log_stats_file = 0;
+            }
+            log_stats_file = fopen("stats.log", "w");
+            if(log_stats_file){
+                fprintf(log_stats_file, "entities,dlights,parts,frame time\n");
+            }
+        }else{
+            if(log_stats_file){
+                fclose(log_stats_file);
+                log_stats_file = 0;
+            }
+        }
+    }
+    if(fixedtime->value){
+        msec = fixedtime->value;
+    }else if(timescale->value){
+        msec *= timescale->value;
+        if(msec < 1){
+            msec = 1;
+        }
+    }
 #ifndef DEDICATED_ONLY
-	if (showtrace->value)
-	{
-		extern int c_traces, c_brush_traces;
-		extern int c_pointcontents;
-
-		Com_Printf("%4i traces  %4i points\n", c_traces, c_pointcontents);
-		c_traces = 0;
-		c_brush_traces = 0;
-		c_pointcontents = 0;
-	}
+    if(showtrace->value){
+        extern int c_traces, c_brush_traces;
+        extern int c_pointcontents;
+        Com_Printf("%4i traces  %4i points\n", c_traces, c_pointcontents);
+        c_traces = 0;
+        c_brush_traces = 0;
+        c_pointcontents = 0;
+    }
 #endif
-
-	do
-	{
-		s = Sys_ConsoleInput();
-
-		if (s)
-		{
-			Cbuf_AddText(va("%s\n", s));
-		}
-	}
-	while (s);
-
-	Cbuf_Execute();
-
+    const char* s;
+    do{
+        s = Sys_ConsoleInput();
+        if(s){
+            Cbuf_AddText(va("%s\n", s));
+        }
+    }while(s);
+    Cbuf_Execute();
 #ifndef DEDICATED_ONLY
-	if (host_speeds->value)
-	{
-		time_before = Sys_Milliseconds();
-	}
+    if(host_speeds->value){
+        time_before = Sys_Milliseconds();
+    }
 #endif
-
-	SV_Frame(msec);
-
+    SV_Frame(msec);
 #ifndef DEDICATED_ONLY
-	if (host_speeds->value)
-	{
-		time_between = Sys_Milliseconds();
-	}
-
-	CL_Frame(msec);
-
-	if (host_speeds->value)
-	{
-		int all, sv, gm, cl, rf;
-
-		time_after = Sys_Milliseconds();
-		all = time_after - time_before;
-		sv = time_between - time_before;
-		cl = time_after - time_between;
-		gm = time_after_game - time_before_game;
-		rf = time_after_ref - time_before_ref;
-		sv -= gm;
-		cl -= rf;
-		Com_Printf("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
-				all, sv, gm, cl, rf);
-	}
+    if(host_speeds->value){
+        time_between = Sys_Milliseconds();
+    }
+    CL_Frame(msec);
+    if(host_speeds->value){
+        int all, sv, gm, cl, rf;
+        time_after = Sys_Milliseconds();
+        all = time_after - time_before;
+        sv = time_between - time_before;
+        cl = time_after - time_between;
+        gm = time_after_game - time_before_game;
+        rf = time_after_ref - time_before_ref;
+        sv -= gm;
+        cl -= rf;
+        Com_Printf("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
+                all, sv, gm, cl, rf);
+    }
 #endif
 }
 

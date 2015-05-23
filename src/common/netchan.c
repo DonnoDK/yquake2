@@ -89,17 +89,12 @@ netadr_t net_from;
 sizebuf_t net_message;
 byte net_message_buffer[MAX_MSGLEN];
 
-void
-Netchan_Init(void)
-{
-	int port;
-
-	/* pick a port value that should be nice and random */
-	port = Sys_Milliseconds() & 0xffff;
-
-	showpackets = Cvar_Get("showpackets", "0", 0);
-	showdrop = Cvar_Get("showdrop", "0", 0);
-	qport = Cvar_Get("qport", va("%i", port), CVAR_NOSET);
+void Netchan_Init(void){
+    /* pick a port value that should be nice and random */
+    int port = Sys_Milliseconds() & 0xffff;
+    showpackets = Cvar_Get("showpackets", "0", 0);
+    showdrop = Cvar_Get("showdrop", "0", 0);
+    qport = Cvar_Get("qport", va("%i", port), CVAR_NOSET);
 }
 
 /*
