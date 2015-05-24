@@ -446,81 +446,52 @@ IN_Update(void)
 /*
  * Move handling
  */
-void
-IN_Move(usercmd_t *cmd)
-{
-	if (m_filter->value)
-	{
-		if ((mouse_x > 1) || (mouse_x < -1))
-		{
-			mouse_x = (mouse_x + old_mouse_x) * 0.5;
-		}
-
-		if ((mouse_y > 1) || (mouse_y < -1))
-		{
-			mouse_y = (mouse_y + old_mouse_y) * 0.5;
-		}
-	}
-
-	old_mouse_x = mouse_x;
-	old_mouse_y = mouse_y;
-
-	if (mouse_x || mouse_y)
-	{
-		if (!exponential_speedup->value)
-		{
-			mouse_x *= sensitivity->value;
-			mouse_y *= sensitivity->value;
-		}
-		else
-		{
-			if ((mouse_x > MOUSE_MIN) || (mouse_y > MOUSE_MIN) ||
-				(mouse_x < -MOUSE_MIN) || (mouse_y < -MOUSE_MIN))
-			{
-				mouse_x = (mouse_x * mouse_x * mouse_x) / 4;
-				mouse_y = (mouse_y * mouse_y * mouse_y) / 4;
-
-				if (mouse_x > MOUSE_MAX)
-				{
-					mouse_x = MOUSE_MAX;
-				}
-				else if (mouse_x < -MOUSE_MAX)
-				{
-					mouse_x = -MOUSE_MAX;
-				}
-
-				if (mouse_y > MOUSE_MAX)
-				{
-					mouse_y = MOUSE_MAX;
-				}
-				else if (mouse_y < -MOUSE_MAX)
-				{
-					mouse_y = -MOUSE_MAX;
-				}
-			}
-		}
-
-		/* add mouse X/Y movement to cmd */
-		if ((in_strafe.state & 1) || (lookstrafe->value && mlooking))
-		{
-			cmd->sidemove += m_side->value * mouse_x;
-		}
-		else
-		{
-			cl.viewangles[YAW] -= m_yaw->value * mouse_x;
-		}
-
-		if ((mlooking || freelook->value) && !(in_strafe.state & 1))
-		{
-			cl.viewangles[PITCH] += m_pitch->value * mouse_y;
-		}
-		else
-		{
-			cmd->forwardmove -= m_forward->value * mouse_y;
-		}
-
-		mouse_x = mouse_y = 0;
-	}
+Vector3_t IN_Move(){
+    Vector3_t vector = {0, 0, 0};
+    if(m_filter->value){
+        if((mouse_x > 1) || (mouse_x < -1)){
+            mouse_x = (mouse_x + old_mouse_x) * 0.5;
+        }
+        if((mouse_y > 1) || (mouse_y < -1)){
+            mouse_y = (mouse_y + old_mouse_y) * 0.5;
+        }
+    }
+    old_mouse_x = mouse_x;
+    old_mouse_y = mouse_y;
+    if(mouse_x || mouse_y){
+        if(!exponential_speedup->value){
+            mouse_x *= sensitivity->value;
+            mouse_y *= sensitivity->value;
+        }else{
+            if((mouse_x > MOUSE_MIN) || (mouse_y > MOUSE_MIN) || (mouse_x < -MOUSE_MIN) || (mouse_y < -MOUSE_MIN)){
+                mouse_x = (mouse_x * mouse_x * mouse_x) / 4;
+                mouse_y = (mouse_y * mouse_y * mouse_y) / 4;
+                if(mouse_x > MOUSE_MAX){
+                    mouse_x = MOUSE_MAX;
+                }else if(mouse_x < -MOUSE_MAX){
+                    mouse_x = -MOUSE_MAX;
+                }
+                if(mouse_y > MOUSE_MAX){
+                    mouse_y = MOUSE_MAX;
+                }else if(mouse_y < -MOUSE_MAX){
+                    mouse_y = -MOUSE_MAX;
+                }
+            }
+        }
+        /* add mouse X/Y movement to cmd */
+        if((in_strafe.state & 1) || (lookstrafe->value && mlooking)){
+            vector.x = m_side->value * mouse_x;
+        }else{
+            cl.viewangles[YAW] -= m_yaw->value * mouse_x;
+        }
+        if((mlooking || freelook->value) && !(in_strafe.state & 1)){
+            cl.viewangles[PITCH] += m_pitch->value * mouse_y;
+        }else{
+            vector.z = -(m_forward->value * mouse_y);
+        }
+        mouse_x = mouse_y = 0;
+    }
+    return vector;
 }
  
 /* ------------------------------------------------------------------ */

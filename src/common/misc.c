@@ -258,11 +258,6 @@ void Qcommon_Init(int argc, char **argv){
 }
 
 void Qcommon_Frame(int msec){
-#ifndef DEDICATED_ONLY
-    int time_before = 0;
-    int time_between = 0;
-    int time_after;
-#endif
     if(setjmp(abortframe)){
         return; /* an ERR_DROP was thrown */
     }
@@ -309,19 +304,21 @@ void Qcommon_Frame(int msec){
     }
     Cbuf_Execute();
 #ifndef DEDICATED_ONLY
+    int time_before = 0;
     if(host_speeds->value){
         time_before = Sys_Milliseconds();
     }
 #endif
     SV_Frame(msec);
 #ifndef DEDICATED_ONLY
+    int time_between = 0;
     if(host_speeds->value){
         time_between = Sys_Milliseconds();
     }
     CL_Frame(msec);
     if(host_speeds->value){
         int all, sv, gm, cl, rf;
-        time_after = Sys_Milliseconds();
+        int time_after = Sys_Milliseconds();
         all = time_after - time_before;
         sv = time_between - time_before;
         cl = time_after - time_between;

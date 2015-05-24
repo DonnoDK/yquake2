@@ -37,7 +37,7 @@ void IN_Init(void);
 /*
  * Move handling
  */
-void IN_Move(usercmd_t *cmd);
+Vector3_t IN_Move();
 
 /*
  * Shuts the backend down

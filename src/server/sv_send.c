@@ -70,47 +70,35 @@ SV_ClientPrintf(client_t *cl, int level, char *fmt, ...)
  * Sends text to all active clients
  */
 void SV_BroadcastPrintf(int level, const char *fmt, ...){
-	va_list argptr;
-	char string[2048];
-	client_t *cl;
-	int i;
-
-	va_start(argptr, fmt);
-	vsprintf(string, fmt, argptr);
-	va_end(argptr);
-
-	/* echo to console */
-	if (dedicated->value)
-	{
-		char copy[1024];
-		int i;
-
-		/* mask off high bits */
-		for (i = 0; i < 1023 && string[i]; i++)
-		{
-			copy[i] = string[i] & 127;
-		}
-
-		copy[i] = 0;
-		Com_Printf("%s", copy);
-	}
-
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
-		if (level < cl->messagelevel)
-		{
-			continue;
-		}
-
-		if (cl->state != cs_spawned)
-		{
-			continue;
-		}
-
-		MSG_WriteByte(&cl->netchan.message, svc_print);
-		MSG_WriteByte(&cl->netchan.message, level);
-		MSG_WriteString(&cl->netchan.message, string);
-	}
+    va_list argptr;
+    char string[2048];
+    va_start(argptr, fmt);
+    vsprintf(string, fmt, argptr);
+    va_end(argptr);
+    /* echo to console */
+    if(dedicated->value){
+        char copy[1024];
+        int i;
+        /* mask off high bits */
+        for(i = 0; i < 1023 && string[i]; i++){
+            copy[i] = string[i] & 127;
+        }
+        copy[i] = 0;
+        Com_Printf("%s", copy);
+    }
+    client_t *cl;
+    int i;
+    for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
+        if(level < cl->messagelevel){
+            continue;
+        }
+        if(cl->state != cs_spawned){
+            continue;
+        }
+        MSG_WriteByte(&cl->netchan.message, svc_print);
+        MSG_WriteByte(&cl->netchan.message, level);
+        MSG_WriteString(&cl->netchan.message, string);
+    }
 }
 
 /*

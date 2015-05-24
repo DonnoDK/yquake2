@@ -865,7 +865,7 @@ static void CL_ParseServerData(const struct serverdataPacket_t* packet){
     if(ShouldUpdateGameDir(packet->gamedir, Cvar_Get("game", "", CVAR_LATCH | CVAR_SERVERINFO)->string)){
         Cvar_Set("game", packet->gamedir);
     }
-    free(packet->gamedir);
+    free((void*)packet->gamedir);
     /* parse player entity number */
     cl.playernum = packet->player_number;
     /* get the full level name */

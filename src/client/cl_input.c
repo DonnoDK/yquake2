@@ -400,156 +400,103 @@ CL_AdjustAngles(void)
 	cl.viewangles[PITCH] += speed * cl_pitchspeed->value * down;
 }
 
-/*
- * Send the intended movement message to the server
- */
-void
-CL_BaseMove(usercmd_t *cmd)
-{
-	CL_AdjustAngles();
+static Vector3_t CL_MovementVector(){
+    Vector3_t vector = {0, 0, 0};
+    if(in_strafe.state & 1){
+        vector.x += cl_sidespeed->value * CL_KeyState(&in_right);
+        vector.x -= cl_sidespeed->value * CL_KeyState(&in_left);
+    }
+    vector.x += cl_sidespeed->value * CL_KeyState(&in_moveright);
+    vector.x -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
 
-	memset(cmd, 0, sizeof(*cmd));
+    vector.y += cl_upspeed->value * CL_KeyState(&in_up);
+    vector.y -= cl_upspeed->value * CL_KeyState(&in_down);
 
-	VectorCopy(cl.viewangles, cmd->angles);
-
-	if (in_strafe.state & 1)
-	{
-		cmd->sidemove += cl_sidespeed->value * CL_KeyState(&in_right);
-		cmd->sidemove -= cl_sidespeed->value * CL_KeyState(&in_left);
-	}
-
-	cmd->sidemove += cl_sidespeed->value * CL_KeyState(&in_moveright);
-	cmd->sidemove -= cl_sidespeed->value * CL_KeyState(&in_moveleft);
-
-	cmd->upmove += cl_upspeed->value * CL_KeyState(&in_up);
-	cmd->upmove -= cl_upspeed->value * CL_KeyState(&in_down);
-
-	if (!(in_klook.state & 1))
-	{
-		cmd->forwardmove += cl_forwardspeed->value * CL_KeyState(&in_forward);
-		cmd->forwardmove -= cl_forwardspeed->value * CL_KeyState(&in_back);
-	}
-
-	/* adjust for speed key / running */
-	if ((in_speed.state & 1) ^ (int)(cl_run->value))
-	{
-		cmd->forwardmove *= 2;
-		cmd->sidemove *= 2;
-		cmd->upmove *= 2;
-	}
+    if(!(in_klook.state & 1)){
+        vector.z += cl_forwardspeed->value * CL_KeyState(&in_forward);
+        vector.z -= cl_forwardspeed->value * CL_KeyState(&in_back);
+    }
+    // adjust for speed key / running
+    if((in_speed.state & 1) ^ (int)(cl_run->value)){
+        vector.x *= 2;
+        vector.y *= 2;
+        vector.z *= 2;
+    }
+    return vector;
 }
 
-void
-CL_ClampPitch(void)
-{
-	float pitch;
-
-	pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
-
-	if (pitch > 180)
-	{
-		pitch -= 360;
-	}
-
-	if (cl.viewangles[PITCH] + pitch < -360)
-	{
-		cl.viewangles[PITCH] += 360; /* wrapped */
-	}
-
-	if (cl.viewangles[PITCH] + pitch > 360)
-	{
-		cl.viewangles[PITCH] -= 360; /* wrapped */
-	}
-
-	if (cl.viewangles[PITCH] + pitch > 89)
-	{
-		cl.viewangles[PITCH] = 89 - pitch;
-	}
-
-	if (cl.viewangles[PITCH] + pitch < -89)
-	{
-		cl.viewangles[PITCH] = -89 - pitch;
-	}
+void CL_ClampPitch(void){
+    float pitch = SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
+    if(pitch > 180){
+        pitch -= 360;
+    }
+    if(cl.viewangles[PITCH] + pitch < -360){
+        cl.viewangles[PITCH] += 360; /* wrapped */
+    }
+    if(cl.viewangles[PITCH] + pitch > 360){
+        cl.viewangles[PITCH] -= 360; /* wrapped */
+    }
+    if(cl.viewangles[PITCH] + pitch > 89){
+        cl.viewangles[PITCH] = 89 - pitch;
+    }
+    if(cl.viewangles[PITCH] + pitch < -89){
+        cl.viewangles[PITCH] = -89 - pitch;
+    }
 }
 
-void
-CL_FinishMove(usercmd_t *cmd)
-{
-	int ms;
-	int i;
-
-	/* figure button bits */
-	if (in_attack.state & 3)
-	{
-		cmd->buttons |= BUTTON_ATTACK;
-	}
-
-	in_attack.state &= ~2;
-
-	if (in_use.state & 3)
-	{
-		cmd->buttons |= BUTTON_USE;
-	}
-
-	in_use.state &= ~2;
-
-	if (anykeydown && (cls.key_dest == key_game))
-	{
-		cmd->buttons |= BUTTON_ANY;
-	}
-
-	/* send milliseconds of time to apply the move */
-	ms = cls.frametime * 1000;
-
-	if (ms > 250)
-	{
-		ms = 100; /* time was unreasonable */
-	}
-
-	cmd->msec = ms;
-
-	CL_ClampPitch();
-
-	for (i = 0; i < 3; i++)
-	{
-		cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
-	}
-
-	cmd->impulse = in_impulse;
-	in_impulse = 0;
-
-	/* send the ambient light level at the player's current position */
-	cmd->lightlevel = (byte)cl_lightlevel->value;
+void CL_FinishMove(usercmd_t *cmd){
+    /* figure button bits */
+    if(in_attack.state & 3){
+        cmd->buttons |= BUTTON_ATTACK;
+    }
+    in_attack.state &= ~2;
+    if(in_use.state & 3){
+        cmd->buttons |= BUTTON_USE;
+    }
+    in_use.state &= ~2;
+    if(anykeydown && (cls.key_dest == key_game)){
+        cmd->buttons |= BUTTON_ANY;
+    }
+    /* send milliseconds of time to apply the move */
+    int ms = cls.frametime * 1000;
+    if(ms > 250){
+        ms = 100; /* time was unreasonable */
+    }
+    cmd->msec = ms;
+    CL_ClampPitch();
+    for(int i = 0; i < 3; i++){
+        cmd->angles[i] = ANGLE2SHORT(cl.viewangles[i]);
+    }
+    cmd->impulse = in_impulse;
+    in_impulse = 0;
+    /* send the ambient light level at the player's current position */
+    cmd->lightlevel = (byte)cl_lightlevel->value;
 }
 
-usercmd_t
-CL_CreateCmd(void)
-{
-	usercmd_t cmd;
-
-	frame_msec = sys_frame_time - old_sys_frame_time;
-
-	if (frame_msec < 1)
-	{
-		frame_msec = 1;
-	}
-
-	if (frame_msec > 200)
-	{
-		frame_msec = 200;
-	}
-
-	/* get basic movement from keyboard */
-	CL_BaseMove(&cmd);
-
-	/* allow mice or other external controllers to add to the move */
-	IN_Move(&cmd);
-
-	CL_FinishMove(&cmd);
-
-	old_sys_frame_time = sys_frame_time;
-
-	return cmd;
+static usercmd_t CL_CreateCmd(void){
+    frame_msec = sys_frame_time - old_sys_frame_time;
+    if(frame_msec < 1){
+        frame_msec = 1;
+    }
+    if(frame_msec > 200){
+        frame_msec = 200;
+    }
+    /* get basic movement from keyboard */
+    usercmd_t cmd;
+    memset(&cmd, 0, sizeof(cmd));
+    CL_AdjustAngles();
+    VectorCopy(cl.viewangles, cmd.angles);
+    Vector3_t vec = CL_MovementVector();
+    cmd.forwardmove = vec.z;
+    cmd.sidemove = vec.x;
+    cmd.upmove = vec.y;
+    /* allow mice or other external controllers to add to the move */
+    vec = IN_Move();
+    cmd.forwardmove += vec.z;
+    cmd.sidemove += vec.x;
+    CL_FinishMove(&cmd);
+    old_sys_frame_time = sys_frame_time;
+    return cmd;
 }
 
 void
@@ -567,145 +514,105 @@ IN_ForceCenterView(void)
 	cl.viewangles[PITCH] = 0;
 }
 
-void
-CL_InitInput(void)
-{
-	Cmd_AddCommand("centerview", IN_CenterView);
-	Cmd_AddCommand("force_centerview", IN_ForceCenterView);
-
-	Cmd_AddCommand("+moveup", IN_UpDown);
-	Cmd_AddCommand("-moveup", IN_UpUp);
-	Cmd_AddCommand("+movedown", IN_DownDown);
-	Cmd_AddCommand("-movedown", IN_DownUp);
-	Cmd_AddCommand("+left", IN_LeftDown);
-	Cmd_AddCommand("-left", IN_LeftUp);
-	Cmd_AddCommand("+right", IN_RightDown);
-	Cmd_AddCommand("-right", IN_RightUp);
-	Cmd_AddCommand("+forward", IN_ForwardDown);
-	Cmd_AddCommand("-forward", IN_ForwardUp);
-	Cmd_AddCommand("+back", IN_BackDown);
-	Cmd_AddCommand("-back", IN_BackUp);
-	Cmd_AddCommand("+lookup", IN_LookupDown);
-	Cmd_AddCommand("-lookup", IN_LookupUp);
-	Cmd_AddCommand("+lookdown", IN_LookdownDown);
-	Cmd_AddCommand("-lookdown", IN_LookdownUp);
-	Cmd_AddCommand("+strafe", IN_StrafeDown);
-	Cmd_AddCommand("-strafe", IN_StrafeUp);
-	Cmd_AddCommand("+moveleft", IN_MoveleftDown);
-	Cmd_AddCommand("-moveleft", IN_MoveleftUp);
-	Cmd_AddCommand("+moveright", IN_MoverightDown);
-	Cmd_AddCommand("-moveright", IN_MoverightUp);
-	Cmd_AddCommand("+speed", IN_SpeedDown);
-	Cmd_AddCommand("-speed", IN_SpeedUp);
-	Cmd_AddCommand("+attack", IN_AttackDown);
-	Cmd_AddCommand("-attack", IN_AttackUp);
-	Cmd_AddCommand("+use", IN_UseDown);
-	Cmd_AddCommand("-use", IN_UseUp);
-	Cmd_AddCommand("impulse", IN_Impulse);
-	Cmd_AddCommand("+klook", IN_KLookDown);
-	Cmd_AddCommand("-klook", IN_KLookUp);
-
-	cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
+void CL_InitInput(void){
+    Cmd_AddCommand("centerview", IN_CenterView);
+    Cmd_AddCommand("force_centerview", IN_ForceCenterView);
+    Cmd_AddCommand("+moveup", IN_UpDown);
+    Cmd_AddCommand("-moveup", IN_UpUp);
+    Cmd_AddCommand("+movedown", IN_DownDown);
+    Cmd_AddCommand("-movedown", IN_DownUp);
+    Cmd_AddCommand("+left", IN_LeftDown);
+    Cmd_AddCommand("-left", IN_LeftUp);
+    Cmd_AddCommand("+right", IN_RightDown);
+    Cmd_AddCommand("-right", IN_RightUp);
+    Cmd_AddCommand("+forward", IN_ForwardDown);
+    Cmd_AddCommand("-forward", IN_ForwardUp);
+    Cmd_AddCommand("+back", IN_BackDown);
+    Cmd_AddCommand("-back", IN_BackUp);
+    Cmd_AddCommand("+lookup", IN_LookupDown);
+    Cmd_AddCommand("-lookup", IN_LookupUp);
+    Cmd_AddCommand("+lookdown", IN_LookdownDown);
+    Cmd_AddCommand("-lookdown", IN_LookdownUp);
+    Cmd_AddCommand("+strafe", IN_StrafeDown);
+    Cmd_AddCommand("-strafe", IN_StrafeUp);
+    Cmd_AddCommand("+moveleft", IN_MoveleftDown);
+    Cmd_AddCommand("-moveleft", IN_MoveleftUp);
+    Cmd_AddCommand("+moveright", IN_MoverightDown);
+    Cmd_AddCommand("-moveright", IN_MoverightUp);
+    Cmd_AddCommand("+speed", IN_SpeedDown);
+    Cmd_AddCommand("-speed", IN_SpeedUp);
+    Cmd_AddCommand("+attack", IN_AttackDown);
+    Cmd_AddCommand("-attack", IN_AttackUp);
+    Cmd_AddCommand("+use", IN_UseDown);
+    Cmd_AddCommand("-use", IN_UseUp);
+    Cmd_AddCommand("impulse", IN_Impulse);
+    Cmd_AddCommand("+klook", IN_KLookDown);
+    Cmd_AddCommand("-klook", IN_KLookUp);
+    cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
 }
 
-void
-CL_SendCmd(void)
-{
-	sizebuf_t buf;
-	byte data[128];
-	int i;
-	usercmd_t *cmd, *oldcmd;
-	usercmd_t nullcmd;
-	int checksumIndex;
-
-	/* build a command even if not connected */
-
-	/* save this command off for prediction */
-	i = cls.netchan.outgoing_sequence & (CMD_BACKUP - 1);
-	cmd = &cl.cmds[i];
-	cl.cmd_time[i] = cls.realtime; /* for netgraph ping calculation */
-
-	*cmd = CL_CreateCmd();
-
-	cl.cmd = *cmd;
-
-	if ((cls.state == ca_disconnected) || (cls.state == ca_connecting))
-	{
-		return;
-	}
-
-	if (cls.state == ca_connected)
-	{
-		if (cls.netchan.message.cursize ||
-			(curtime - cls.netchan.last_sent > 100))
-		{
+void CL_SendCmd(void){
+    /* build a command even if not connected */
+    /* save this command off for prediction */
+    int i = cls.netchan.outgoing_sequence & (CMD_BACKUP - 1);
+    usercmd_t* cmd = &cl.cmds[i];
+    cl.cmd_time[i] = cls.realtime; /* for netgraph ping calculation */
+    *cmd = CL_CreateCmd();
+    cl.cmd = *cmd;
+    if((cls.state == ca_disconnected) || (cls.state == ca_connecting)){
+        return;
+    }
+    if(cls.state == ca_connected){
+        if(cls.netchan.message.cursize || (curtime - cls.netchan.last_sent > 100)){
             byte zero_data = 0;
-			Netchan_Transmit(&cls.netchan, 0, &zero_data);
-		}
-
-		return;
-	}
-
-	/* send a userinfo update if needed */
-	if (userinfo_modified)
-	{
-		CL_FixUpGender();
-		userinfo_modified = false;
-		MSG_WriteByte(&cls.netchan.message, clc_userinfo);
-		MSG_WriteString(&cls.netchan.message, Cvar_Userinfo());
-	}
-
-	SZ_Init(&buf, data, sizeof(data));
-
-	if (cmd->buttons && (cl.cinematictime > 0) && !cl.attractloop &&
-		(cls.realtime - cl.cinematictime > 1000))
-	{
-		/* skip the rest of the cinematic */
-		SCR_FinishCinematic();
-	}
-
-	/* begin a client move command */
-	MSG_WriteByte(&buf, clc_move);
-
-	/* save the position for a checksum byte */
-	checksumIndex = buf.cursize;
-	MSG_WriteByte(&buf, 0);
-
-	/* let the server know what the last frame we
-	   got was, so the next message can be delta
-	   compressed */
-	if (cl_nodelta->value || !cl.frame.valid || cls.demowaiting)
-	{
-		MSG_WriteLong(&buf, -1); /* no compression */
-	}
-	else
-	{
-		MSG_WriteLong(&buf, cl.frame.serverframe);
-	}
-
-	/* send this and the previous cmds in the message, so
-	   if the last packet was dropped, it can be recovered */
-	i = (cls.netchan.outgoing_sequence - 2) & (CMD_BACKUP - 1);
-	cmd = &cl.cmds[i];
-	memset(&nullcmd, 0, sizeof(nullcmd));
-	MSG_WriteDeltaUsercmd(&buf, &nullcmd, cmd);
-	oldcmd = cmd;
-
-	i = (cls.netchan.outgoing_sequence - 1) & (CMD_BACKUP - 1);
-	cmd = &cl.cmds[i];
-	MSG_WriteDeltaUsercmd(&buf, oldcmd, cmd);
-	oldcmd = cmd;
-
-	i = (cls.netchan.outgoing_sequence) & (CMD_BACKUP - 1);
-	cmd = &cl.cmds[i];
-	MSG_WriteDeltaUsercmd(&buf, oldcmd, cmd);
-
-	/* calculate a checksum over the move commands */
-	buf.data[checksumIndex] = COM_BlockSequenceCRCByte(
-			buf.data + checksumIndex + 1, buf.cursize - checksumIndex - 1,
-			cls.netchan.outgoing_sequence);
-
-	/* deliver the message */
-	Netchan_Transmit(&cls.netchan, buf.cursize, buf.data);
+            Netchan_Transmit(&cls.netchan, 0, &zero_data);
+        }
+        return;
+    }
+    /* send a userinfo update if needed */
+    if(userinfo_modified){
+        CL_FixUpGender();
+        userinfo_modified = false;
+        MSG_WriteByte(&cls.netchan.message, clc_userinfo);
+        MSG_WriteString(&cls.netchan.message, Cvar_Userinfo());
+    }
+    sizebuf_t buf;
+    byte data[128];
+    SZ_Init(&buf, data, sizeof(data));
+    if(cmd->buttons && (cl.cinematictime > 0) && !cl.attractloop && (cls.realtime - cl.cinematictime > 1000)){
+        /* skip the rest of the cinematic */
+        SCR_FinishCinematic();
+    }
+    /* begin a client move command */
+    MSG_WriteByte(&buf, clc_move);
+    /* save the position for a checksum byte */
+    int checksumIndex = buf.cursize;
+    MSG_WriteByte(&buf, 0);
+    /* let the server know what the last frame we
+       got was, so the next message can be delta
+       compressed */
+    if(cl_nodelta->value || !cl.frame.valid || cls.demowaiting){
+        MSG_WriteLong(&buf, -1); /* no compression */
+    }else{
+        MSG_WriteLong(&buf, cl.frame.serverframe);
+    }
+    /* send this and the previous cmds in the message, so
+       if the last packet was dropped, it can be recovered */
+    i = (cls.netchan.outgoing_sequence - 2) & (CMD_BACKUP - 1);
+    cmd = &cl.cmds[i];
+    usercmd_t nullcmd;
+    memset(&nullcmd, 0, sizeof(nullcmd));
+    MSG_WriteDeltaUsercmd(&buf, &nullcmd, cmd);
+    usercmd_t* oldcmd = cmd;
+    i = (cls.netchan.outgoing_sequence - 1) & (CMD_BACKUP - 1);
+    cmd = &cl.cmds[i];
+    MSG_WriteDeltaUsercmd(&buf, oldcmd, cmd);
+    oldcmd = cmd;
+    i = (cls.netchan.outgoing_sequence) & (CMD_BACKUP - 1);
+    cmd = &cl.cmds[i];
+    MSG_WriteDeltaUsercmd(&buf, oldcmd, cmd);
+    /* calculate a checksum over the move commands */
+    buf.data[checksumIndex] = COM_BlockSequenceCRCByte( buf.data + checksumIndex + 1, buf.cursize - checksumIndex - 1, cls.netchan.outgoing_sequence);
+    /* deliver the message */
+    Netchan_Transmit(&cls.netchan, buf.cursize, buf.data);
 }
-

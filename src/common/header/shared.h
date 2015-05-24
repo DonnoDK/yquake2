@@ -147,6 +147,13 @@ extern vec3_t vec3_origin;
 #define VectorNegate(a, b) (b[0] = -a[0], b[1] = -a[1], b[2] = -a[2])
 #define VectorSet(v, x, y, z) (v[0] = (x), v[1] = (y), v[2] = (z))
 
+typedef struct Vector3_s{
+    float x;
+    float y;
+    float z;
+}Vector3_t;
+
+
 void VectorMA(vec3_t veca, float scale, vec3_t vecb, vec3_t vecc);
 
 /* just in case you do't want to use the macros */
