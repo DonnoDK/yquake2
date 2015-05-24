@@ -820,21 +820,29 @@ CL_ParseFrame(void)
 struct serverdataPacket_t{
     int server_protocol;
     int server_count;
-    int attractloop;
+    qboolean attractloop;
     const char* gamedir;
     int player_number;
     const char* levelname;
 };
 
 struct serverdataPacket_t CL_ServerPacketForMessage(sizebuf_t* message){
-    struct serverdataPacket_t p = {
-        .server_protocol = MSG_ReadLong(message),
-        .server_count = MSG_ReadLong(message),
-        .attractloop = MSG_ReadByte(message),
-        .gamedir = MSG_ReadString(message),
-        .player_number = MSG_ReadShort(message),
-        .levelname = MSG_ReadString(message)};
+    int prot = MSG_ReadLong(message);
+    int count = MSG_ReadLong(message);
+    qboolean attlop = MSG_ReadByte(message);
+    const char* gamedir = strdup(MSG_ReadString(message));
+    int pnum = MSG_ReadShort(message);
+    const char* lname = MSG_ReadString(message);
+    struct serverdataPacket_t p = {prot, count, attlop, gamedir, pnum, lname};
     return p;
+}
+
+static qboolean ShouldUpdateGameDir(const char* gamedir, const char* current_gamedir){
+    if((*gamedir && (!current_gamedir || !*current_gamedir || strcmp(current_gamedir, gamedir))) ||
+            (!*gamedir && (current_gamedir || *current_gamedir))) {
+        return true;
+    }
+    return false;
 }
 
 static void CL_ParseServerData(const struct serverdataPacket_t* packet){
@@ -852,25 +860,23 @@ static void CL_ParseServerData(const struct serverdataPacket_t* packet){
     cl.servercount = packet->server_count;
     cl.attractloop = packet->attractloop;
     /* game directory */
-    const char* str = packet->gamedir;
-    Q_strlcpy(cl.gamedir, str, sizeof(cl.gamedir));
+    Q_strlcpy(cl.gamedir, packet->gamedir, sizeof(cl.gamedir));
     /* set gamedir */
-    extern cvar_t *fs_gamedirvar;
-    if((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string || strcmp(fs_gamedirvar->string, str))) || (!*str && (fs_gamedirvar->string || *fs_gamedirvar->string))) {
-        Cvar_Set("game", str);
+    if(ShouldUpdateGameDir(packet->gamedir, Cvar_Get("game", "", CVAR_LATCH | CVAR_SERVERINFO)->string)){
+        Cvar_Set("game", packet->gamedir);
     }
+    free(packet->gamedir);
     /* parse player entity number */
     cl.playernum = packet->player_number;
     /* get the full level name */
-    str = packet->levelname;
     if(cl.playernum == -1){
         /* playing a cinematic or showing a pic, not a level */
-        SCR_PlayCinematic(str);
+        SCR_PlayCinematic(packet->levelname);
     }else{
         /* seperate the printfs so the server
          * message can have a color */
         Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
-        Com_Printf("%c%s\n", 2, str);
+        Com_Printf("%c%s\n", 2, packet->levelname);
 
         /* need to prep refresh at next oportunity */
         cl.refresh_prepped = false;
