@@ -495,7 +495,7 @@ void M_Menu_Main_f (void);
 void M_ForceMenuOff (void);
 void M_AddToServerList (netadr_t adr, const char *info);
 
-void CL_ParseInventory (void);
+void CL_ParseInventory(sizebuf_t* message);
 void CL_KeyInventory (int key);
 void CL_DrawInventory (void);
 

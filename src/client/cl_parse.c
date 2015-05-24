@@ -1204,7 +1204,7 @@ void CL_ParseServerMessage(sizebuf_t* message){
                 CL_ParseFrame();
                 break;
             case svc_inventory:
-                CL_ParseInventory();
+                CL_ParseInventory(message);
                 break;
             case svc_layout:
                 s = MSG_ReadString(message);
