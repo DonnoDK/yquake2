@@ -303,19 +303,13 @@ IN_TranslateSDLtoQ2Key(unsigned int keysym)
  * frame by the client and does nearly all the
  * input magic.
  */
-void
-IN_Update(void)
-{
+void IN_Update(void){
 	qboolean want_grab;
 	SDL_Event event;
  	unsigned int key;
-
 	/* Get and process an event */
-	while (SDL_PollEvent(&event))
-	{
-
-		switch (event.type)
-		{
+	while(SDL_PollEvent(&event)){
+		switch(event.type){
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 			case SDL_MOUSEWHEEL:
 				Key_Event((event.wheel.y > 0 ? K_MWHEELUP : K_MWHEELDOWN), true, true);
@@ -324,22 +318,18 @@ IN_Update(void)
 #endif
 			case SDL_MOUSEBUTTONDOWN:
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-				if (event.button.button == 4)
-				{
+				if(event.button.button == 4){
 					Key_Event(K_MWHEELUP, true, true);
 					Key_Event(K_MWHEELUP, false, true);
 					break;
-				}
-				else if (event.button.button == 5)
-				{
+				}else if(event.button.button == 5){
 					Key_Event(K_MWHEELDOWN, true, true);
 					Key_Event(K_MWHEELDOWN, false, true);
 					break;
 				}
 #endif
 			case SDL_MOUSEBUTTONUP:
-				switch( event.button.button )
-				{
+				switch( event.button.button ){
 					case SDL_BUTTON_LEFT:
 						key = K_MOUSE1;
 						break;
@@ -358,22 +348,17 @@ IN_Update(void)
 					default:
 						return;
 				}
-
 				Key_Event(key, (event.type == SDL_MOUSEBUTTONDOWN), true);
 				break;
-
 			case SDL_MOUSEMOTION:
                 if (cls.key_dest == key_game && (int)cl_paused->value == 0) {
                     mouse_x += event.motion.xrel;
                     mouse_y += event.motion.yrel;
                 }
 				break;
-
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 			case SDL_TEXTINPUT:
-				if ((event.text.text[0] >= SDLK_SPACE) &&
-					 (event.text.text[0] < SDLK_DELETE))
-				{
+				if ((event.text.text[0] >= SDLK_SPACE) && (event.text.text[0] < SDLK_DELETE)) {
 					Char_Event(event.text.text[0]);
 				}
 
@@ -382,57 +367,40 @@ IN_Update(void)
 
 			case SDL_KEYDOWN:
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-				if ((event.key.keysym.unicode >= SDLK_SPACE) &&
-					 (event.key.keysym.unicode < SDLK_DELETE))
-				{
+				if ((event.key.keysym.unicode >= SDLK_SPACE) && (event.key.keysym.unicode < SDLK_DELETE)) {
 					Char_Event(event.key.keysym.unicode);
 				}
 #endif
-
-				if ((event.key.keysym.sym >= SDLK_SPACE) &&
-					 (event.key.keysym.sym < SDLK_DELETE))
-				{
+				if ((event.key.keysym.sym >= SDLK_SPACE) && (event.key.keysym.sym < SDLK_DELETE)) {
 					Key_Event(event.key.keysym.sym, true, false);
-				}
-				else
-				{
+				} else {
 					Key_Event(IN_TranslateSDLtoQ2Key(event.key.keysym.sym), true, true);
 				}
 
 				break;
 
 			case SDL_KEYUP:
-
-				if ((event.key.keysym.sym >= SDLK_SPACE) &&
-					 (event.key.keysym.sym < SDLK_DELETE))
-				{
+				if ((event.key.keysym.sym >= SDLK_SPACE) && (event.key.keysym.sym < SDLK_DELETE)) {
 					Key_Event(event.key.keysym.sym, false, false);
-				}
-				else
-				{
+				} else {
 					Key_Event(IN_TranslateSDLtoQ2Key(event.key.keysym.sym), false, true);
 				}
 
 				break;
-
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 			case SDL_WINDOWEVENT:
-				if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
-				{
+				if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
 					Key_MarkAllUp();
 				}
-
 #else // SDL1.2
 			case SDL_ACTIVEEVENT:
-				if(event.active.gain == 0 && (event.active.state & SDL_APPINPUTFOCUS))
-				{
+				if(event.active.gain == 0 && (event.active.state & SDL_APPINPUTFOCUS)) {
 					Key_MarkAllUp();
 				}
 #endif
 				break;
 		}
 	}
-
 	/* Grab and ungrab the mouse if the* console or the menu is opened */
 	want_grab = (vid_fullscreen->value || in_grab->value == 1 ||
 			(in_grab->value == 2 && windowed_mouse->value));

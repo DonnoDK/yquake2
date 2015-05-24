@@ -2483,40 +2483,26 @@ static netadr_t local_server_netadr[MAX_LOCAL_SERVERS];
 static char local_server_names[MAX_LOCAL_SERVERS][80];
 static char local_server_netadr_strings[MAX_LOCAL_SERVERS][80];
 
-void
-M_AddToServerList(netadr_t adr, char *info)
-{
-	char *s;
-	int i;
-
-	if (m_num_servers == MAX_LOCAL_SERVERS)
-	{
-		return;
-	}
-
-	while (*info == ' ')
-	{
-		info++;
-	}
-
-	s = NET_AdrToString(adr);
-
-	/* ignore if duplicated */
-	for (i = 0; i < m_num_servers; i++)
-	{
-		if (!strcmp(local_server_names[i], info) &&
-			!strcmp(local_server_netadr_strings[i], s))
-		{
-			return;
-		}
-	}
-
-	local_server_netadr[m_num_servers] = adr;
-	Q_strlcpy(local_server_names[m_num_servers], info,
-			sizeof(local_server_names[m_num_servers]));
-	Q_strlcpy(local_server_netadr_strings[m_num_servers], s,
-			sizeof(local_server_netadr_strings[m_num_servers]));
-	m_num_servers++;
+void M_AddToServerList(netadr_t adr, const char *info){
+    char *s;
+    int i;
+    if(m_num_servers == MAX_LOCAL_SERVERS){
+        return;
+    }
+    while(*info == ' '){
+        info++;
+    }
+    s = NET_AdrToString(adr);
+    /* ignore if duplicated */
+    for(i = 0; i < m_num_servers; i++){
+        if (!strcmp(local_server_names[i], info) && !strcmp(local_server_netadr_strings[i], s)){
+            return;
+        }
+    }
+    local_server_netadr[m_num_servers] = adr;
+    Q_strlcpy(local_server_names[m_num_servers], info, sizeof(local_server_names[m_num_servers]));
+    Q_strlcpy(local_server_netadr_strings[m_num_servers], s, sizeof(local_server_netadr_strings[m_num_servers]));
+    m_num_servers++;
 }
 
 static void

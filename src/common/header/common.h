@@ -747,9 +747,6 @@ extern cvar_t *developer;
 extern cvar_t *modder;
 extern cvar_t *dedicated;
 extern cvar_t *host_speeds;
-extern cvar_t *log_stats;
-
-extern FILE *log_stats_file;
 
 /* host_speeds times */
 extern int time_before_game;
@@ -765,7 +762,6 @@ void Z_FreeTags(int tag);
 
 void Qcommon_Init(int argc, char **argv);
 void Qcommon_Frame(int msec);
-void Qcommon_Shutdown(void);
 
 #define NUMVERTEXNORMALS 162
 extern vec3_t bytedirs[NUMVERTEXNORMALS];

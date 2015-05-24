@@ -589,12 +589,6 @@ V_RenderView(float stereo_separation)
 				r_numdlights, r_numparticles);
 	}
 
-	if (log_stats->value && (log_stats_file != 0))
-	{
-		fprintf(log_stats_file, "%i,%i,%i,", r_numentities,
-				r_numdlights, r_numparticles);
-	}
-
 	SCR_AddDirtyPoint(scr_vrect.x, scr_vrect.y);
 	SCR_AddDirtyPoint(scr_vrect.x + scr_vrect.width - 1,
 			scr_vrect.y + scr_vrect.height - 1);

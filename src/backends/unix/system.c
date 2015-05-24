@@ -60,233 +60,122 @@ static char findpattern[MAX_OSPATH];
 static DIR *fdir;
 qboolean stdin_active = true;
 
-extern FILE	*logfile;
-
-static qboolean
-CompareAttributes(char *path, char *name, unsigned musthave, unsigned canthave)
-{
-	struct stat st;
-	char fn[MAX_OSPATH];
-
-	/* . and .. never match */
-	if ((strcmp(name, ".") == 0) || (strcmp(name, "..") == 0))
-	{
-		return false;
-	}
-
-	return true;
-
-	if (stat(fn, &st) == -1)
-	{
-		return false; /* shouldn't happen */
-	}
-
-	if ((st.st_mode & S_IFDIR) && (canthave & SFF_SUBDIR))
-	{
-		return false;
-	}
-
-	if ((musthave & SFF_SUBDIR) && !(st.st_mode & S_IFDIR))
-	{
-		return false;
-	}
-
-	return true;
+static qboolean CompareAttributes(char *path, char *name, unsigned musthave, unsigned canthave) {
+    /* . and .. never match */
+    if((strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)){
+        return false;
+    }
+    return true;
 }
 
 int Sys_Milliseconds(void){
-	struct timeval tp;
-	struct timezone tzp;
-	static int secbase;
-	gettimeofday(&tp, &tzp);
-	if(!secbase){
-		secbase = tp.tv_sec;
-		return tp.tv_usec / 1000;
-	}
-	curtime = (tp.tv_sec - secbase) * 1000 + tp.tv_usec / 1000;
-	return curtime;
+    struct timeval tp;
+    struct timezone tzp;
+    static int secbase;
+    gettimeofday(&tp, &tzp);
+    if(!secbase){
+        secbase = tp.tv_sec;
+        return tp.tv_usec / 1000;
+    }
+    curtime = (tp.tv_sec - secbase) * 1000 + tp.tv_usec / 1000;
+    return curtime;
 }
 
 int Sys_CurrentTime(void){
     return curtime;
 }
 
-void
-Sys_Mkdir(char *path)
-{
-	mkdir(path, 0755);
+void Sys_Mkdir(char *path){
+    mkdir(path, 0755);
 }
 
-char *
-Sys_GetCurrentDirectory(void)
-{
-	static char dir[MAX_OSPATH];
-
-	if (!getcwd(dir, sizeof(dir)))
-	{
-		Sys_Error("Couldn't get current working directory");
-	}
-
-	return dir;
+char* Sys_GetCurrentDirectory(void){
+    static char dir[MAX_OSPATH];
+    if(!getcwd(dir, sizeof(dir))){
+        Sys_Error("Couldn't get current working directory");
+    }
+    return dir;
 }
 
-char *
-Sys_FindFirst(char *path, unsigned musthave, unsigned canhave)
-{
-	struct dirent *d;
-	char *p;
-
-	if (fdir)
-	{
-		Sys_Error("Sys_BeginFind without close");
-	}
-
-	strcpy(findbase, path);
-
-	if ((p = strrchr(findbase, '/')) != NULL)
-	{
-		*p = 0;
-		strcpy(findpattern, p + 1);
-	}
-	else
-	{
-		strcpy(findpattern, "*");
-	}
-
-	if (strcmp(findpattern, "*.*") == 0)
-	{
-		strcpy(findpattern, "*");
-	}
-
-	if ((fdir = opendir(findbase)) == NULL)
-	{
-		return NULL;
-	}
-
-	while ((d = readdir(fdir)) != NULL)
-	{
-		if (!*findpattern || glob_match(findpattern, d->d_name))
-		{
-			if (CompareAttributes(findbase, d->d_name, musthave, canhave))
-			{
-				sprintf(findpath, "%s/%s", findbase, d->d_name);
-				return findpath;
-			}
-		}
-	}
-
-	return NULL;
+char* Sys_FindFirst(char *path, unsigned musthave, unsigned canhave){
+    if(fdir){
+        Sys_Error("Sys_BeginFind without close");
+    }
+    strcpy(findbase, path);
+    char *p;
+    if((p = strrchr(findbase, '/')) != NULL){
+        *p = 0;
+        strcpy(findpattern, p + 1);
+    }else{
+        strcpy(findpattern, "*");
+    }
+    if(strcmp(findpattern, "*.*") == 0){
+        strcpy(findpattern, "*");
+    }
+    if((fdir = opendir(findbase)) == NULL){
+        return NULL;
+    }
+    struct dirent *d;
+    while((d = readdir(fdir)) != NULL){
+        if(!*findpattern || glob_match(findpattern, d->d_name)){
+            if(CompareAttributes(findbase, d->d_name, musthave, canhave)){
+                sprintf(findpath, "%s/%s", findbase, d->d_name);
+                return findpath;
+            }
+        }
+    }
+    return NULL;
 }
 
-char *
-Sys_FindNext(unsigned musthave, unsigned canhave)
-{
-	struct dirent *d;
-
-	if (fdir == NULL)
-	{
-		return NULL;
-	}
-
-	while ((d = readdir(fdir)) != NULL)
-	{
-		if (!*findpattern || glob_match(findpattern, d->d_name))
-		{
-			if (CompareAttributes(findbase, d->d_name, musthave, canhave))
-			{
-				sprintf(findpath, "%s/%s", findbase, d->d_name);
-				return findpath;
-			}
-		}
-	}
-
-	return NULL;
+char * Sys_FindNext(unsigned musthave, unsigned canhave){
+    struct dirent *d;
+    if(fdir == NULL){
+        return NULL;
+    }
+    while((d = readdir(fdir)) != NULL){
+        if(!*findpattern || glob_match(findpattern, d->d_name)){
+            if(CompareAttributes(findbase, d->d_name, musthave, canhave)){
+                sprintf(findpath, "%s/%s", findbase, d->d_name);
+                return findpath;
+            }
+        }
+    }
+    return NULL;
 }
 
-void
-Sys_FindClose(void)
-{
-	if (fdir != NULL)
-	{
-		closedir(fdir);
-	}
-
-	fdir = NULL;
+void Sys_FindClose(void){
+    if(fdir != NULL){
+        closedir(fdir);
+    }
+    fdir = NULL;
 }
 
-void
-Sys_ConsoleOutput(char *string)
-{
-	fputs(string, stdout);
+void Sys_ConsoleOutput(char *string){
+    fputs(string, stdout);
 }
 
-void
-Sys_Printf(char *fmt, ...)
-{
-	va_list argptr;
-	char text[1024];
-	unsigned char *p;
-
-	va_start(argptr, fmt);
-	vsnprintf(text, 1024, fmt, argptr);
-	va_end(argptr);
-
-	for (p = (unsigned char *)text; *p; p++)
-	{
-		*p &= 0x7f;
-
-		if (((*p > 128) || (*p < 32)) && (*p != 10) && (*p != 13) && (*p != 9))
-		{
-			printf("[%02x]", *p);
-		}
-		else
-		{
-			putc(*p, stdout);
-		}
-	}
-}
-
-void
-Sys_Quit(void)
-{
+void Sys_Quit(void){
 #ifndef DEDICATED_ONLY
-	CL_Shutdown();
+    CL_Shutdown();
 #endif
-
-	if (logfile)
-	{
-		fclose(logfile);
-		logfile = NULL;
-	}
-
-	Qcommon_Shutdown();
-	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) & ~FNDELAY);
-
-	printf("------------------------------------\n");
-
-	exit(0);
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) & ~FNDELAY);
+    printf("------------------------------------\n");
+    exit(0);
 }
 
-void
-Sys_Error(char *error, ...)
-{
-	va_list argptr;
-	char string[1024];
-
-	/* change stdin to non blocking */
-	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) & ~FNDELAY);
-
+void Sys_Error(char *error, ...){
+    va_list argptr;
+    char string[1024];
+    /* change stdin to non blocking */
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) & ~FNDELAY);
 #ifndef DEDICATED_ONLY
-	CL_Shutdown();
+    CL_Shutdown();
 #endif
-	Qcommon_Shutdown();
-
-	va_start(argptr, error);
-	vsnprintf(string, 1024, error, argptr);
-	va_end(argptr);
-	fprintf(stderr, "Error: %s\n", string);
-
-	exit(1);
+    va_start(argptr, error);
+    vsnprintf(string, 1024, error, argptr);
+    va_end(argptr);
+    fprintf(stderr, "Error: %s\n", string);
+    exit(1);
 }
 
 /*
@@ -432,13 +321,10 @@ Sys_GetGameAPI(void *parms)
 	return GetGameAPI(parms);
 }
 
-void
-Sys_SendKeyEvents(void)
-{
+void Sys_SendKeyEvents(void){
 #ifndef DEDICATED_ONLY
 	IN_Update();
 #endif
-
 	/* grab frame time */
 	sys_frame_time = Sys_Milliseconds();
 }

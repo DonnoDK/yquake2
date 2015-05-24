@@ -28,9 +28,7 @@
 #include "header/zone.h"
 #include <setjmp.h>
 
-FILE *log_stats_file;
 cvar_t *host_speeds;
-cvar_t *log_stats;
 cvar_t *developer;
 cvar_t *modder;
 cvar_t *timescale;
@@ -41,7 +39,6 @@ cvar_t *showtrace;
 cvar_t *dedicated;
 
 extern jmp_buf abortframe; /* an ERR_DROP occured, exit the entire frame */
-extern zhead_t z_chain;
 
 static byte chktbl[1024] = {
 	0x84, 0x47, 0x51, 0xc1, 0x93, 0x22, 0x21, 0x24, 0x2f, 0x66, 0x60, 0x4d, 0xb0, 0x7c, 0xda,
@@ -206,7 +203,6 @@ void Qcommon_Init(int argc, char **argv){
     Cmd_AddCommand("z_stats", Z_Stats_f);
     Cmd_AddCommand("error", Com_Error_f);
     host_speeds = Cvar_Get("host_speeds", "0", 0);
-    log_stats = Cvar_Get("log_stats", "0", 0);
     developer = Cvar_Get("developer", "0", 0);
     modder = Cvar_Get("modder", "0", 0);
     timescale = Cvar_Get("timescale", "1", 0);
@@ -254,24 +250,6 @@ void Qcommon_Init(int argc, char **argv){
 void Qcommon_Frame(int msec){
     if(setjmp(abortframe)){
         return; /* an ERR_DROP was thrown */
-    }
-    if(log_stats->modified){
-        log_stats->modified = false;
-        if(log_stats->value){
-            if(log_stats_file){
-                fclose(log_stats_file);
-                log_stats_file = 0;
-            }
-            log_stats_file = fopen("stats.log", "w");
-            if(log_stats_file){
-                fprintf(log_stats_file, "entities,dlights,parts,frame time\n");
-            }
-        }else{
-            if(log_stats_file){
-                fclose(log_stats_file);
-                log_stats_file = 0;
-            }
-        }
     }
     if(fixedtime->value){
         msec = fixedtime->value;
@@ -326,9 +304,3 @@ void Qcommon_Frame(int msec){
     }
 #endif
 }
-
-void
-Qcommon_Shutdown(void)
-{
-}
-
