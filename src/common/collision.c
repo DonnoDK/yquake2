@@ -1010,102 +1010,66 @@ CM_RecursiveHullCheck(int num, float p1f, float p2f, vec3_t p1, vec3_t p2)
 	CM_RecursiveHullCheck(node->children[side ^ 1], midf, p2f, mid, p2);
 }
 
-trace_t
-CM_BoxTrace(vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs,
-		int headnode, int brushmask)
-{
-	int i;
-
-	checkcount++; /* for multi-check avoidance */
-
+trace_t CM_BoxTrace(vec3_t start, vec3_t end, vec3_t mins, vec3_t maxs, int headnode, int brushmask){
+    checkcount++; /* for multi-check avoidance */
 #ifndef DEDICATED_ONLY
-	c_traces++; /* for statistics, may be zeroed */
+    c_traces++; /* for statistics, may be zeroed */
 #endif
-
-	/* fill in a default trace */
-	memset(&trace_trace, 0, sizeof(trace_trace));
-	trace_trace.fraction = 1;
-	trace_trace.surface = &(nullsurface.c);
-
-	if (!numnodes)  /* map not loaded */
-	{
-		return trace_trace;
-	}
-
-	trace_contents = brushmask;
-	VectorCopy(start, trace_start);
-	VectorCopy(end, trace_end);
-	VectorCopy(mins, trace_mins);
-	VectorCopy(maxs, trace_maxs);
-
-	/* check for position test special case */
-	if ((start[0] == end[0]) && (start[1] == end[1]) && (start[2] == end[2]))
-	{
-		int leafs[1024];
-		int i, numleafs;
-		vec3_t c1, c2;
-		int topnode;
-
-		VectorAdd(start, mins, c1);
-		VectorAdd(start, maxs, c2);
-
-		for (i = 0; i < 3; i++)
-		{
-			c1[i] -= 1;
-			c2[i] += 1;
-		}
-
-		numleafs = CM_BoxLeafnums_headnode(c1, c2, leafs, 1024,
-				headnode, &topnode);
-
-		for (i = 0; i < numleafs; i++)
-		{
-			CM_TestInLeaf(leafs[i]);
-
-			if (trace_trace.allsolid)
-			{
-				break;
-			}
-		}
-
-		VectorCopy(start, trace_trace.endpos);
-		return trace_trace;
-	}
-
-	/* check for point special case */
-	if ((mins[0] == 0) && (mins[1] == 0) && (mins[2] == 0) &&
-		(maxs[0] == 0) && (maxs[1] == 0) && (maxs[2] == 0))
-	{
-		trace_ispoint = true;
-		VectorClear(trace_extents);
-	}
-
-	else
-	{
-		trace_ispoint = false;
-		trace_extents[0] = -mins[0] > maxs[0] ? -mins[0] : maxs[0];
-		trace_extents[1] = -mins[1] > maxs[1] ? -mins[1] : maxs[1];
-		trace_extents[2] = -mins[2] > maxs[2] ? -mins[2] : maxs[2];
-	}
-
-	/* general sweeping through world */
-	CM_RecursiveHullCheck(headnode, 0, 1, start, end);
-
-	if (trace_trace.fraction == 1)
-	{
-		VectorCopy(end, trace_trace.endpos);
-	}
-
-	else
-	{
-		for (i = 0; i < 3; i++)
-		{
-			trace_trace.endpos[i] = start[i] + trace_trace.fraction *
-									(end[i] - start[i]);
-		}
-	}
-
-	return trace_trace;
+    /* fill in a default trace */
+    memset(&trace_trace, 0, sizeof(trace_trace));
+    trace_trace.fraction = 1;
+    trace_trace.surface = &(nullsurface.c);
+    if(!numnodes)  /* map not loaded */
+    {
+        return trace_trace;
+    }
+    trace_contents = brushmask;
+    VectorCopy(start, trace_start);
+    VectorCopy(end, trace_end);
+    VectorCopy(mins, trace_mins);
+    VectorCopy(maxs, trace_maxs);
+    /* check for position test special case */
+    if((start[0] == end[0]) && (start[1] == end[1]) && (start[2] == end[2])){
+        vec3_t c1, c2;
+        VectorAdd(start, mins, c1);
+        VectorAdd(start, maxs, c2);
+        for(int i = 0; i < 3; i++){
+            c1[i] -= 1;
+            c2[i] += 1;
+        }
+        int leafs[1024];
+        int topnode;
+        int numleafs = CM_BoxLeafnums_headnode(c1, c2, leafs, 1024, headnode, &topnode);
+        for(int i = 0; i < numleafs; i++){
+            CM_TestInLeaf(leafs[i]);
+            if(trace_trace.allsolid){
+                break;
+            }
+        }
+        VectorCopy(start, trace_trace.endpos);
+        return trace_trace;
+    }
+    /* check for point special case */
+    if ((mins[0] == 0) && (mins[1] == 0) && (mins[2] == 0) &&
+            (maxs[0] == 0) && (maxs[1] == 0) && (maxs[2] == 0)){
+        trace_ispoint = true;
+        VectorClear(trace_extents);
+    }else{
+        trace_ispoint = false;
+        trace_extents[0] = -mins[0] > maxs[0] ? -mins[0] : maxs[0];
+        trace_extents[1] = -mins[1] > maxs[1] ? -mins[1] : maxs[1];
+        trace_extents[2] = -mins[2] > maxs[2] ? -mins[2] : maxs[2];
+    }
+    /* general sweeping through world */
+    CM_RecursiveHullCheck(headnode, 0, 1, start, end);
+    if(trace_trace.fraction == 1){
+        VectorCopy(end, trace_trace.endpos);
+    }else{
+        for(int i = 0; i < 3; i++){
+            trace_trace.endpos[i] = start[i] + trace_trace.fraction * (end[i] - start[i]);
+        }
+    }
+    return trace_trace;
 }
 
 /*
