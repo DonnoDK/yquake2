@@ -677,6 +677,12 @@ CL_FireEntityEvents(frame_t *frame)
 	}
 }
 
+static void SHOWNET(const char *s){
+    if(cl_shownet->value >= 2){
+        Com_Printf("%3i:%s\n", net_message.readcount - 1, s);
+    }
+}
+
 void
 CL_ParseFrame(void)
 {
@@ -1095,14 +1101,6 @@ void CL_ParseStartSoundPacket(void){
     S_StartSound(pos, ent, channel, cl.sound_precache[sound_num], volume, attenuation, ofs);
 }
 
-void
-SHOWNET(char *s)
-{
-	if (cl_shownet->value >= 2)
-	{
-		Com_Printf("%3i:%s\n", net_message.readcount - 1, s);
-	}
-}
 
 void CL_ParseServerMessage(sizebuf_t* message){
     /* if recording demos, copy the message out */
