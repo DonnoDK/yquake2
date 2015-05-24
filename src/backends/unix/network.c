@@ -168,11 +168,6 @@ void SockadrToNetadr(struct sockaddr_storage *s, netadr_t *a){
     }
 }
 
-void
-NET_Init()
-{
-}
-
 qboolean
 NET_CompareAdr(netadr_t a, netadr_t b)
 {

@@ -1928,78 +1928,48 @@ ClientBegin(edict_t *ent)
  * The game can override any of the settings in place
  * (forcing skins or names, etc) before copying it off.
  */
-void
-ClientUserinfoChanged(edict_t *ent, char *userinfo)
-{
-	char *s;
-	int playernum;
-
-	if (!ent || !userinfo)
-	{
-		return;
-	}
-
-	/* check for malformed or illegal info strings */
-	if (!Info_Validate(userinfo))
-	{
-		strcpy(userinfo, "\\name\\badinfo\\skin\\male/grunt");
-	}
-
-	/* set name */
-	s = Info_ValueForKey(userinfo, "name");
-	Q_strlcpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname));
-
-	/* set spectator */
-	s = Info_ValueForKey(userinfo, "spectator");
-
-	/* spectators are only supported in deathmatch */
-	if (deathmatch->value && *s && strcmp(s, "0"))
-	{
-		ent->client->pers.spectator = true;
-	}
-	else
-	{
-		ent->client->pers.spectator = false;
-	}
-
-	/* set skin */
-	s = Info_ValueForKey(userinfo, "skin");
-
-	playernum = ent - g_edicts - 1;
-
-	/* combine name and skin into a configstring */
-	gi.configstring(CS_PLAYERSKINS + playernum,
-			va("%s\\%s", ent->client->pers.netname, s));
-
-	/* fov */
-	if (deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV))
-	{
-		ent->client->ps.fov = 90;
-	}
-	else
-	{
-		ent->client->ps.fov = (int)strtol(Info_ValueForKey(userinfo, "fov"), (char **)NULL, 10);
-
-		if (ent->client->ps.fov < 1)
-		{
-			ent->client->ps.fov = 90;
-		}
-		else if (ent->client->ps.fov > 160)
-		{
-			ent->client->ps.fov = 160;
-		}
-	}
-
-	/* handedness */
-	s = Info_ValueForKey(userinfo, "hand");
-
-	if (strlen(s))
-	{
-		ent->client->pers.hand = (int)strtol(s, (char **)NULL, 10);
-	}
-
-	/* save off the userinfo in case we want to check something later */
-	Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
+void ClientUserinfoChanged(edict_t *ent, char *userinfo){
+    if(!ent || !userinfo){
+        return;
+    }
+    /* check for malformed or illegal info strings */
+    if(!Info_Validate(userinfo)){
+        strcpy(userinfo, "\\name\\badinfo\\skin\\male/grunt");
+    }
+    /* set name */
+    char* s = Info_ValueForKey(userinfo, "name");
+    Q_strlcpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname));
+    /* set spectator */
+    s = Info_ValueForKey(userinfo, "spectator");
+    /* spectators are only supported in deathmatch */
+    if(deathmatch->value && *s && strcmp(s, "0")){
+        ent->client->pers.spectator = true;
+    }else{
+        ent->client->pers.spectator = false;
+    }
+    /* set skin */
+    s = Info_ValueForKey(userinfo, "skin");
+    int playernum = ent - g_edicts - 1;
+    /* combine name and skin into a configstring */
+    gi.configstring(CS_PLAYERSKINS + playernum, va("%s\\%s", ent->client->pers.netname, s));
+    /* fov */
+    if(deathmatch->value && ((int)dmflags->value & DF_FIXED_FOV)){
+        ent->client->ps.fov = 90;
+    }else{
+        ent->client->ps.fov = (int)strtol(Info_ValueForKey(userinfo, "fov"), (char **)NULL, 10);
+        if(ent->client->ps.fov < 1){
+            ent->client->ps.fov = 90;
+        }else if(ent->client->ps.fov > 160){
+            ent->client->ps.fov = 160;
+        }
+    }
+    /* handedness */
+    s = Info_ValueForKey(userinfo, "hand");
+    if(strlen(s)){
+        ent->client->pers.hand = (int)strtol(s, (char **)NULL, 10);
+    }
+    /* save off the userinfo in case we want to check something later */
+    Q_strlcpy(ent->client->pers.userinfo, userinfo, sizeof(ent->client->pers.userinfo));
 }
 
 /*

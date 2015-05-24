@@ -31,7 +31,6 @@
 #define MAXPRINTMSG 4096
 
 FILE *logfile;
-cvar_t *logfile_active;  /* 1 = buffer log, 2 = flush after each print */
 jmp_buf abortframe; /* an ERR_DROP occured, exit the entire frame */
 int server_state;
 
@@ -71,65 +70,25 @@ Com_EndRedirect(void)
  * Both client and server can use this, and it will output
  * to the apropriate place.
  */
-void
-Com_Printf(char *fmt, ...)
-{
-	va_list argptr;
-	char msg[MAXPRINTMSG];
-
-	va_start(argptr, fmt);
-	vsnprintf(msg, MAXPRINTMSG, fmt, argptr);
-	va_end(argptr);
-
-	if (rd_target)
-	{
-		if ((strlen(msg) + strlen(rd_buffer)) > (rd_buffersize - 1))
-		{
-			rd_flush(rd_target, rd_buffer);
-			*rd_buffer = 0;
-		}
-
-		strcat(rd_buffer, msg);
-		return;
-	}
-
+void Com_Printf(char *fmt, ...){
+    va_list argptr;
+    char msg[MAXPRINTMSG];
+    va_start(argptr, fmt);
+    vsnprintf(msg, MAXPRINTMSG, fmt, argptr);
+    va_end(argptr);
+    if(rd_target){
+        if((strlen(msg) + strlen(rd_buffer)) > (rd_buffersize - 1)){
+            rd_flush(rd_target, rd_buffer);
+            *rd_buffer = 0;
+        }
+        strcat(rd_buffer, msg);
+        return;
+    }
 #ifndef DEDICATED_ONLY
-	Con_Print(msg);
+    Con_Print(msg);
 #endif
-
-	/* also echo to debugging console */
-	Sys_ConsoleOutput(msg);
-
-	/* logfile */
-	if (logfile_active && logfile_active->value)
-	{
-		char name[MAX_QPATH];
-
-		if (!logfile)
-		{
-			Com_sprintf(name, sizeof(name), "%s/qconsole.log", FS_Gamedir());
-
-			if (logfile_active->value > 2)
-			{
-				logfile = fopen(name, "a");
-			}
-
-			else
-			{
-				logfile = fopen(name, "w");
-			}
-		}
-
-		if (logfile)
-		{
-			fprintf(logfile, "%s", msg);
-		}
-
-		if (logfile_active->value > 1)
-		{
-			fflush(logfile);  /* force it to save every time */
-		}
-	}
+    /* also echo to debugging console */
+    Sys_ConsoleOutput(msg);
 }
 
 /*

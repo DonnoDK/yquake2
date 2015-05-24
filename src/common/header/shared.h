@@ -219,8 +219,6 @@ const char *COM_Parse(const char **data_p);
 /* data is an in/out parm, returns a parsed out token */
 void Com_sprintf(char *dest, int size, char *fmt, ...);
 
-void Com_PageInMemory(byte *buffer, int size);
-
 /* ============================================= */
 
 /* portable case insensitive compare */
@@ -229,7 +227,7 @@ int Q_strcasecmp(char *s1, char *s2);
 int Q_strncasecmp(char *s1, char *s2, int n);
 
 /* portable string lowercase */
-char *Q_strlwr(char *s);
+char *Q_strlwr(const char *s);
 
 /* portable safe string copy/concatenate */
 int Q_strlcpy(char *dst, const char *src, int size);
@@ -254,10 +252,9 @@ char *va(char *format, ...);
 #define MAX_INFO_VALUE 64
 #define MAX_INFO_STRING 512
 
-char *Info_ValueForKey(char *s, char *key);
-void Info_RemoveKey(char *s, char *key);
-void Info_SetValueForKey(char *s, char *key, char *value);
-qboolean Info_Validate(char *s);
+char *Info_ValueForKey(const char *s, const char *key);
+void Info_SetValueForKey(char *s, const char *key, const char *value);
+qboolean Info_Validate(const char* s);
 
 /* ============================================= */
 

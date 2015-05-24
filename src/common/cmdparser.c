@@ -174,8 +174,7 @@ void Cbuf_Execute(void){
  */
 void Cbuf_AddEarlyCommands(int argc, const char** argv, qboolean clear){
     for(int i = 0; i < argc; i++){
-        const char* s = argv[i];
-        if(strcmp(s, "+set")){
+        if(strcmp(argv[i], "+set")){
             continue;
         }
         Cbuf_AddText(va("set %s %s\n", argv[i + 1], argv[i + 2]));

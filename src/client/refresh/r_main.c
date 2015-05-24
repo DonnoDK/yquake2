@@ -1086,8 +1086,10 @@ R_SetMode(void)
 int
 R_Init(void *hinstance, void *hWnd)
 {
+    /*
 	char renderer_buffer[1000];
 	char vendor_buffer[1000];
+    */
 	int err;
 	int j;
 	extern float r_turbsin[256];
@@ -1150,11 +1152,13 @@ R_Init(void *hinstance, void *hWnd)
 	gl_config.extensions_string = (char *)glGetString(GL_EXTENSIONS);
 	VID_Printf(PRINT_ALL, "GL_EXTENSIONS: %s\n", gl_config.extensions_string);
 
+    /*
 	Q_strlcpy(renderer_buffer, gl_config.renderer_string, sizeof(renderer_buffer));
 	Q_strlwr(renderer_buffer);
 
 	Q_strlcpy(vendor_buffer, gl_config.vendor_string, sizeof(vendor_buffer));
 	Q_strlwr(vendor_buffer);
+    */
 
 	Cvar_Set("scr_drawall", "0");
 	gl_config.allow_cds = true;

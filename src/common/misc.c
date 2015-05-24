@@ -40,7 +40,6 @@ cvar_t *showtrace;
 #endif
 cvar_t *dedicated;
 
-extern cvar_t *logfile_active;
 extern jmp_buf abortframe; /* an ERR_DROP occured, exit the entire frame */
 extern zhead_t z_chain;
 
@@ -212,7 +211,6 @@ void Qcommon_Init(int argc, char **argv){
     modder = Cvar_Get("modder", "0", 0);
     timescale = Cvar_Get("timescale", "1", 0);
     fixedtime = Cvar_Get("fixedtime", "0", 0);
-    logfile_active = Cvar_Get("logfile", "1", CVAR_ARCHIVE);
 #ifndef DEDICATED_ONLY
     showtrace = Cvar_Get("showtrace", "0", 0);
 #endif
@@ -227,10 +225,6 @@ void Qcommon_Init(int argc, char **argv){
     if(dedicated->value){
         Cmd_AddCommand("quit", Com_Quit);
     }
-    /* NOTE: only applicable on windows platform */
-    Sys_Init();
-    /* NOTE: only applicable on windows platform */
-    NET_Init();
     Netchan_Init();
     SV_Init();
 #ifndef DEDICATED_ONLY

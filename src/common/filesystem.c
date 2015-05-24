@@ -399,128 +399,87 @@ FS_FOpenFileWrite(fsHandle_t *handle)
  * Returns file size or -1 if not found. Can open separate files as well as
  * files inside pack files (both PAK and PK3).
  */
-int
-FS_FOpenFileRead(fsHandle_t *handle)
-{
-	char path[MAX_OSPATH];
-	int i;
-	fsSearchPath_t *search;
-	fsPack_t *pack;
-
-	file_from_pak = 0;
+int FS_FOpenFileRead(fsHandle_t *handle){
+    int i;
+    fsSearchPath_t *search;
+    fsPack_t *pack;
+    file_from_pak = 0;
 #ifdef ZIP
-	file_from_pk3 = 0;
+    file_from_pk3 = 0;
 #endif
-
-	/* Search through the path, one element at a time. */
-	for (search = fs_searchPaths; search; search = search->next)
-	{
-		/* Search inside a pack file. */
-		if (search->pack)
-		{
-			pack = search->pack;
-
-			for (i = 0; i < pack->numFiles; i++)
-			{
-				if (Q_stricmp(pack->files[i].name, handle->name) == 0)
-				{
-					/* Found it! */
-					Com_FilePath(pack->name, fs_fileInPath,
-							sizeof(fs_fileInPath));
-					fs_fileInPack = true;
-
-					if (fs_debug->value)
-					{
-						Com_Printf("FS_FOpenFileRead: '%s' (found in '%s').\n",
-								handle->name, pack->name);
-					}
-
-					if (pack->pak)
-					{
-						/* PAK */
-						file_from_pak = 1;
-						handle->file = fopen(pack->name, "rb");
-
-						if (handle->file)
-						{
-							fseek(handle->file, pack->files[i].offset, SEEK_SET);
-							return pack->files[i].size;
-						}
-					}
+    /* Search through the path, one element at a time. */
+    for(search = fs_searchPaths; search; search = search->next){
+        /* Search inside a pack file. */
+        if(search->pack){
+            pack = search->pack;
+            for(i = 0; i < pack->numFiles; i++){
+                if(Q_stricmp(pack->files[i].name, handle->name) == 0){
+                    /* Found it! */
+                    Com_FilePath(pack->name, fs_fileInPath, sizeof(fs_fileInPath));
+                    fs_fileInPack = true;
+                    if(fs_debug->value){
+                        Com_Printf("FS_FOpenFileRead: '%s' (found in '%s').\n", handle->name, pack->name);
+                    }
+                    if(pack->pak){
+                        /* PAK */
+                        file_from_pak = 1;
+                        handle->file = fopen(pack->name, "rb");
+                        if(handle->file){
+                            fseek(handle->file, pack->files[i].offset, SEEK_SET);
+                            return pack->files[i].size;
+                        }
+                    }
 #ifdef ZIP
-					else if (pack->pk3)
-					{
-						/* PK3 */
-						file_from_pk3 = 1;
-						Q_strlcpy(file_from_pk3_name, strrchr(pack->name,
-										'/') + 1, sizeof(file_from_pk3_name));
-						handle->zip = unzOpen(pack->name);
-
-						if (handle->zip)
-						{
-							if (unzLocateFile(handle->zip, handle->name,
-										2) == UNZ_OK)
-							{
-								if (unzOpenCurrentFile(handle->zip) == UNZ_OK)
-								{
-									return pack->files[i].size;
-								}
-							}
-
-							unzClose(handle->zip);
-						}
-					}
+                    else if (pack->pk3){
+                        /* PK3 */
+                        file_from_pk3 = 1;
+                        Q_strlcpy(file_from_pk3_name, strrchr(pack->name, '/') + 1, sizeof(file_from_pk3_name));
+                        handle->zip = unzOpen(pack->name);
+                        if(handle->zip){
+                            if (unzLocateFile(handle->zip, handle->name, 2) == UNZ_OK){
+                                if (unzOpenCurrentFile(handle->zip) == UNZ_OK){
+                                    return pack->files[i].size;
+                                }
+                            }
+                            unzClose(handle->zip);
+                        }
+                    }
 #endif
-
-					Com_Error(ERR_FATAL, "Couldn't reopen '%s'", pack->name);
-				}
-			}
-		}
-		else
-		{
-			/* Search in a directory tree. */
-			Com_sprintf(path, sizeof(path), "%s/%s", search->path, handle->name);
-
-			handle->file = fopen(path, "rb");
-
-			if (!handle->file)
-			{
-				Q_strlwr(path);
-				handle->file = fopen(path, "rb");
-			}
-
-			if (!handle->file)
-			{
-				continue;
-			}
-
-			if (handle->file)
-			{
-				/* Found it! */
-				Q_strlcpy(fs_fileInPath, search->path, sizeof(fs_fileInPath));
-				fs_fileInPack = false;
-
-				if (fs_debug->value)
-				{
-					Com_Printf("FS_FOpenFileRead: '%s' (found in '%s').\n",
-							handle->name, search->path);
-				}
-
-				return FS_FileLength(handle->file);
-			}
-		}
-	}
-
-	/* Not found! */
-	fs_fileInPath[0] = 0;
-	fs_fileInPack = false;
-
-	if (fs_debug->value)
-	{
-		Com_Printf("FS_FOpenFileRead: couldn't find '%s'.\n", handle->name);
-	}
-
-	return -1;
+                    Com_Error(ERR_FATAL, "Couldn't reopen '%s'", pack->name);
+                }
+            }
+        }else{
+            /* Search in a directory tree. */
+            char path[MAX_OSPATH];
+            Com_sprintf(path, sizeof(path), "%s/%s", search->path, handle->name);
+            handle->file = fopen(path, "rb");
+            if(!handle->file){
+                /* try lower-case path */
+                char* pathLower = Q_strlwr(path);
+                handle->file = fopen(pathLower, "rb");
+                free(pathLower);
+            }
+            if(!handle->file){
+                continue;
+            }
+            if(handle->file){
+                /* Found it! */
+                Q_strlcpy(fs_fileInPath, search->path, sizeof(fs_fileInPath));
+                fs_fileInPack = false;
+                if(fs_debug->value){
+                    Com_Printf("FS_FOpenFileRead: '%s' (found in '%s').\n", handle->name, search->path);
+                }
+                return FS_FileLength(handle->file);
+            }
+        }
+    }
+    /* Not found! */
+    fs_fileInPath[0] = 0;
+    fs_fileInPack = false;
+    if(fs_debug->value){
+        Com_Printf("FS_FOpenFileRead: couldn't find '%s'.\n", handle->name);
+    }
+    return -1;
 }
 
 /*

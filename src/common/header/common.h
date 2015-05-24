@@ -526,7 +526,6 @@ typedef struct
 	unsigned short port;
 } netadr_t;
 
-void NET_Init(void);
 void NET_Shutdown(void);
 
 void NET_Config(qboolean multiplayer);
@@ -776,7 +775,6 @@ void SCR_DebugGraph(float value, int color);
 
 /* NON-PORTABLE SYSTEM SERVICES */
 
-void Sys_Init(void);
 void Sys_UnloadGame(void);
 void *Sys_GetGameAPI(void *parms);
 

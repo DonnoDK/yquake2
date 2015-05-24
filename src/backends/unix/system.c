@@ -94,11 +94,6 @@ CompareAttributes(char *path, char *name, unsigned musthave, unsigned canthave)
 	return true;
 }
 
-void
-Sys_Init(void)
-{
-}
-
 int Sys_Milliseconds(void){
 	struct timeval tp;
 	struct timezone tzp;
