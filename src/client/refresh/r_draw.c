@@ -59,45 +59,33 @@ Draw_Char(int x, int y, int num)
  * It can be clipped to the top of the screen to allow the console to be
  * smoothly scrolled off.
  */
-void
-Draw_CharScaled(int x, int y, int num, float scale)
-{
-	int row, col;
-	float frow, fcol, size, scaledSize;
-
-	num &= 255;
-
-	if ((num & 127) == 32)
-	{
-		return; /* space */
-	}
-
-	if (y <= -8)
-	{
-		return; /* totally off screen */
-	}
-
-	row = num >> 4;
-	col = num & 15;
-
-	frow = row * 0.0625;
-	fcol = col * 0.0625;
-	size = 0.0625;
-
-	scaledSize = 8*scale;
-
-	R_Bind(draw_chars->texnum);
-
-	glBegin(GL_QUADS);
-	glTexCoord2f(fcol, frow);
-	glVertex2f(x, y);
-	glTexCoord2f(fcol + size, frow);
-	glVertex2f(x + scaledSize, y);
-	glTexCoord2f(fcol + size, frow + size);
-	glVertex2f(x + scaledSize, y + scaledSize);
-	glTexCoord2f(fcol, frow + size);
-	glVertex2f(x, y + scaledSize);
-	glEnd();
+void Draw_CharScaled(int x, int y, int num, float scale){
+    int row, col;
+    float frow, fcol, size, scaledSize;
+    num &= 255;
+    if((num & 127) == 32){
+        return; /* space */
+    }
+    if(y <= -8){
+        return; /* totally off screen */
+    }
+    row = num >> 4;
+    col = num & 15;
+    frow = row * 0.0625;
+    fcol = col * 0.0625;
+    size = 0.0625;
+    scaledSize = 8*scale;
+    R_Bind(draw_chars->texnum);
+    glBegin(GL_QUADS);
+    glTexCoord2f(fcol, frow);
+    glVertex2f(x, y);
+    glTexCoord2f(fcol + size, frow);
+    glVertex2f(x + scaledSize, y);
+    glTexCoord2f(fcol + size, frow + size);
+    glVertex2f(x + scaledSize, y + scaledSize);
+    glTexCoord2f(fcol, frow + size);
+    glVertex2f(x, y + scaledSize);
+    glEnd();
 }
 
 image_t *

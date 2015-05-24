@@ -1199,26 +1199,17 @@ EnableOGGMusic(void *unused)
 
 extern void Key_ClearTyping(void);
 
-static void
-ConsoleFunc(void *unused)
-{
+static void ConsoleFunc(void *unused){
     SCR_EndLoadingPlaque(); /* get rid of loading plaque */
-
-    if (cl.attractloop)
-    {
+    if(cl.attractloop){
         Cbuf_AddText("killserver\n");
         return;
     }
-
     Key_ClearTyping();
     Con_ClearNotify();
-
     M_ForceMenuOff();
     cls.key_dest = key_console;
-
-    if ((Cvar_VariableValue("maxclients") == 1) &&
-            Com_ServerState())
-    {
+    if((Cvar_VariableValue("maxclients") == 1) && Com_ServerState()){
         Cvar_Set("paused", "1");
     }
 }

@@ -846,7 +846,7 @@ Char_Event(int key)
 	/* console key is hardcoded, so the user can never unbind it */
 	if ((key == '^') || (key == '~') || (key == '`'))
 	{
-		Con_ToggleConsole_f();
+        Cbuf_AddText("toggleconsole\n");
 		return;
 	}
 
@@ -927,11 +927,10 @@ Key_Event(int key, qboolean down, qboolean special)
 	}
 
 	/* Toogle console though Shift + Escape */
-	if (down && keydown[K_SHIFT] && key == K_ESCAPE)
-	{
-		Con_ToggleConsole_f();
-		return;
-	}
+    if(down && keydown[K_SHIFT] && key == K_ESCAPE){
+        Cbuf_AddText("toggleconsole\n");
+        return;
+    }
 
 	/* Key is unbound */
 	if ((key >= 200) && !keybindings[key] && (cls.key_dest != key_console))

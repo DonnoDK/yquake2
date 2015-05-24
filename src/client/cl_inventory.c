@@ -37,15 +37,10 @@ CL_ParseInventory(void)
 	}
 }
 
-static void
-Inv_DrawStringScaled(int x, int y, char *string, float factor)
-{
-	while (*string)
-	{
-		Draw_CharScaled(x, y, *string, factor);
-		x += factor*8;
-		string++;
-	}
+// TODO: refactor remove
+static void Inv_DrawStringScaled(int x, int y, char *string, float factor){
+    DrawStringScaled(x, y, string, factor);
+    return;
 }
 
 static void

@@ -1478,7 +1478,7 @@ void SCR_UpdateScreen(void){
 			if(cl_drawfps->value){
 				char s[8];
 				sprintf(s, "%3.0ffps", 1 / cls.frametime);
-				DrawString(viddef.width - 64, 0, s);
+				DrawStringScaled(viddef.width - 64, 0, s, 1.0f);
 			}
 			if(scr_timegraph->value){
 				SCR_DebugGraph(cls.frametime * 300, 0);
