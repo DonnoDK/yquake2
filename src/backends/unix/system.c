@@ -58,8 +58,8 @@ static char findbase[MAX_OSPATH];
 static char findpath[MAX_OSPATH];
 static char findpattern[MAX_OSPATH];
 static DIR *fdir;
-
 qboolean stdin_active = true;
+
 extern FILE	*logfile;
 
 static qboolean
@@ -99,24 +99,21 @@ Sys_Init(void)
 {
 }
 
-int
-Sys_Milliseconds(void)
-{
+int Sys_Milliseconds(void){
 	struct timeval tp;
 	struct timezone tzp;
 	static int secbase;
-
 	gettimeofday(&tp, &tzp);
-
-	if (!secbase)
-	{
+	if(!secbase){
 		secbase = tp.tv_sec;
 		return tp.tv_usec / 1000;
 	}
-
 	curtime = (tp.tv_sec - secbase) * 1000 + tp.tv_usec / 1000;
-
 	return curtime;
+}
+
+int Sys_CurrentTime(void){
+    return curtime;
 }
 
 void
@@ -300,17 +297,12 @@ Sys_Error(char *error, ...)
 /*
  * returns -1 if not present
  */
-int
-Sys_FileTime(char *path)
-{
-	struct  stat buf;
-
-	if (stat(path, &buf) == -1)
-	{
-		return -1;
-	}
-
-	return buf.st_mtime;
+int Sys_FileTime(char *path){
+    struct stat buf;
+    if(stat(path, &buf) == -1){
+        return -1;
+    }
+    return buf.st_mtime;
 }
 
 void
@@ -320,9 +312,6 @@ floating_point_exception_handler(int whatever)
 }
 
 const char* Sys_ConsoleInput(void){
-    if(!dedicated || !dedicated->value){
-        return NULL;
-    }
     if(!stdin_active){
         return NULL;
     }
@@ -337,8 +326,8 @@ const char* Sys_ConsoleInput(void){
     }
     static char text[256];
     int len = read(0, text, sizeof(text));
-    if(len == 0)   /* eof! */
-    {
+    if(len == 0){
+        /* eof! */
         stdin_active = false;
         return NULL;
     }

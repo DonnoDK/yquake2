@@ -297,12 +297,14 @@ void Qcommon_Frame(int msec){
         c_pointcontents = 0;
     }
 #endif
-    const char* s = Sys_ConsoleInput();
-    while(s != NULL){
-        Cbuf_AddText(va("%s\n", s));
-        s = Sys_ConsoleInput();
+    if(dedicated && dedicated->value){
+        const char* s = Sys_ConsoleInput();
+        while(s != NULL){
+            Cbuf_AddText(va("%s\n", s));
+            s = Sys_ConsoleInput();
+        }
+        Cbuf_Execute();
     }
-    Cbuf_Execute();
 #ifndef DEDICATED_ONLY
     int time_before = 0;
     if(host_speeds->value){

@@ -563,7 +563,7 @@ void CL_SendCmd(void){
         return;
     }
     if(cls.state == ca_connected){
-        if(cls.netchan.message.cursize || (curtime - cls.netchan.last_sent > 100)){
+        if(cls.netchan.message.cursize || (Sys_CurrentTime() - cls.netchan.last_sent > 100)){
             byte zero_data = 0;
             Netchan_Transmit(&cls.netchan, 0, &zero_data);
         }

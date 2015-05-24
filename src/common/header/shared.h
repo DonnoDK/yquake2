@@ -278,6 +278,7 @@ void randk_seed(void);
 extern int curtime; /* time returned by last Sys_Milliseconds */
 
 int Sys_Milliseconds(void);
+int Sys_CurrentTime(void);
 void Sys_Mkdir(char *path);
 
 /* large block stack allocation routines */
