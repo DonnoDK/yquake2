@@ -270,6 +270,15 @@ void Cmd_Echo_f(int argc, const char** argv){
     Com_Printf("\n");
 }
 
+static cmdalias_t* Cmd_AliasNamed(const char* name){
+    for(cmdalias_t* alias = cmd_alias; alias; alias = alias->next){
+        if(!strcmp(name, alias->name)){
+            return alias;
+        }
+    }
+    return NULL;
+}
+
 /*
  * Creates a new command that executes
  * a command string (possibly ; seperated)
@@ -282,32 +291,26 @@ void Cmd_Alias_f(int argc, const char** argv){
         }
         return;
     }
-    const char* s = argv[1];
-    if(strlen(s) >= MAX_ALIAS_NAME){
+    if(strlen(argv[1]) >= MAX_ALIAS_NAME){
         Com_Printf("Alias name is too long\n");
         return;
     }
     /* if the alias already exists, reuse it */
-    cmdalias_t *a;
-    for(a = cmd_alias; a; a = a->next){
-        if(!strcmp(s, a->name)){
-            Z_Free(a->value);
-            break;
-        }
-    }
-    if(!a){
+    cmdalias_t *a = Cmd_AliasNamed(argv[1]);
+    if(a){
+        Z_Free(a->value);
+    }else{
         a = Z_Malloc(sizeof(cmdalias_t));
         a->next = cmd_alias;
         cmd_alias = a;
     }
-    strcpy(a->name, s);
+    strcpy(a->name, argv[1]);
     /* copy the rest of the command line */
     char cmd[1024];
     cmd[0] = 0; /* start out with a null string */
-    int c = argc;
-    for(int i = 2; i < c; i++){
+    for(int i = 2; i < argc; i++){
         strcat(cmd, argv[i]);
-        if(i != (c - 1)){
+        if(i != (argc - 1)){
             strcat(cmd, " ");
         }
     }
@@ -520,14 +523,6 @@ int qsort_strcomp(const void *s1, const void *s2){
     return strcmp(*(char **)s1, *(char **)s2);
 }
 
-static const cmdalias_t* Cmd_AliasNamed(const char* name){
-    for(cmdalias_t* alias = cmd_alias; alias; alias = alias->next){
-        if(!strcmp(name, alias->name)){
-            return alias;
-        }
-    }
-    return NULL;
-}
 
 const char* Cmd_CompleteCommand(const char *partial){
     if(partial == NULL || strlen(partial) == 0){

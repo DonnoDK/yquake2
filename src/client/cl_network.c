@@ -99,80 +99,53 @@ CL_Drop(void)
  * We have gotten a challenge from the server, so try and
  * connect.
  */
-void
-CL_SendConnectPacket(void)
-{
-	netadr_t adr;
-	int port;
-
-	memset(&adr, 0, sizeof(adr));
-
-	if (!NET_StringToAdr(cls.servername, &adr))
-	{
-		Com_Printf("Bad server address\n");
-		cls.connect_time = 0;
-		return;
-	}
-
-	if (adr.port == 0)
-	{
-		adr.port = BigShort(PORT_SERVER);
-	}
-
-	port = Cvar_VariableValue("qport");
-
-	userinfo_modified = false;
-
-	Netchan_OutOfBandPrint(NS_CLIENT, adr, "connect %i %i %i \"%s\"\n",
-			PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo());
+static void CL_SendConnectPacket(const char* servername){
+    netadr_t adr;
+    memset(&adr, 0, sizeof(adr));
+    if(!NET_StringToAdr(servername, &adr)){
+        Com_Printf("Bad server address\n");
+        cls.connect_time = 0;
+        return;
+    }
+    if(adr.port == 0){
+        adr.port = BigShort(PORT_SERVER);
+    }
+    int port = Cvar_VariableValue("qport");
+    userinfo_modified = false;
+    Netchan_OutOfBandPrint(NS_CLIENT, adr, "connect %i %i %i \"%s\"\n", PROTOCOL_VERSION, port, cls.challenge, Cvar_Userinfo());
 }
 
 /*
  * Resend a connect message if the last one has timed out
  */
-void
-CL_CheckForResend(void)
-{
-	netadr_t adr;
-
-	/* if the local server is running and we aren't just connect */
-	if ((cls.state == ca_disconnected) && Com_ServerState())
-	{
-		cls.state = ca_connecting;
-		Q_strlcpy(cls.servername, "localhost", sizeof(cls.servername));
-		/* we don't need a challenge on the localhost */
-		CL_SendConnectPacket();
-		return;
-	}
-
-	/* resend if we haven't gotten a reply yet */
-	if (cls.state != ca_connecting)
-	{
-		return;
-	}
-
-	if (cls.realtime - cls.connect_time < 3000)
-	{
-		return;
-	}
-
-	if (!NET_StringToAdr(cls.servername, &adr))
-	{
-		Com_Printf("Bad server address\n");
-		cls.state = ca_disconnected;
-		return;
-	}
-
-	if (adr.port == 0)
-	{
-		adr.port = BigShort(PORT_SERVER);
-	}
-
-	cls.connect_time = cls.realtime;
-
-	Com_Printf("Connecting to %s...\n", cls.servername);
-
-	Netchan_OutOfBandPrint(NS_CLIENT, adr, "getchallenge\n");
+void CL_CheckForResend(void){
+    netadr_t adr;
+    /* if the local server is running and we aren't just connect */
+    if((cls.state == ca_disconnected) && Com_ServerState()){
+        cls.state = ca_connecting;
+        Q_strlcpy(cls.servername, "localhost", sizeof(cls.servername));
+        /* we don't need a challenge on the localhost */
+        CL_SendConnectPacket(cls.servername);
+        return;
+    }
+    /* resend if we haven't gotten a reply yet */
+    if(cls.state != ca_connecting){
+        return;
+    }
+    if(cls.realtime - cls.connect_time < 3000){
+        return;
+    }
+    if(!NET_StringToAdr(cls.servername, &adr)){
+        Com_Printf("Bad server address\n");
+        cls.state = ca_disconnected;
+        return;
+    }
+    if(adr.port == 0){
+        adr.port = BigShort(PORT_SERVER);
+    }
+    cls.connect_time = cls.realtime;
+    Com_Printf("Connecting to %s...\n", cls.servername);
+    Netchan_OutOfBandPrint(NS_CLIENT, adr, "getchallenge\n");
 }
 
 void CL_Connect_f(void){
@@ -379,20 +352,14 @@ void CL_Packet_f(void){
  * Just sent as a hint to the client that they should
  * drop to full console
  */
-void
-CL_Changing_f(void)
-{
+void CL_Changing_f(void){
 	/* if we are downloading, we don't change!
 	   This so we don't suddenly stop downloading a map */
-	if (cls.download)
-	{
+	if(cls.download){
 		return;
 	}
-
 	SCR_BeginLoadingPlaque();
-
 	cls.state = ca_connected; /* not active anymore, but not disconnected */
-
 	Com_Printf("\nChanging map...\n");
 }
 
@@ -557,7 +524,7 @@ void CL_ConnectionlessPacket(void){
     /* challenge from the server we are connecting to */
     if(!strcmp(c, "challenge")){
         cls.challenge = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
-        CL_SendConnectPacket();
+        CL_SendConnectPacket(cls.servername);
         return;
     }
     /* echo request from server */
