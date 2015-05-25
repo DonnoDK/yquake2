@@ -228,18 +228,18 @@ void Cvar_GetLatchedVars(void){
 /*
  * Handles variable inspection and changing from the console
  */
-qboolean Cvar_Command(const char* command, const char* argument, int count){
+qboolean Cvar_Command(int argc, const char** argv){
     /* check variables */
-    cvar_t* v = Cvar_FindVar(command);
+    cvar_t* v = Cvar_FindVar(argv[0]);
     if(!v){
         return false;
     }
     /* perform a variable print or set */
-    if(count == 1){
+    if(argc == 1){
         Com_Printf("\"%s\" is \"%s\"\n", v->name, v->string);
         return true;
     }
-    Cvar_Set(v->name, argument);
+    Cvar_Set(v->name, argv[1]);
     return true;
 }
 

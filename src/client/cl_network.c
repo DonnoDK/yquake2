@@ -28,7 +28,6 @@
 #include "../client/sound/header/local.h"
 
 void CL_ParseStatusMessage(void);
-
 extern cvar_t *msg;
 extern cvar_t *rcon_client_password;
 extern cvar_t *rcon_address;
@@ -40,35 +39,35 @@ extern cvar_t *cl_timeout;
  * the server, so when they are typed in at the console, they will need
  * to be forwarded.
  */
-void Cmd_ForwardToServer(void){
-    const char* cmd = Cmd_Argv(0);
+void Cmd_ForwardToServer(int argc, const char** argv){
+    const char* cmd = argv[0];
     if((cls.state <= ca_connected) || (*cmd == '-') || (*cmd == '+')){
         Com_Printf("Unknown command \"%s\"\n", cmd);
         return;
     }
     MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
     SZ_Print(&cls.netchan.message, cmd);
-    if(Cmd_Argc() > 1){
-        SZ_Print(&cls.netchan.message, " ");
-        SZ_Print(&cls.netchan.message, Cmd_Args());
+    if(argc > 1){
+        for(int i = 1; i < argc; i++){
+            SZ_Print(&cls.netchan.message, " ");
+            SZ_Print(&cls.netchan.message, argv[i]);
+        }
     }
 }
 
-void
-CL_ForwardToServer_f(void)
-{
-	if ((cls.state != ca_connected) && (cls.state != ca_active))
-	{
-		Com_Printf("Can't \"%s\", not connected\n", Cmd_Argv(0));
-		return;
-	}
-
-	/* don't forward the first argument */
-	if (Cmd_Argc() > 1)
-	{
-		MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
-		SZ_Print(&cls.netchan.message, Cmd_Args());
-	}
+void CL_ForwardToServer_f(int argc, const char** argv){
+    if((cls.state != ca_connected) && (cls.state != ca_active)){
+        Com_Printf("Can't \"%s\", not connected\n", argv[0]);
+        return;
+    }
+    /* don't forward the first argument */
+    if(argc > 1){
+        MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+        for(int i = 1; i < argc; i++){
+            SZ_Print(&cls.netchan.message, " ");
+            SZ_Print(&cls.netchan.message, argv[i]);
+        }
+    }
 }
 
 /*

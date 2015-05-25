@@ -442,7 +442,7 @@ void CL_ReadPackets (void);
 int  CL_ReadFromServer (void);
 void CL_WriteToServer (usercmd_t *cmd);
 
-void IN_CenterView (void);
+void IN_CenterView(int argc, const char** argv);
 
 float CL_KeyState (kbutton_t *key);
 char *Key_KeynumToString (int keynum);
@@ -456,7 +456,7 @@ extern	char *svc_strings[256];
 void CL_ParseServerMessage(sizebuf_t* message);
 void CL_LoadClientinfo (clientinfo_t *ci, const char *s);
 void CL_ParseClientinfo (int player);
-void CL_Download_f (void);
+void CL_Download_f(int argc, const char** argv);
 
 extern	int			gun_frame;
 

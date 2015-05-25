@@ -28,7 +28,7 @@
 #include "header/client.h"
 #include "../backends/generic/header/input.h"
 
-void CL_ForwardToServer_f(void);
+void CL_ForwardToServer_f(int argc, const char** argv);
 void CL_Changing_f(void);
 void CL_Reconnect_f(void);
 void CL_Connect_f(void);
@@ -419,7 +419,7 @@ void CL_InitLocal(void){
 	gender->modified = false;
 	cl_vwep = Cvar_Get("cl_vwep", "1", CVAR_ARCHIVE);
 	/* register our commands */
-	Cmd_AddCommand("cmd", CL_ForwardToServer_f);
+	Cmd_AddArgsCommand("cmd", CL_ForwardToServer_f);
 	Cmd_AddCommand("pause", CL_Pause_f);
 	Cmd_AddCommand("pingservers", CL_PingServers_f);
 	Cmd_AddCommand("skins", CL_Skins_f);
@@ -435,7 +435,7 @@ void CL_InitLocal(void){
 	Cmd_AddCommand("rcon", CL_Rcon_f);
 	Cmd_AddCommand("setenv", CL_Setenv_f);
 	Cmd_AddCommand("precache", CL_Precache_f);
-	Cmd_AddCommand("download", CL_Download_f);
+	Cmd_AddArgsCommand("download", CL_Download_f);
 	/* forward to server commands
 	 * the only thing this does is allow command completion
 	 * to work -- all unknown commands are automatically

@@ -131,127 +131,127 @@ void KeyUp(kbutton_t *b){
     b->state |= 4; /* impulse up */
 }
 
-void IN_KLookDown(void){
+void IN_KLookDown(int argc, const char** argv){
     KeyDown(&in_klook);
 }
 
-void IN_KLookUp(void){
+void IN_KLookUp(int argc, const char** argv){
     KeyUp(&in_klook);
 }
 
-void IN_UpDown(void){
+void IN_UpDown(int argc, const char** argv){
     KeyDown(&in_up);
 }
 
-void IN_UpUp(void){
+void IN_UpUp(int argc, const char** argv){
     KeyUp(&in_up);
 }
 
-void IN_DownDown(void){
+void IN_DownDown(int argc, const char** argv){
     KeyDown(&in_down);
 }
 
-void IN_DownUp(void){
+void IN_DownUp(int argc, const char** argv){
     KeyUp(&in_down);
 }
 
-void IN_LeftDown(void){
+void IN_LeftDown(int argc, const char** argv){
     KeyDown(&in_left);
 }
 
-void IN_LeftUp(void){
+void IN_LeftUp(int argc, const char** argv){
     KeyUp(&in_left);
 }
 
-void IN_RightDown(void){
+void IN_RightDown(int argc, const char** argv){
     KeyDown(&in_right);
 }
 
-void IN_RightUp(void){
+void IN_RightUp(int argc, const char** argv){
     KeyUp(&in_right);
 }
 
-void IN_ForwardDown(void){
+void IN_ForwardDown(int argc, const char** argv){
     KeyDown(&in_forward);
 }
 
-void IN_ForwardUp(void){
+void IN_ForwardUp(int argc, const char** argv){
     KeyUp(&in_forward);
 }
 
-void IN_BackDown(void){
+void IN_BackDown(int argc, const char** argv){
     KeyDown(&in_back);
 }
 
-void IN_BackUp(void){
+void IN_BackUp(int argc, const char** argv){
     KeyUp(&in_back);
 }
 
-void IN_LookupDown(void){
+void IN_LookupDown(int argc, const char** argv){
     KeyDown(&in_lookup);
 }
 
-void IN_LookupUp(void){
+void IN_LookupUp(int argc, const char** argv){
     KeyUp(&in_lookup);
 }
 
-void IN_LookdownDown(void){
+void IN_LookdownDown(int argc, const char** argv){
     KeyDown(&in_lookdown);
 }
 
-void IN_LookdownUp(void){
+void IN_LookdownUp(int argc, const char** argv){
     KeyUp(&in_lookdown);
 }
 
-void IN_MoveleftDown(void){
+void IN_MoveleftDown(int argc, const char** argv){
     KeyDown(&in_moveleft);
 }
 
-void IN_MoveleftUp(void){
+void IN_MoveleftUp(int argc, const char** argv){
     KeyUp(&in_moveleft);
 }
 
-void IN_MoverightDown(void){
+void IN_MoverightDown(int argc, const char** argv){
     KeyDown(&in_moveright);
 }
 
-void IN_MoverightUp(void){
+void IN_MoverightUp(int argc, const char** argv){
     KeyUp(&in_moveright);
 }
 
-void IN_SpeedDown(void){
+void IN_SpeedDown(int argc, const char** argv){
     KeyDown(&in_speed);
 }
 
-void IN_SpeedUp(void){
+void IN_SpeedUp(int argc, const char** argv){
     KeyUp(&in_speed);
 }
 
-void IN_StrafeDown(void){
+void IN_StrafeDown(int argc, const char** argv){
     KeyDown(&in_strafe);
 }
 
-void IN_StrafeUp(void){
+void IN_StrafeUp(int argc, const char** argv){
     KeyUp(&in_strafe);
 }
 
-void IN_AttackDown(void){
+void IN_AttackDown(int argc, const char** argv){
     KeyDown(&in_attack);
 }
 
-void IN_AttackUp(void){
+void IN_AttackUp(int argc, const char** argv){
     KeyUp(&in_attack);
 }
 
-void IN_UseDown(void){
+void IN_UseDown(int argc, const char** argv){
     KeyDown(&in_use);
 }
 
-void IN_UseUp(void){
+void IN_UseUp(int argc, const char** argv){
     KeyUp(&in_use);
 }
 
-void IN_Impulse(void){
+void IN_Impulse(int argc, const char** argv){
     in_impulse = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
 }
 
@@ -423,55 +423,51 @@ static usercmd_t CL_CreateCmd(void){
     return cmd;
 }
 
-void
-IN_CenterView(void)
-{
+void IN_CenterView(int argc, const char** argv){
 	cl.viewangles[PITCH] = -SHORT2ANGLE(cl.frame.playerstate.pmove.delta_angles[PITCH]);
 }
 
 /*
  * Centers the view
  */
-static void
-IN_ForceCenterView(void)
-{
+static void IN_ForceCenterView(int argc, const char** argv){
 	cl.viewangles[PITCH] = 0;
 }
 
 void CL_InitInput(void){
-    Cmd_AddCommand("centerview", IN_CenterView);
-    Cmd_AddCommand("force_centerview", IN_ForceCenterView);
-    Cmd_AddCommand("+moveup", IN_UpDown);
-    Cmd_AddCommand("-moveup", IN_UpUp);
-    Cmd_AddCommand("+movedown", IN_DownDown);
-    Cmd_AddCommand("-movedown", IN_DownUp);
-    Cmd_AddCommand("+left", IN_LeftDown);
-    Cmd_AddCommand("-left", IN_LeftUp);
-    Cmd_AddCommand("+right", IN_RightDown);
-    Cmd_AddCommand("-right", IN_RightUp);
-    Cmd_AddCommand("+forward", IN_ForwardDown);
-    Cmd_AddCommand("-forward", IN_ForwardUp);
-    Cmd_AddCommand("+back", IN_BackDown);
-    Cmd_AddCommand("-back", IN_BackUp);
-    Cmd_AddCommand("+lookup", IN_LookupDown);
-    Cmd_AddCommand("-lookup", IN_LookupUp);
-    Cmd_AddCommand("+lookdown", IN_LookdownDown);
-    Cmd_AddCommand("-lookdown", IN_LookdownUp);
-    Cmd_AddCommand("+strafe", IN_StrafeDown);
-    Cmd_AddCommand("-strafe", IN_StrafeUp);
-    Cmd_AddCommand("+moveleft", IN_MoveleftDown);
-    Cmd_AddCommand("-moveleft", IN_MoveleftUp);
-    Cmd_AddCommand("+moveright", IN_MoverightDown);
-    Cmd_AddCommand("-moveright", IN_MoverightUp);
-    Cmd_AddCommand("+speed", IN_SpeedDown);
-    Cmd_AddCommand("-speed", IN_SpeedUp);
-    Cmd_AddCommand("+attack", IN_AttackDown);
-    Cmd_AddCommand("-attack", IN_AttackUp);
-    Cmd_AddCommand("+use", IN_UseDown);
-    Cmd_AddCommand("-use", IN_UseUp);
-    Cmd_AddCommand("impulse", IN_Impulse);
-    Cmd_AddCommand("+klook", IN_KLookDown);
-    Cmd_AddCommand("-klook", IN_KLookUp);
+    Cmd_AddArgsCommand("centerview", IN_CenterView);
+    Cmd_AddArgsCommand("force_centerview", IN_ForceCenterView);
+    Cmd_AddArgsCommand("+moveup", IN_UpDown);
+    Cmd_AddArgsCommand("-moveup", IN_UpUp);
+    Cmd_AddArgsCommand("+movedown", IN_DownDown);
+    Cmd_AddArgsCommand("-movedown", IN_DownUp);
+    Cmd_AddArgsCommand("+left", IN_LeftDown);
+    Cmd_AddArgsCommand("-left", IN_LeftUp);
+    Cmd_AddArgsCommand("+right", IN_RightDown);
+    Cmd_AddArgsCommand("-right", IN_RightUp);
+    Cmd_AddArgsCommand("+forward", IN_ForwardDown);
+    Cmd_AddArgsCommand("-forward", IN_ForwardUp);
+    Cmd_AddArgsCommand("+back", IN_BackDown);
+    Cmd_AddArgsCommand("-back", IN_BackUp);
+    Cmd_AddArgsCommand("+lookup", IN_LookupDown);
+    Cmd_AddArgsCommand("-lookup", IN_LookupUp);
+    Cmd_AddArgsCommand("+lookdown", IN_LookdownDown);
+    Cmd_AddArgsCommand("-lookdown", IN_LookdownUp);
+    Cmd_AddArgsCommand("+strafe", IN_StrafeDown);
+    Cmd_AddArgsCommand("-strafe", IN_StrafeUp);
+    Cmd_AddArgsCommand("+moveleft", IN_MoveleftDown);
+    Cmd_AddArgsCommand("-moveleft", IN_MoveleftUp);
+    Cmd_AddArgsCommand("+moveright", IN_MoverightDown);
+    Cmd_AddArgsCommand("-moveright", IN_MoverightUp);
+    Cmd_AddArgsCommand("+speed", IN_SpeedDown);
+    Cmd_AddArgsCommand("-speed", IN_SpeedUp);
+    Cmd_AddArgsCommand("+attack", IN_AttackDown);
+    Cmd_AddArgsCommand("-attack", IN_AttackUp);
+    Cmd_AddArgsCommand("+use", IN_UseDown);
+    Cmd_AddArgsCommand("-use", IN_UseUp);
+    Cmd_AddArgsCommand("impulse", IN_Impulse);
+    Cmd_AddArgsCommand("+klook", IN_KLookDown);
+    Cmd_AddArgsCommand("-klook", IN_KLookUp);
     cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
 }
 

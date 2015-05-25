@@ -507,45 +507,32 @@ CL_CheckOrDownloadFile(char *filename)
 /*
  * Request a download from the server
  */
-void
-CL_Download_f(void)
-{
-	char filename[MAX_OSPATH];
-
-	if (Cmd_Argc() != 2)
-	{
-		Com_Printf("Usage: download <filename>\n");
-		return;
-	}
-
-	Com_sprintf(filename, sizeof(filename), "%s", Cmd_Argv(1));
-
-	if (strstr(filename, ".."))
-	{
-		Com_Printf("Refusing to download a path with ..\n");
-		return;
-	}
-
-	if (FS_LoadFile(filename, NULL) != -1)
-	{
-		/* it exists, no need to download */
-		Com_Printf("File already exists.\n");
-		return;
-	}
-
-	strcpy(cls.downloadname, filename);
-	Com_Printf("Downloading %s\n", cls.downloadname);
-
-	/* download to a temp name, and only rename
-	   to the real name when done, so if interrupted
-	   a runt file wont be left */
-	COM_StripExtension(cls.downloadname, cls.downloadtempname);
-	strcat(cls.downloadtempname, ".tmp");
-
-	MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
-	MSG_WriteString(&cls.netchan.message, va("download %s", cls.downloadname));
-
-	cls.downloadnumber++;
+void CL_Download_f(int argc, const char** argv){
+    char filename[MAX_OSPATH];
+    if(argc != 2){
+        Com_Printf("Usage: download <filename>\n");
+        return;
+    }
+    Com_sprintf(filename, sizeof(filename), "%s", argv[1]);
+    if(strstr(filename, "..")){
+        Com_Printf("Refusing to download a path with ..\n");
+        return;
+    }
+    if(FS_LoadFile(filename, NULL) != -1){
+        /* it exists, no need to download */
+        Com_Printf("File already exists.\n");
+        return;
+    }
+    strcpy(cls.downloadname, filename);
+    Com_Printf("Downloading %s\n", cls.downloadname);
+    /* download to a temp name, and only rename
+       to the real name when done, so if interrupted
+       a runt file wont be left */
+    COM_StripExtension(cls.downloadname, cls.downloadtempname);
+    strcat(cls.downloadtempname, ".tmp");
+    MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
+    MSG_WriteString(&cls.netchan.message, va("download %s", cls.downloadname));
+    cls.downloadnumber++;
 }
 
 /*

@@ -470,7 +470,7 @@ static void IN_MLookDown(int argc, const char** argv){
  */
 static void IN_MLookUp(int argc, const char** argv){
 	mlooking = false;
-	IN_CenterView();
+	IN_CenterView(argc, argv);
 }
 
 /* ------------------------------------------------------------------ */

@@ -416,7 +416,7 @@ void Cmd_ExecuteString(const char *text);
 /* Parses a single line of text into arguments and tries to execute it */
 /* as if it was typed at the console */
 
-void Cmd_ForwardToServer(void);
+void Cmd_ForwardToServer(int argc, const char** argv);
 
 /* adds the current command line as a clc_stringcmd to the client message. */
 /* things like godmode, noclip, etc, are commands directed to the server, */
@@ -474,7 +474,7 @@ void Cvar_GetLatchedVars(void);
 
 /* any CVAR_LATCHED variables that have been set will now take effect */
 
-qboolean Cvar_Command(const char* command, const char* argument, int count);
+qboolean Cvar_Command(int argc, const char** argv);
 
 /* called by Cmd_ExecuteString when Cmd_Argv(0) doesn't match a known */
 /* command.  Returns true if the command was a variable reference that */

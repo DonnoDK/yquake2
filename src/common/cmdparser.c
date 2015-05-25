@@ -631,7 +631,7 @@ void Cmd_ExecuteString(const char *text){
         if(command->function != NULL){
             command->function();
         }else if(command->function_with_args != NULL){
-            command->function_with_args(Cmd_Argc(), (const char**)cmd_argv);
+            command->function_with_args(cmd_argc, (const char**)cmd_argv);
         }else{
             Cmd_ExecuteString(va("cmd %s", text));
         }
@@ -648,12 +648,12 @@ void Cmd_ExecuteString(const char *text){
         return;
     }
     /* check cvars */
-    if(Cvar_Command(Cmd_Argv(0), Cmd_Argv(1), Cmd_Argc())){
+    if(Cvar_Command(cmd_argc, (const char**)cmd_argv)){
         return;
     }
 #ifndef DEDICATED_ONLY
     /* send it as a server command if we are connected */
-    Cmd_ForwardToServer();
+    Cmd_ForwardToServer(cmd_argc, (const char**)cmd_argv);
 #endif
 }
 
@@ -669,10 +669,8 @@ void Cmd_ForEach(void(*f)(cmd_function_t* cmd)){
 }
 
 int Cmd_Count(void){
-    cmd_function_t *cmd;
     int i = 0;
-    for(cmd = cmd_functions; cmd; cmd = cmd->next, i++){
-    }
+    for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){i++;}
     return i;
 }
 
