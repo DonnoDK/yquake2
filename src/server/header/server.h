@@ -190,7 +190,6 @@ extern cvar_t *sv_enforcetime;
 extern client_t *sv_client;
 extern edict_t *sv_player;
 
-void SV_FinalMessage(char *message, qboolean reconnect);
 void SV_DropClient(client_t *drop);
 
 int SV_ModelIndex(char *name);
@@ -205,7 +204,6 @@ void SV_InitOperatorCommands(void);
 void SV_SendServerinfo(client_t *client);
 void SV_UserinfoChanged(client_t *cl);
 
-void Master_Heartbeat(void);
 void Master_Packet(void);
 
 void SV_InitGame(void);

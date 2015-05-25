@@ -33,68 +33,45 @@ char *SV_StatusString(void);
 /*
  * Responds with all the info that qplug or qspy can see
  */
-void
-SVC_Status(void)
-{
-	Netchan_OutOfBandPrint(NS_SERVER, net_from, "print\n%s", SV_StatusString());
+void SVC_Status(void){
+    Netchan_OutOfBandPrint(NS_SERVER, net_from, "print\n%s", SV_StatusString());
 }
 
-void
-SVC_Ack(void)
-{
-	Com_Printf("Ping acknowledge from %s\n", NET_AdrToString(net_from));
+void SVC_Ack(void){
+    Com_Printf("Ping acknowledge from %s\n", NET_AdrToString(net_from));
 }
 
 /*
  * Responds with short info for broadcast scans
  * The second parameter should be the current protocol version number.
  */
-void
-SVC_Info(void)
-{
-	char string[64];
-	int i, count;
-	int version;
-
-	if (maxclients->value == 1)
-	{
-		return; /* ignore in single player */
-	}
-
-	version = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
-
-	if (version != PROTOCOL_VERSION)
-	{
-		Com_sprintf(string, sizeof(string), "%s: wrong version\n",
-				hostname->string, sizeof(string));
-	}
-	else
-	{
-		count = 0;
-
-		for (i = 0; i < maxclients->value; i++)
-		{
-			if (svs.clients[i].state >= cs_connected)
-			{
-				count++;
-			}
-		}
-
-		Com_sprintf(string, sizeof(string), "%16s %8s %2i/%2i\n",
-				hostname->string, sv.name, count,
-				(int)maxclients->value);
-	}
-
-	Netchan_OutOfBandPrint(NS_SERVER, net_from, "info\n%s", string);
+void SVC_Info(void){
+    char string[64];
+    int i, count;
+    int version;
+    if(maxclients->value == 1){
+        return; /* ignore in single player */
+    }
+    version = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
+    if(version != PROTOCOL_VERSION){
+        Com_sprintf(string, sizeof(string), "%s: wrong version\n", hostname->string, sizeof(string));
+    }else{
+        count = 0;
+        for(i = 0; i < maxclients->value; i++){
+            if(svs.clients[i].state >= cs_connected){
+                count++;
+            }
+        }
+        Com_sprintf(string, sizeof(string), "%16s %8s %2i/%2i\n", hostname->string, sv.name, count, (int)maxclients->value);
+    }
+    Netchan_OutOfBandPrint(NS_SERVER, net_from, "info\n%s", string);
 }
 
 /*
  * SVC_Ping
  */
-void
-SVC_Ping(void)
-{
-	Netchan_OutOfBandPrint(NS_SERVER, net_from, "ack");
+void SVC_Ping(void){
+    Netchan_OutOfBandPrint(NS_SERVER, net_from, "ack");
 }
 
 /*

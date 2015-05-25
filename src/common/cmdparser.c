@@ -653,23 +653,23 @@ void Cmd_ExecuteString(const char *text){
 }
 
 
-void Cmd_PrintName(cmd_function_t* cmd){
+static void Cmd_PrintName(cmd_function_t* cmd){
     Com_Printf("%s\n", cmd->name);
 }
 
-void Cmd_ForEach(void(*f)(cmd_function_t* cmd)){
+static void Cmd_ForEach(void(*f)(cmd_function_t* cmd)){
     for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
         f(cmd);
     }
 }
 
-int Cmd_Count(void){
+static int Cmd_Count(void){
     int i = 0;
     for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){i++;}
     return i;
 }
 
-void Cmd_List_f(int argc, const char** argv){
+static void Cmd_List_f(int argc, const char** argv){
     Cmd_ForEach(Cmd_PrintName);
     Com_Printf("%i commands\n", Cmd_Count());
 }
