@@ -127,9 +127,7 @@ VID_Error(int err_level, char *fmt, ...)
  * simply by setting the modified flag for the vid_fullscreen variable, which will
  * cause the entire video mode and refreshto be reset on the next frame.
  */
-void
-VID_Restart_f(void)
-{
+void VID_Restart_f(int argc, const char** argv){
 	vid_fullscreen->modified = true;
 }
 
@@ -215,7 +213,7 @@ VID_Init(void)
 	vid_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
 
 	/* Add some console commands that we want to handle */
-	Cmd_AddCommand("vid_restart", VID_Restart_f);
+	Cmd_AddArgsCommand("vid_restart", VID_Restart_f);
 
 	/* Start the graphics mode and load refresh DLL */
 	VID_CheckChanges();

@@ -93,14 +93,10 @@ static cvar_t *windowed_mouse;
  * This creepy function translates SDL keycodes into
  * the id Tech 2 engines interal representation.
  */
-static int
-IN_TranslateSDLtoQ2Key(unsigned int keysym)
-{
+static int IN_TranslateSDLtoQ2Key(unsigned int keysym){
 	int key = 0;
-
 	/* These must be translated */
-	switch (keysym)
-	{
+	switch(keysym){
 		case SDLK_PAGEUP:
 			key = K_PGUP;
 			break;
@@ -288,11 +284,9 @@ IN_TranslateSDLtoQ2Key(unsigned int keysym)
 		case SDLK_CAPSLOCK:
 			key = K_CAPSLOCK;
 			break;
-
 		default:
 			break;
 	}
-
 	return key;
 }
 
@@ -467,18 +461,14 @@ Vector3_t IN_Move(){
 /*
  * Look down
  */
-static void
-IN_MLookDown(void)
-{
+static void IN_MLookDown(int argc, const char** argv){
 	mlooking = true;
 }
 
 /*
  * Look up
  */
-static void
-IN_MLookUp(void)
-{
+static void IN_MLookUp(int argc, const char** argv){
 	mlooking = false;
 	IN_CenterView();
 }
@@ -509,8 +499,8 @@ IN_Init(void)
 	vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
 	windowed_mouse = Cvar_Get("windowed_mouse", "1", CVAR_USERINFO | CVAR_ARCHIVE);
 
-	Cmd_AddCommand("+mlook", IN_MLookDown);
-	Cmd_AddCommand("-mlook", IN_MLookUp);
+	Cmd_AddArgsCommand("+mlook", IN_MLookDown);
+	Cmd_AddArgsCommand("-mlook", IN_MLookUp);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_StartTextInput();

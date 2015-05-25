@@ -51,7 +51,7 @@ cvar_t *cd_volume;
 cvar_t *cd_nocd;
 cvar_t *cd_dev;
 
-static void CD_f();
+static void CD_f(int argc, const char** argv);
 
 static void
 CDAudio_Eject()
@@ -387,7 +387,7 @@ CDAudio_Init()
 		cdValid = false;
 	}
 
-	Cmd_AddCommand("cd", CD_f);
+	Cmd_AddArgsCommand("cd", CD_f);
 	Com_Printf("CD Audio Initialized.\n");
 	return 0;
 }
@@ -416,104 +416,62 @@ CDAudio_Shutdown()
 	initialized = false;
 }
 
-static void
-CD_f()
-{
-	char *command;
-	int cdstate;
-
-	if (Cmd_Argc() < 2)
-	{
-		return;
-	}
-
-	command = Cmd_Argv(1);
-
-	if (!Q_strcasecmp(command, "on"))
-	{
-		enabled = true;
-	}
-
-	if (!Q_strcasecmp(command, "off"))
-	{
-		if (!cd_id)
-		{
-			return;
-		}
-
-		cdstate = SDL_CDStatus(cd_id);
-
-		if ((cdstate == CD_PLAYING) || (cdstate == CD_PAUSED))
-		{
-			CDAudio_Stop();
-		}
-
-		enabled = false;
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "play"))
-	{
-		CDAudio_Play((byte)(int)strtol(Cmd_Argv(2), (char **)NULL, 10), false);
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "loop"))
-	{
-		CDAudio_Play((byte)(int)strtol(Cmd_Argv(2), (char **)NULL, 10), true);
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "stop"))
-	{
-		CDAudio_Stop();
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "pause"))
-	{
-		CDAudio_Pause();
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "resume"))
-	{
-		CDAudio_Resume();
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "eject"))
-	{
-		CDAudio_Eject();
-		return;
-	}
-
-	if (!Q_strcasecmp(command, "info"))
-	{
-		if (!cd_id)
-		{
-			return;
-		}
-
-		cdstate = SDL_CDStatus(cd_id);
-		Com_Printf("%d tracks\n", cd_id->numtracks);
-
-		if (cdstate == CD_PLAYING)
-		{
-			Com_Printf("Currently %s track %d\n",
-					playLooping ? "looping" : "playing",
-					cd_id->cur_track + 1);
-		}
-		else
-		if (cdstate == CD_PAUSED)
-		{
-			Com_Printf("Paused %s track %d\n",
-					playLooping ? "looping" : "playing",
-					cd_id->cur_track + 1);
-		}
-
-		return;
-	}
+static void CD_f(int argc, const char** argv){
+    if (argc < 2){
+        return;
+    }
+    char* command = argv[1];
+    if(!Q_strcasecmp(command, "on")){
+        enabled = true;
+    }
+    if(!Q_strcasecmp(command, "off")){
+        if(!cd_id){
+            return;
+        }
+        int cdstate = SDL_CDStatus(cd_id);
+        if((cdstate == CD_PLAYING) || (cdstate == CD_PAUSED)){
+            CDAudio_Stop();
+        }
+        enabled = false;
+        return;
+    }
+    if(!Q_strcasecmp(command, "play")){
+        CDAudio_Play((byte)(int)strtol(argv[2], (char **)NULL, 10), false);
+        return;
+    }
+    if(!Q_strcasecmp(command, "loop")){
+        CDAudio_Play((byte)(int)strtol(argv[2], (char **)NULL, 10), true);
+        return;
+    }
+    if(!Q_strcasecmp(command, "stop")){
+        CDAudio_Stop();
+        return;
+    }
+    if(!Q_strcasecmp(command, "pause")){
+        CDAudio_Pause();
+        return;
+    }
+    if(!Q_strcasecmp(command, "resume")){
+        CDAudio_Resume();
+        return;
+    }
+    if(!Q_strcasecmp(command, "eject")){
+        CDAudio_Eject();
+        return;
+    }
+    if(!Q_strcasecmp(command, "info")){
+        if(!cd_id){
+            return;
+        }
+        int cdstate = SDL_CDStatus(cd_id);
+        Com_Printf("%d tracks\n", cd_id->numtracks);
+        if(cdstate == CD_PLAYING){
+            Com_Printf("Currently %s track %d\n", playLooping ? "looping" : "playing", cd_id->cur_track + 1);
+        }else if(cdstate == CD_PAUSED){
+            Com_Printf("Paused %s track %d\n", playLooping ? "looping" : "playing", cd_id->cur_track + 1);
+        }
+        return;
+    }
 }
 
 void

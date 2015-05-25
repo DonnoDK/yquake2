@@ -35,6 +35,7 @@ typedef struct cmd_function_s{
     struct cmd_function_s *next;
     char *name;
     xcommand_t function;
+    xcommand_with_args_t function_with_args;
 } cmd_function_t;
 
 static cmd_function_t *cmd_functions; /* possible commands to execute */
@@ -63,7 +64,7 @@ static char defer_text_buf[8192];
  * until next frame.  This allows commands like: bind g "impulse 5 ;
  * +attack ; wait ; -attack ; impulse 2"
  */
-static void Cmd_Wait_f(void){
+static void Cmd_Wait_f(int argc, const char** argv){
     cmd_wait = true;
 }
 
@@ -238,18 +239,18 @@ qboolean Cbuf_AddLateCommands(int argc, const char** argv){
     return ret;
 }
 
-void Cmd_Exec_f(void){
-    if(Cmd_Argc() != 2){
+void Cmd_Exec_f(int argc, const char** argv){
+    if(argc != 2){
         Com_Printf("exec <filename> : execute a script file\n");
         return;
     }
     char* f;
-    int len = FS_LoadFile(Cmd_Argv(1), (void **)&f);
+    int len = FS_LoadFile(argv[1], (void **)&f);
     if(!f){
-        Com_Printf("couldn't exec %s\n", Cmd_Argv(1));
+        Com_Printf("couldn't exec %s\n", argv[1]);
         return;
     }
-    Com_Printf("execing %s\n", Cmd_Argv(1));
+    Com_Printf("execing %s\n", argv[1]);
     /* the file doesn't have a trailing 0, so we need to copy it off */
     char* f2 = Z_Malloc(len + 1);
     memcpy(f2, f, len);
@@ -262,9 +263,9 @@ void Cmd_Exec_f(void){
 /*
  * Just prints the rest of the line to the console
  */
-void Cmd_Echo_f(void){
-    for(int i = 1; i < Cmd_Argc(); i++){
-        Com_Printf("%s ", Cmd_Argv(i));
+void Cmd_Echo_f(int argc, const char** argv){
+    for(int i = 1; i < argc; i++){
+        Com_Printf("%s ", argv[i]);
     }
     Com_Printf("\n");
 }
@@ -273,15 +274,15 @@ void Cmd_Echo_f(void){
  * Creates a new command that executes
  * a command string (possibly ; seperated)
  */
-void Cmd_Alias_f(void){
-    if(Cmd_Argc() == 1){
+void Cmd_Alias_f(int argc, const char** argv){
+    if(argc == 1){
         Com_Printf("Current alias commands:\n");
         for(cmdalias_t* a = cmd_alias; a; a = a->next){
             Com_Printf("%s : %s\n", a->name, a->value);
         }
         return;
     }
-    const char* s = Cmd_Argv(1);
+    const char* s = argv[1];
     if(strlen(s) >= MAX_ALIAS_NAME){
         Com_Printf("Alias name is too long\n");
         return;
@@ -303,9 +304,9 @@ void Cmd_Alias_f(void){
     /* copy the rest of the command line */
     char cmd[1024];
     cmd[0] = 0; /* start out with a null string */
-    int c = Cmd_Argc();
+    int c = argc;
     for(int i = 2; i < c; i++){
-        strcat(cmd, Cmd_Argv(i));
+        strcat(cmd, argv[i]);
         if(i != (c - 1)){
             strcat(cmd, " ");
         }
@@ -452,6 +453,29 @@ static const cmd_function_t* Cmd_CommandNamed(const char* name){
     return NULL;
 }
 
+void Cmd_AddArgsCommand(char* cmd_name, xcommand_with_args_t function){
+    /* fail if the command is a variable name */
+    if(Cvar_VariableString(cmd_name)[0]){
+        Cmd_RemoveCommand(cmd_name);
+    }
+    /* fail if the command already exists */
+    if(Cmd_CommandNamed(cmd_name) != NULL){
+        Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
+        return;
+    }
+    cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
+    cmd->name = cmd_name;
+    cmd->function = NULL;
+    cmd->function_with_args = function;
+    /* link the command in */
+    cmd_function_t** pos = &cmd_functions;
+    while(*pos && strcmp((*pos)->name, cmd->name) < 0){
+        pos = &(*pos)->next;
+    }
+    cmd->next = *pos;
+    *pos = cmd;
+}
+
 void Cmd_AddCommand(char *cmd_name, xcommand_t function){
     /* fail if the command is a variable name */
     if(Cvar_VariableString(cmd_name)[0]){
@@ -465,6 +489,7 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function){
     cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
     cmd->name = cmd_name;
     cmd->function = function;
+    cmd->function_with_args = NULL;
     /* link the command in */
     cmd_function_t** pos = &cmd_functions;
     while(*pos && strcmp((*pos)->name, cmd->name) < 0){
@@ -597,7 +622,7 @@ qboolean Cmd_IsComplete(const char *command){
 void Cmd_ExecuteString(const char *text){
     Cmd_TokenizeString(text, true);
     /* execute the command line */
-    if(!Cmd_Argc()){
+    if(cmd_argc == 0){
         return; /* no tokens */
     }
     /* check functions */
@@ -605,6 +630,8 @@ void Cmd_ExecuteString(const char *text){
     if(command != NULL){
         if(command->function != NULL){
             command->function();
+        }else if(command->function_with_args != NULL){
+            command->function_with_args(Cmd_Argc(), (const char**)cmd_argv);
         }else{
             Cmd_ExecuteString(va("cmd %s", text));
         }
@@ -630,20 +657,35 @@ void Cmd_ExecuteString(const char *text){
 #endif
 }
 
-void Cmd_List_f(void){
+
+void Cmd_PrintName(cmd_function_t* cmd){
+    Com_Printf("%s\n", cmd->name);
+}
+
+void Cmd_ForEach(void(*f)(cmd_function_t* cmd)){
+    for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
+        f(cmd);
+    }
+}
+
+int Cmd_Count(void){
     cmd_function_t *cmd;
     int i = 0;
     for(cmd = cmd_functions; cmd; cmd = cmd->next, i++){
-        Com_Printf("%s\n", cmd->name);
     }
-    Com_Printf("%i commands\n", i);
+    return i;
+}
+
+void Cmd_List_f(int argc, const char** argv){
+    Cmd_ForEach(Cmd_PrintName);
+    Com_Printf("%i commands\n", Cmd_Count());
 }
 
 void Cmd_Init(void){
     /* register our commands */
-    Cmd_AddCommand("cmdlist", Cmd_List_f);
-    Cmd_AddCommand("exec", Cmd_Exec_f);
-    Cmd_AddCommand("echo", Cmd_Echo_f);
-    Cmd_AddCommand("alias", Cmd_Alias_f);
-    Cmd_AddCommand("wait", Cmd_Wait_f);
+    Cmd_AddArgsCommand("cmdlist", Cmd_List_f);
+    Cmd_AddArgsCommand("exec", Cmd_Exec_f);
+    Cmd_AddArgsCommand("echo", Cmd_Echo_f);
+    Cmd_AddArgsCommand("alias", Cmd_Alias_f);
+    Cmd_AddArgsCommand("wait", Cmd_Wait_f);
 }

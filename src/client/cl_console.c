@@ -64,7 +64,7 @@ void Key_ClearTyping(void){
 
 // TODO: this looks a lot like "static void ConsoleFunc(void *unused)" in menu.c,
 // which calls Key_ClearTyping
-static void Con_ToggleConsole_f(void){
+static void Con_ToggleConsole_f(int argc, const char** argv){
     SCR_EndLoadingPlaque(); /* get rid of loading plaque */
     if(cl.attractloop){
         Cbuf_AddText("killserver\n");
@@ -89,17 +89,17 @@ static void Con_ToggleConsole_f(void){
     }
 }
 
-static void Con_Clear_f(void){
+static void Con_Clear_f(int argc, const char** argv){
     memset(con.text, ' ', CON_TEXTSIZE);
 }
 
 /*
  * Save the console contents out to a file
  */
-static void Con_Dump_f(void){
+static void Con_Dump_f(int argc, const char** argv){
     int l, x;
     char name[MAX_OSPATH];
-    if(Cmd_Argc() != 2){
+    if(argc != 2){
         Com_Printf("usage: condump <filename>\n");
         return;
     }
@@ -107,7 +107,7 @@ static void Con_Dump_f(void){
         Com_Printf("con.linewidth too large!\n");
         return;
     }
-    Com_sprintf(name, sizeof(name), "%s/%s.txt", FS_Gamedir(), Cmd_Argv(1));
+    Com_sprintf(name, sizeof(name), "%s/%s.txt", FS_Gamedir(), argv[1]);
     Com_Printf("Dumped console text to %s.\n", name);
     FS_CreatePath(name);
     FILE* f = fopen(name, "w");
@@ -154,12 +154,12 @@ void Con_ClearNotify(void){
     }
 }
 
-static void Con_MessageMode_f(void){
+static void Con_MessageMode_f(int argc, const char** argv){
     chat_team = false;
     cls.key_dest = key_message;
 }
 
-static void Con_MessageMode2_f(void){
+static void Con_MessageMode2_f(int argc, const char** argv){
     chat_team = true;
     cls.key_dest = key_message;
 }
@@ -212,12 +212,12 @@ void Con_Init(void){
 	Com_Printf("Console initialized.\n");
 	/* register our commands */
 	con_notifytime = Cvar_Get("con_notifytime", "3", 0);
-	Cmd_AddCommand("toggleconsole", Con_ToggleConsole_f);
-	Cmd_AddCommand("togglechat", Con_ToggleConsole_f);
-	Cmd_AddCommand("messagemode", Con_MessageMode_f);
-	Cmd_AddCommand("messagemode2", Con_MessageMode2_f);
-	Cmd_AddCommand("clear", Con_Clear_f);
-	Cmd_AddCommand("condump", Con_Dump_f);
+	Cmd_AddArgsCommand("toggleconsole", Con_ToggleConsole_f);
+	Cmd_AddArgsCommand("togglechat", Con_ToggleConsole_f);
+	Cmd_AddArgsCommand("messagemode", Con_MessageMode_f);
+	Cmd_AddArgsCommand("messagemode2", Con_MessageMode2_f);
+	Cmd_AddArgsCommand("clear", Con_Clear_f);
+	Cmd_AddArgsCommand("condump", Con_Dump_f);
 	con.initialized = true;
 }
 
