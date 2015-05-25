@@ -238,238 +238,135 @@ CL_Rcon_f(void)
  * the server This is also called on Com_Error, so
  * it shouldn't cause any errors
  */
-void
-CL_Disconnect(void)
-{
-	byte final[32];
-
-	if (cls.state == ca_disconnected)
-	{
-		return;
-	}
-
-	if (cl_timedemo && cl_timedemo->value)
-	{
-		int time;
-
-		time = Sys_Milliseconds() - cl.timedemo_start;
-
-		if (time > 0)
-		{
-			Com_Printf("%i frames, %3.1f seconds: %3.1f fps\n",
-					cl.timedemo_frames, time / 1000.0,
-					cl.timedemo_frames * 1000.0 / time);
-		}
-	}
-
-	VectorClear(cl.refdef.blend);
-
-	R_SetPalette(NULL);
-
-	M_ForceMenuOff();
-
-	cls.connect_time = 0;
-
-	SCR_StopCinematic();
+void CL_Disconnect(void){
+    byte final[32];
+    if(cls.state == ca_disconnected){
+        return;
+    }
+    if(cl_timedemo && cl_timedemo->value){
+        int time = Sys_Milliseconds() - cl.timedemo_start;
+        if(time > 0){
+            Com_Printf("%i frames, %3.1f seconds: %3.1f fps\n", cl.timedemo_frames, time / 1000.0, cl.timedemo_frames * 1000.0 / time);
+        }
+    }
+    VectorClear(cl.refdef.blend);
+    R_SetPalette(NULL);
+    M_ForceMenuOff();
+    cls.connect_time = 0;
+    SCR_StopCinematic();
 #ifdef OGG
-	OGG_Stop();
+    OGG_Stop();
 #endif
 #ifdef CDA
-	CDAudio_Stop();
+    CDAudio_Stop();
 #endif
-
-	if (cls.demorecording)
-	{
-		CL_Stop_f();
-	}
-
-	/* send a disconnect message to the server */
-	final[0] = clc_stringcmd;
-
-	strcpy((char *)final + 1, "disconnect");
-
-	Netchan_Transmit(&cls.netchan, strlen((const char *)final), final);
-	Netchan_Transmit(&cls.netchan, strlen((const char *)final), final);
-	Netchan_Transmit(&cls.netchan, strlen((const char *)final), final);
-
-	CL_ClearState();
-
-	/* stop file download */
-	if (cls.download)
-	{
-		fclose(cls.download);
-		cls.download = NULL;
-	}
-
-	cls.state = ca_disconnected;
-
-	snd_is_underwater = false;
+    if(cls.demorecording){
+        CL_Stop_f();
+    }
+    /* send a disconnect message to the server */
+    final[0] = clc_stringcmd;
+    strcpy((char *)final + 1, "disconnect");
+    Netchan_Transmit(&cls.netchan, strlen((const char *)final), final);
+    Netchan_Transmit(&cls.netchan, strlen((const char *)final), final);
+    Netchan_Transmit(&cls.netchan, strlen((const char *)final), final);
+    CL_ClearState();
+    /* stop file download */
+    if(cls.download){
+        fclose(cls.download);
+        cls.download = NULL;
+    }
+    cls.state = ca_disconnected;
+    snd_is_underwater = false;
 }
 
-void
-CL_Disconnect_f(void)
-{
+void CL_Disconnect_f(void){
 	Com_Error(ERR_DROP, "Disconnected from server");
 }
 
-/*
- * packet <destination> <contents>
- *
- * Contents allows \n escape character
- */
-void CL_Packet_f(void){
-    if(Cmd_Argc() != 3){
-        Com_Printf("packet <destination> <contents>\n");
-        return;
-    }
-    NET_Config(true);  /* allow remote */
-    netadr_t adr;
-    if(!NET_StringToAdr(Cmd_Argv(1), &adr)){
-        Com_Printf("Bad address\n");
-        return;
-    }
-    if(!adr.port){
-        adr.port = BigShort(PORT_SERVER);
-    }
-    const char* in = Cmd_Argv(2);
-    char send[2048];
-    char* out = send + 4;
-    send[0] = send[1] = send[2] = send[3] = (char)0xff;
-    int l = strlen(in);
-    for(int i = 0; i < l; i++){
-        if((in[i] == '\\') && (in[i + 1] == 'n')){
-            *out++ = '\n';
-            i++;
-        }else{
-            *out++ = in[i];
-        }
-    }
-    *out = 0;
-    NET_SendPacket(NS_CLIENT, out - send, send, adr);
-}
 
 /*
  * Just sent as a hint to the client that they should
  * drop to full console
  */
 void CL_Changing_f(void){
-	/* if we are downloading, we don't change!
-	   This so we don't suddenly stop downloading a map */
-	if(cls.download){
-		return;
-	}
-	SCR_BeginLoadingPlaque();
-	cls.state = ca_connected; /* not active anymore, but not disconnected */
-	Com_Printf("\nChanging map...\n");
+    /* if we are downloading, we don't change!
+       This so we don't suddenly stop downloading a map */
+    if(cls.download){
+        return;
+    }
+    SCR_BeginLoadingPlaque();
+    cls.state = ca_connected; /* not active anymore, but not disconnected */
+    Com_Printf("\nChanging map...\n");
 }
 
 /*
  * The server is changing levels
  */
-void
-CL_Reconnect_f(void)
-{
-	/* if we are downloading, we don't change!
-	   This so we don't suddenly stop downloading a map */
-	if (cls.download)
-	{
-		return;
-	}
-
-	S_StopAllSounds();
-
-	if (cls.state == ca_connected)
-	{
-		Com_Printf("reconnecting...\n");
-		cls.state = ca_connected;
-		MSG_WriteChar(&cls.netchan.message, clc_stringcmd);
-		MSG_WriteString(&cls.netchan.message, "new");
-		return;
-	}
-
-	if (*cls.servername)
-	{
-		if (cls.state >= ca_connected)
-		{
-			CL_Disconnect();
-			cls.connect_time = cls.realtime - 1500;
-		}
-
-		else
-		{
-			cls.connect_time = -99999; /* Hack: fire immediately */
-		}
-
-		cls.state = ca_connecting;
-
-		Com_Printf("reconnecting...\n");
-	}
+void CL_Reconnect_f(void){
+    /* if we are downloading, we don't change!
+       This so we don't suddenly stop downloading a map */
+    if(cls.download){
+        return;
+    }
+    S_StopAllSounds();
+    if(cls.state == ca_connected){
+        Com_Printf("reconnecting...\n");
+        cls.state = ca_connected;
+        MSG_WriteChar(&cls.netchan.message, clc_stringcmd);
+        MSG_WriteString(&cls.netchan.message, "new");
+        return;
+    }
+    if(*cls.servername){
+        if(cls.state >= ca_connected){
+            CL_Disconnect();
+            cls.connect_time = cls.realtime - 1500;
+        }else{
+            cls.connect_time = -99999; /* Hack: fire immediately */
+        }
+        cls.state = ca_connecting;
+        Com_Printf("reconnecting...\n");
+    }
 }
 
-void
-CL_PingServers_f(void)
-{
-	int i;
-	netadr_t adr;
-	char name[32];
-	char *adrstring;
-	cvar_t *noudp;
-	cvar_t *noipx;
-
-	NET_Config(true);  /* allow remote but do we even need lokal pings? */
-
-	/* send a broadcast packet */
-	Com_Printf("pinging broadcast...\n");
-
-	noudp = Cvar_Get("noudp", "0", CVAR_NOSET);
-
-	if (!noudp->value)
-	{
-		adr.type = NA_BROADCAST;
-		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
-
-		Com_Printf("pinging multicast...\n");
-		adr.type = NA_MULTICAST6;
-		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
-	}
-
-	noipx = Cvar_Get("noipx", "0", CVAR_NOSET);
-
-	if (!noipx->value)
-	{
-		adr.type = NA_BROADCAST_IPX;
-		adr.port = BigShort(PORT_SERVER);
-		Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
-	}
-
-	/* send a packet to each address book entry */
-	for (i = 0; i < 16; i++)
-	{
-		Com_sprintf(name, sizeof(name), "adr%i", i);
-		adrstring = (char *)Cvar_VariableString(name);
-
-		if (!adrstring || !adrstring[0])
-		{
-			continue;
-		}
-
-		Com_Printf("pinging %s...\n", adrstring);
-
-		if (!NET_StringToAdr(adrstring, &adr))
-		{
-			Com_Printf("Bad address: %s\n", adrstring);
-			continue;
-		}
-
-		if (!adr.port)
-		{
-			adr.port = BigShort(PORT_SERVER);
-		}
-
-		Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
-	}
+void CL_PingServers_f(void){
+    netadr_t adr;
+    char name[32];
+    NET_Config(true);  /* allow remote but do we even need lokal pings? */
+    /* send a broadcast packet */
+    Com_Printf("pinging broadcast...\n");
+    cvar_t* noudp = Cvar_Get("noudp", "0", CVAR_NOSET);
+    if(!noudp->value){
+        adr.type = NA_BROADCAST;
+        adr.port = BigShort(PORT_SERVER);
+        Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+        Com_Printf("pinging multicast...\n");
+        adr.type = NA_MULTICAST6;
+        adr.port = BigShort(PORT_SERVER);
+        Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+    }
+    cvar_t* noipx = Cvar_Get("noipx", "0", CVAR_NOSET);
+    if(!noipx->value){
+        adr.type = NA_BROADCAST_IPX;
+        adr.port = BigShort(PORT_SERVER);
+        Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+    }
+    /* send a packet to each address book entry */
+    for(int i = 0; i < 16; i++){
+        Com_sprintf(name, sizeof(name), "adr%i", i);
+        const char* adrstring = Cvar_VariableString(name);
+        if(!adrstring || !adrstring[0]){
+            continue;
+        }
+        Com_Printf("pinging %s...\n", adrstring);
+        if(!NET_StringToAdr(adrstring, &adr)){
+            Com_Printf("Bad address: %s\n", adrstring);
+            continue;
+        }
+        if(!adr.port){
+            adr.port = BigShort(PORT_SERVER);
+        }
+        Netchan_OutOfBandPrint(NS_CLIENT, adr, va("info %i", PROTOCOL_VERSION));
+    }
 }
 
 /*
