@@ -177,126 +177,80 @@ SV_CheckForSavegame(void)
  * Change the server to a new map, taking all connected
  * clients along with it.
  */
-void
-SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate,
-		qboolean attractloop, qboolean loadgame)
-{
-	int i;
-	unsigned checksum;
-
-	if (attractloop)
-	{
-		Cvar_Set("paused", "0");
-	}
-
-	Com_Printf("------- server initialization ------\n");
-	Com_DPrintf("SpawnServer: %s\n", server);
-
-	if (sv.demofile)
-	{
-		FS_FCloseFile(sv.demofile);
-	}
-
-	svs.spawncount++; /* any partially connected client will be restarted */
-	sv.state = ss_dead;
-	Com_SetServerState(sv.state);
-
-	/* wipe the entire per-level structure */
-	memset(&sv, 0, sizeof(sv));
-	svs.realtime = 0;
-	sv.loadgame = loadgame;
-	sv.attractloop = attractloop;
-
-	/* save name for levels that don't set message */
-	strcpy(sv.configstrings[CS_NAME], server);
-
-	if (Cvar_VariableValue("deathmatch"))
-	{
-		sprintf(sv.configstrings[CS_AIRACCEL], "%g", sv_airaccelerate->value);
-		pm_airaccelerate = sv_airaccelerate->value;
-	}
-	else
-	{
-		strcpy(sv.configstrings[CS_AIRACCEL], "0");
-		pm_airaccelerate = 0;
-	}
-
-	SZ_Init(&sv.multicast, sv.multicast_buf, sizeof(sv.multicast_buf));
-
-	strcpy(sv.name, server);
-
-	/* leave slots at start for clients only */
+void SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate, qboolean attractloop, qboolean loadgame){
+    if(attractloop){
+        Cvar_Set("paused", "0");
+    }
+    Com_Printf("------- server initialization ------\n");
+    Com_DPrintf("SpawnServer: %s\n", server);
+    if(sv.demofile){
+        FS_FCloseFile(sv.demofile);
+    }
+    svs.spawncount++; /* any partially connected client will be restarted */
+    sv.state = ss_dead;
+    Com_SetServerState(sv.state);
+    /* wipe the entire per-level structure */
+    memset(&sv, 0, sizeof(sv));
+    svs.realtime = 0;
+    sv.loadgame = loadgame;
+    sv.attractloop = attractloop;
+    /* save name for levels that don't set message */
+    strcpy(sv.configstrings[CS_NAME], server);
+    if(Cvar_VariableValue("deathmatch")){
+        sprintf(sv.configstrings[CS_AIRACCEL], "%g", sv_airaccelerate->value);
+        pm_airaccelerate = sv_airaccelerate->value;
+    }else{
+        strcpy(sv.configstrings[CS_AIRACCEL], "0");
+        pm_airaccelerate = 0;
+    }
+    SZ_Init(&sv.multicast, sv.multicast_buf, sizeof(sv.multicast_buf));
+    strcpy(sv.name, server);
+    /* leave slots at start for clients only */
     ClientsMapForEach(^void(client_t* c){
-		if(c->state > cs_connected){
-			c->state = cs_connected;
-		}
-		c->lastframe = -1;
+        if(c->state > cs_connected){
+            c->state = cs_connected;
+        }
+        c->lastframe = -1;
     });
-
-	sv.time = 1000;
-
-	strcpy(sv.name, server);
-	strcpy(sv.configstrings[CS_NAME], server);
-
-	if (serverstate != ss_game)
-	{
-		sv.models[1] = CM_LoadMap("", false, &checksum); /* no real map */
-	}
-	else
-	{
-		Com_sprintf(sv.configstrings[CS_MODELS + 1],
-				sizeof(sv.configstrings[CS_MODELS + 1]), "maps/%s.bsp", server);
-		sv.models[1] = CM_LoadMap(sv.configstrings[CS_MODELS + 1],
-				false, &checksum);
-	}
-
-	Com_sprintf(sv.configstrings[CS_MAPCHECKSUM],
-			sizeof(sv.configstrings[CS_MAPCHECKSUM]),
-			"%i", checksum);
-
-	/* clear physics interaction links */
-	SV_ClearWorld();
-
-	for (i = 1; i < CM_NumInlineModels(); i++)
-	{
-		Com_sprintf(sv.configstrings[CS_MODELS + 1 + i],
-				sizeof(sv.configstrings[CS_MODELS + 1 + i]),
-				"*%i", i);
-		sv.models[i + 1] = CM_InlineModel(sv.configstrings[CS_MODELS + 1 + i]);
-	}
-
-	/* spawn the rest of the entities on the map */
-	sv.state = ss_loading;
-	Com_SetServerState(sv.state);
-
-	/* load and spawn all other entities */
-	ge->SpawnEntities(sv.name, CM_EntityString(), spawnpoint);
-
-	/* run two frames to allow everything to settle */
-	ge->RunFrame();
-	ge->RunFrame();
-
-	/* verify game didn't clobber important stuff */
-	if ((int)checksum !=
-		(int)strtol(sv.configstrings[CS_MAPCHECKSUM], (char **)NULL, 10))
-	{
-		Com_Error(ERR_DROP, "Game DLL corrupted server configstrings");
-	}
-
-	/* all precaches are complete */
-	sv.state = serverstate;
-	Com_SetServerState(sv.state);
-
-	/* create a baseline for more efficient communications */
-	SV_CreateBaseline();
-
-	/* check for a savegame */
-	SV_CheckForSavegame();
-
-	/* set serverinfo variable */
-	Cvar_FullSet("mapname", sv.name, CVAR_SERVERINFO | CVAR_NOSET);
-
-	Com_Printf("------------------------------------\n\n");
+    sv.time = 1000;
+    strcpy(sv.name, server);
+    strcpy(sv.configstrings[CS_NAME], server);
+    unsigned checksum;
+    if(serverstate != ss_game){
+        sv.models[1] = CM_LoadMap("", false, &checksum); /* no real map */
+    }else{
+        Com_sprintf(sv.configstrings[CS_MODELS + 1], sizeof(sv.configstrings[CS_MODELS + 1]), "maps/%s.bsp", server);
+        sv.models[1] = CM_LoadMap(sv.configstrings[CS_MODELS + 1], false, &checksum);
+    }
+    Com_sprintf(sv.configstrings[CS_MAPCHECKSUM], sizeof(sv.configstrings[CS_MAPCHECKSUM]), "%i", checksum);
+    /* clear physics interaction links */
+    SV_ClearWorld();
+    for(int i = 1; i < CM_NumInlineModels(); i++){
+        Com_sprintf(sv.configstrings[CS_MODELS + 1 + i], sizeof(sv.configstrings[CS_MODELS + 1 + i]), "*%i", i);
+        sv.models[i + 1] = CM_InlineModel(sv.configstrings[CS_MODELS + 1 + i]);
+    }
+    /* spawn the rest of the entities on the map */
+    sv.state = ss_loading;
+    Com_SetServerState(sv.state);
+    /* load and spawn all other entities */
+    ge->SpawnEntities(sv.name, CM_EntityString(), spawnpoint);
+    /* run two frames to allow everything to settle */
+    ge->RunFrame();
+    ge->RunFrame();
+    /* verify game didn't clobber important stuff */
+    if((int)checksum != (int)strtol(sv.configstrings[CS_MAPCHECKSUM], (char **)NULL, 10)) {
+        Com_Error(ERR_DROP, "Game DLL corrupted server configstrings");
+    }
+    /* all precaches are complete */
+    sv.state = serverstate;
+    Com_SetServerState(sv.state);
+    /* create a baseline for more efficient communications */
+    SV_CreateBaseline();
+    /* check for a savegame */
+    SV_CheckForSavegame();
+    /* set serverinfo variable */
+    Cvar_FullSet("mapname", sv.name, CVAR_SERVERINFO | CVAR_NOSET);
+    Com_Printf("------------------------------------\n\n");
 }
 
 /*

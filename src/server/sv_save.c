@@ -25,6 +25,7 @@
  */
 
 #include "header/server.h"
+#include "../common/header/common.h"
 
 void CM_ReadPortalState(fileHandle_t f);
 
@@ -206,21 +207,23 @@ void SV_WriteServerFile(qboolean autosave){
     /* write all CVAR_LATCH cvars
        these will be things like coop,
        skill, deathmatch, etc */
-    for(cvar_t* var = cvar_vars; var; var = var->next){
+    char* name_buf = name;
+    char* string_buf = string;
+    CvarsMapForEach(^void(cvar_t* var){
         if(!(var->flags & CVAR_LATCH)){
-            continue;
+            return;
         }
         if((strlen(var->name) >= sizeof(name) - 1) || (strlen(var->string) >= sizeof(string) - 1)){
             Com_Printf("Cvar too long: %s = %s\n", var->name, var->string);
-            continue;
+            return;
         }
-        memset(name, 0, sizeof(name));
-        memset(string, 0, sizeof(string));
-        strcpy(name, var->name);
-        strcpy(string, var->string);
-        fwrite(name, 1, sizeof(name), f);
-        fwrite(string, 1, sizeof(string), f);
-    }
+        memset(name_buf, 0, sizeof(name));
+        memset(string_buf, 0, sizeof(string));
+        strcpy(name_buf, var->name);
+        strcpy(string_buf, var->string);
+        fwrite(name_buf, 1, sizeof(name), f);
+        fwrite(string_buf, 1, sizeof(string), f);
+    });
     fclose(f);
     /* write game state */
     Com_sprintf(name, sizeof(name), "%s/save/current/game.ssv", FS_Gamedir());

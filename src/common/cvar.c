@@ -41,13 +41,18 @@ static qboolean Cvar_InfoValidate(const char *s){
     return true;
 }
 
-static cvar_t* Cvar_FindVar(const char *var_name){
+
+cvar_t* CvarsReduceForEach(qboolean(^f)(cvar_t* var)){
     for(cvar_t* var = cvar_vars; var != NULL; var = var->next){
-        if(!strcmp(var_name, var->name)){
-            return var;
-        }
+        if(f(var)) return var;
     }
     return NULL;
+}
+
+static cvar_t* Cvar_FindVar(const char *var_name){
+    return CvarsReduceForEach(^qboolean(cvar_t* var){
+        return !strcmp(var_name, var->name);
+    });
 }
 
 const cvar_t* Cvar_VarNamed(const char *name){
@@ -209,10 +214,17 @@ void Cvar_SetValue(const char *var_name, float value){
 /*
  * Any variables with latched values will now be updated
  */
-void Cvar_GetLatchedVars(void){
+
+void CvarsMapForEach(void(^f)(cvar_t* var)){
     for(cvar_t* var = cvar_vars; var; var = var->next){
+        f(var);
+    }
+}
+
+void Cvar_GetLatchedVars(void){
+    CvarsMapForEach(^void(cvar_t* var){
         if(!var->latched_string){
-            continue;
+            return;
         }
         Z_Free(var->string);
         var->string = var->latched_string;
@@ -222,7 +234,7 @@ void Cvar_GetLatchedVars(void){
             FS_SetGamedir(var->string);
             FS_ExecAutoexec();
         }
-    }
+    });
 }
 
 /*
@@ -274,19 +286,20 @@ static void Cvar_Set_f(void){
  */
 void Cvar_WriteVariables(const char *path){
     char buffer[1024];
+    char* buf = buffer;
     FILE* f = fopen(path, "a");
-    for(cvar_t* var = cvar_vars; var; var = var->next){
+    CvarsMapForEach(^void(cvar_t* var){
         if(var->flags & CVAR_ARCHIVE){
-            Com_sprintf(buffer, sizeof(buffer), "set %s \"%s\"\n", var->name, var->string);
-            fprintf(f, "%s", buffer);
+            Com_sprintf(buf, sizeof(buffer), "set %s \"%s\"\n", var->name, var->string);
+            fprintf(f, "%s", buf);
         }
-    }
+    });
     fclose(f);
 }
 
 void Cvar_List_f(void){
-    int i = 0;
-    for(cvar_t* var = cvar_vars; var; var = var->next, i++){
+    __block int i = 0;
+    CvarsMapForEach(^void(cvar_t* var){
         if (var->flags & CVAR_ARCHIVE){
             Com_Printf("*");
         }else{
@@ -310,7 +323,8 @@ void Cvar_List_f(void){
             Com_Printf(" ");
         }
         Com_Printf(" %s \"%s\"\n", var->name, var->string);
-    }
+        i++;
+    });
     Com_Printf("%i cvars\n", i);
 }
 
@@ -319,11 +333,12 @@ qboolean userinfo_modified;
 static char* Cvar_BitInfo(int bit){
     static char info[MAX_INFO_STRING];
     info[0] = 0;
-    for(cvar_t* var = cvar_vars; var; var = var->next){
+    char* infobuf = info;
+    CvarsMapForEach(^void(cvar_t* var){
         if(var->flags & bit){
-            Info_SetValueForKey(info, var->name, var->string);
+            Info_SetValueForKey(infobuf, var->name, var->string);
         }
-    }
+    });
     return info;
 }
 

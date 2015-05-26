@@ -528,7 +528,9 @@ const char* Cmd_CompleteCommand(const char *partial){
     if(partial == NULL || strlen(partial) == 0){
         return NULL;
     }
-    const char *pmatch[1024];
+    char *pmatch[1024];
+    char** match_buf = pmatch;
+
     /* check for exact match */
     const cmd_function_t* command = Cmd_CommandNamed(partial);
     if(command != NULL){
@@ -545,7 +547,7 @@ const char* Cmd_CompleteCommand(const char *partial){
         return cvar->name;
     }
     memset(pmatch, 0, sizeof(const char*));
-    int i = 0;
+    __block int i = 0;
     /* check for partial match */
     int len = strlen(partial);
     for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
@@ -560,12 +562,12 @@ const char* Cmd_CompleteCommand(const char *partial){
             i++;
         }
     }
-    for(cvar = cvar_vars; cvar; cvar = cvar->next){
+    CvarsMapForEach(^void(cvar_t* cvar){
         if(!strncmp(partial, cvar->name, len)){
-            pmatch[i] = cvar->name;
+            match_buf[i] = cvar->name;
             i++;
         }
-    }
+    });
     if(i){
         if(i == 1){
             return pmatch[0];
