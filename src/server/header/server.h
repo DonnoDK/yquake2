@@ -210,6 +210,7 @@ void SV_InitGame(void);
 void SV_Map(qboolean attractloop, const char *levelstring, qboolean loadgame);
 
 void SV_PrepWorldFrame(void);
+void ClientsMapForEach(void(^f)(client_t* c));
 
 typedef enum {RD_NONE, RD_CLIENT, RD_PACKET} redirect_t;
 

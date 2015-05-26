@@ -450,30 +450,22 @@ ucmd_t ucmds[] = {
 	{NULL, NULL}
 };
 
-void
-SV_ExecuteUserCommand(char *s)
-{
-	ucmd_t *u;
-
-	/* Security Fix... This is being set to false so that client's can't
-	   macro expand variables on the server.  It seems unlikely that a
-	   client ever ought to need to be able to do this... */
-	Cmd_TokenizeString(s, false);
-	sv_player = sv_client->edict;
-
-	for (u = ucmds; u->name; u++)
-	{
-		if (!strcmp(Cmd_Argv(0), u->name))
-		{
-			u->func();
-			break;
-		}
-	}
-
-	if (!u->name && (sv.state == ss_game))
-	{
-		ge->ClientCommand(sv_player);
-	}
+void SV_ExecuteUserCommand(char *s){
+    /* Security Fix... This is being set to false so that client's can't
+       macro expand variables on the server.  It seems unlikely that a
+       client ever ought to need to be able to do this... */
+    Cmd_TokenizeString(s, false);
+    sv_player = sv_client->edict;
+    ucmd_t* u;
+    for(u = ucmds; u->name; u++){
+        if(!strcmp(Cmd_Argv(0), u->name)){
+            u->func();
+            break;
+        }
+    }
+    if(!u->name && (sv.state == ss_game)){
+        ge->ClientCommand(sv_player);
+    }
 }
 
 void
@@ -494,153 +486,102 @@ SV_ClientThink(client_t *cl, usercmd_t *cmd)
 /*
  * The current net_message is parsed for the given client
  */
-void
-SV_ExecuteClientMessage(client_t *cl)
-{
-	int c;
-	char *s;
-
-	usercmd_t nullcmd;
-	usercmd_t oldest, oldcmd, newcmd;
-	int net_drop;
-	int stringCmdCount;
-	int checksum, calculatedChecksum;
-	int checksumIndex;
-	qboolean move_issued;
-	int lastframe;
-
-	sv_client = cl;
-	sv_player = sv_client->edict;
-
-	/* only allow one move command */
-	move_issued = false;
-	stringCmdCount = 0;
-
-	while (1)
-	{
-		if (net_message.readcount > net_message.cursize)
-		{
-			Com_Printf("SV_ReadClientMessage: badread\n");
-			SV_DropClient(cl);
-			return;
-		}
-
-		c = MSG_ReadByte(&net_message);
-
-		if (c == -1)
-		{
-			break;
-		}
-
-		switch (c)
-		{
-			default:
-				Com_Printf("SV_ReadClientMessage: unknown command char\n");
-				SV_DropClient(cl);
-				return;
-
-			case clc_nop:
-				break;
-
-			case clc_userinfo:
-				Q_strlcpy(cl->userinfo, MSG_ReadString(&net_message), sizeof(cl->userinfo));
-				SV_UserinfoChanged(cl);
-				break;
-
-			case clc_move:
-
-				if (move_issued)
-				{
-					return; /* someone is trying to cheat... */
-				}
-
-				move_issued = true;
-				checksumIndex = net_message.readcount;
-				checksum = MSG_ReadByte(&net_message);
-				lastframe = MSG_ReadLong(&net_message);
-
-				if (lastframe != cl->lastframe)
-				{
-					cl->lastframe = lastframe;
-
-					if (cl->lastframe > 0)
-					{
-						cl->frame_latency[cl->lastframe & (LATENCY_COUNTS - 1)] =
-							svs.realtime - cl->frames[cl->lastframe & UPDATE_MASK].senttime;
-					}
-				}
-
-				memset(&nullcmd, 0, sizeof(nullcmd));
-				MSG_ReadDeltaUsercmd(&net_message, &nullcmd, &oldest);
-				MSG_ReadDeltaUsercmd(&net_message, &oldest, &oldcmd);
-				MSG_ReadDeltaUsercmd(&net_message, &oldcmd, &newcmd);
-
-				if (cl->state != cs_spawned)
-				{
-					cl->lastframe = -1;
-					break;
-				}
-
-				/* if the checksum fails, ignore the rest of the packet */
-				calculatedChecksum = COM_BlockSequenceCRCByte(
-					net_message.data + checksumIndex + 1,
-					net_message.readcount - checksumIndex - 1,
-					cl->netchan.incoming_sequence);
-
-				if (calculatedChecksum != checksum)
-				{
-					Com_DPrintf("Failed command checksum for %s (%d != %d)/%d\n",
-							cl->name, calculatedChecksum, checksum,
-							cl->netchan.incoming_sequence);
-					return;
-				}
-
-				if (!sv_paused->value)
-				{
-					net_drop = cl->netchan.dropped;
-
-					if (net_drop < 20)
-					{
-						while (net_drop > 2)
-						{
-							SV_ClientThink(cl, &cl->lastcmd);
-
-							net_drop--;
-						}
-
-						if (net_drop > 1)
-						{
-							SV_ClientThink(cl, &oldest);
-						}
-
-						if (net_drop > 0)
-						{
-							SV_ClientThink(cl, &oldcmd);
-						}
-					}
-
-					SV_ClientThink(cl, &newcmd);
-				}
-
-				cl->lastcmd = newcmd;
-				break;
-
-			case clc_stringcmd:
-				s = MSG_ReadString(&net_message);
-
-				/* malicious users may try using too many string commands */
-				if (++stringCmdCount < MAX_STRINGCMDS)
-				{
-					SV_ExecuteUserCommand(s);
-				}
-
-				if (cl->state == cs_zombie)
-				{
-					return; /* disconnect command */
-				}
-
-				break;
-		}
-	}
+void SV_ExecuteClientMessage(client_t *cl){
+    int c;
+    char *s;
+    usercmd_t nullcmd;
+    usercmd_t oldest, oldcmd, newcmd;
+    int net_drop;
+    int stringCmdCount;
+    int checksum, calculatedChecksum;
+    int checksumIndex;
+    qboolean move_issued;
+    int lastframe;
+    sv_client = cl;
+    sv_player = sv_client->edict;
+    /* only allow one move command */
+    move_issued = false;
+    stringCmdCount = 0;
+    while(1){
+        if(net_message.readcount > net_message.cursize){
+            Com_Printf("SV_ReadClientMessage: badread\n");
+            SV_DropClient(cl);
+            return;
+        }
+        c = MSG_ReadByte(&net_message);
+        if(c == -1){
+            break;
+        }
+        switch(c){
+            default:
+                Com_Printf("SV_ReadClientMessage: unknown command char\n");
+                SV_DropClient(cl);
+                return;
+            case clc_nop:
+                break;
+            case clc_userinfo:
+                Q_strlcpy(cl->userinfo, MSG_ReadString(&net_message), sizeof(cl->userinfo));
+                SV_UserinfoChanged(cl);
+                break;
+            case clc_move:
+                if(move_issued){
+                    return; /* someone is trying to cheat... */
+                }
+                move_issued = true;
+                checksumIndex = net_message.readcount;
+                checksum = MSG_ReadByte(&net_message);
+                lastframe = MSG_ReadLong(&net_message);
+                if(lastframe != cl->lastframe){
+                    cl->lastframe = lastframe;
+                    if(cl->lastframe > 0){
+                        cl->frame_latency[cl->lastframe & (LATENCY_COUNTS - 1)] = svs.realtime - cl->frames[cl->lastframe & UPDATE_MASK].senttime;
+                    }
+                }
+                memset(&nullcmd, 0, sizeof(nullcmd));
+                MSG_ReadDeltaUsercmd(&net_message, &nullcmd, &oldest);
+                MSG_ReadDeltaUsercmd(&net_message, &oldest, &oldcmd);
+                MSG_ReadDeltaUsercmd(&net_message, &oldcmd, &newcmd);
+                if(cl->state != cs_spawned){
+                    cl->lastframe = -1;
+                    break;
+                }
+                /* if the checksum fails, ignore the rest of the packet */
+                calculatedChecksum = COM_BlockSequenceCRCByte(  net_message.data + checksumIndex + 1,
+                        net_message.readcount - checksumIndex - 1,
+                        cl->netchan.incoming_sequence);
+                if(calculatedChecksum != checksum){
+                    Com_DPrintf("Failed command checksum for %s (%d != %d)/%d\n", cl->name, calculatedChecksum, checksum, cl->netchan.incoming_sequence);
+                    return;
+                }
+                if(!sv_paused->value){
+                    net_drop = cl->netchan.dropped;
+                    if(net_drop < 20){
+                        while(net_drop > 2){
+                            SV_ClientThink(cl, &cl->lastcmd);
+                            net_drop--;
+                        }
+                        if(net_drop > 1){
+                            SV_ClientThink(cl, &oldest);
+                        }
+                        if(net_drop > 0){
+                            SV_ClientThink(cl, &oldcmd);
+                        }
+                    }
+                    SV_ClientThink(cl, &newcmd);
+                }
+                cl->lastcmd = newcmd;
+                break;
+            case clc_stringcmd:
+                s = MSG_ReadString(&net_message);
+                /* malicious users may try using too many string commands */
+                if(++stringCmdCount < MAX_STRINGCMDS){
+                    SV_ExecuteUserCommand(s);
+                }
+                if(cl->state == cs_zombie){
+                    return; /* disconnect command */
+                }
+                break;
+        }
+    }
 }
 

@@ -86,7 +86,7 @@ SV_SetMaster_f(void)
 /*
  * Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
  */
-qboolean SV_SetPlayer(void){
+static qboolean SV_SetPlayer(void){
     if(Cmd_Argc() < 2){
         return false;
     }
@@ -169,17 +169,19 @@ void SV_GameMap_f(void){
                when the level is re-entered, the clients will spawn
                at spawn points instead of occupying body shells */
             qboolean* savedInuse = malloc(maxclients->value * sizeof(qboolean));
-            client_t *cl;
-            int i;
-            for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
+            __block int i = 0;
+            ClientsMapForEach(^void(client_t* cl){
                 savedInuse[i] = cl->edict->inuse;
+                i++;
                 cl->edict->inuse = false;
-            }
+            });
+            i = 0;
             SV_WriteLevelFile();
             /* we must restore these for clients to transfer over correctly */
-            for(i = 0, cl = svs.clients; i < maxclients->value; i++, cl++){
+            ClientsMapForEach(^void(client_t* cl){
                 cl->edict->inuse = savedInuse[i];
-            }
+                i++;
+            });
             free(savedInuse);
         }
     }
@@ -253,115 +255,71 @@ SV_Kick_f(void)
 	sv_client->lastmessage = svs.realtime; /* min case there is a funny zombie */
 }
 
-void
-SV_Status_f(void)
-{
-	int i, j, l;
-	client_t *cl;
-	char *s;
-	int ping;
-
-	if (!svs.clients)
-	{
-		Com_Printf("No server running.\n");
-		return;
-	}
-
-	Com_Printf("map              : %s\n", sv.name);
-
-	Com_Printf("num score ping name            lastmsg address               qport \n");
-	Com_Printf("--- ----- ---- --------------- ------- --------------------- ------\n");
-
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
-		if (!cl->state)
-		{
-			continue;
-		}
-
-		Com_Printf("%2i ", i);
-		Com_Printf("%5i ", cl->edict->client->ps.stats[STAT_FRAGS]);
-
-		if (cl->state == cs_connected)
-		{
-			Com_Printf("CNCT ");
-		}
-		else if (cl->state == cs_zombie)
-		{
-			Com_Printf("ZMBI ");
-		}
-		else
-		{
-			ping = cl->ping < 9999 ? cl->ping : 9999;
-			Com_Printf("%4i ", ping);
-		}
-
-		Com_Printf("%s", cl->name);
-		l = 16 - strlen(cl->name);
-
-		for (j = 0; j < l; j++)
-		{
-			Com_Printf(" ");
-		}
-
-		Com_Printf("%7i ", svs.realtime - cl->lastmessage);
-
-		s = NET_AdrToString(cl->netchan.remote_address);
-		Com_Printf("%s", s);
-		l = 22 - strlen(s);
-
-		for (j = 0; j < l; j++)
-		{
-			Com_Printf(" ");
-		}
-
-		Com_Printf("%5i", cl->netchan.qport);
-
-		Com_Printf("\n");
-	}
-
-	Com_Printf("\n");
+void SV_Status_f(void){
+    if(!svs.clients){
+        Com_Printf("No server running.\n");
+        return;
+    }
+    Com_Printf("map              : %s\n", sv.name);
+    Com_Printf("num score ping name            lastmsg address               qport \n");
+    Com_Printf("--- ----- ---- --------------- ------- --------------------- ------\n");
+    __block int i = 0;
+    ClientsMapForEach(^void(client_t* cl){
+        if(!cl->state){
+            return;
+        }
+        Com_Printf("%2i ", i);
+        i++;
+        Com_Printf("%5i ", cl->edict->client->ps.stats[STAT_FRAGS]);
+        if(cl->state == cs_connected){
+            Com_Printf("CNCT ");
+        }else if(cl->state == cs_zombie){
+            Com_Printf("ZMBI ");
+        }else{
+            int ping = cl->ping < 9999 ? cl->ping : 9999;
+            Com_Printf("%4i ", ping);
+        }
+        Com_Printf("%s", cl->name);
+        int l = 16 - strlen(cl->name);
+        for(int j = 0; j < l; j++){
+            Com_Printf(" ");
+        }
+        Com_Printf("%7i ", svs.realtime - cl->lastmessage);
+        const char* s = NET_AdrToString(cl->netchan.remote_address);
+        Com_Printf("%s", s);
+        l = 22 - strlen(s);
+        for(int j = 0; j < l; j++){
+            Com_Printf(" ");
+        }
+        Com_Printf("%5i", cl->netchan.qport);
+        Com_Printf("\n");
+    });
+    Com_Printf("\n");
 }
 
-void
-SV_ConSay_f(void)
-{
-	client_t *client;
-	int j;
-	char *p;
-	char text[1024];
-
-	if (Cmd_Argc() < 2)
-	{
-		return;
-	}
-
-	if (!svs.initialized)
-	{
-		Com_Printf("No server running.\n");
-		return;
-	}
-
-	strcpy(text, "console: ");
-	p = Cmd_Args();
-
-	if (*p == '"')
-	{
-		p++;
-		p[strlen(p) - 1] = 0;
-	}
-
-	strcat(text, p);
-
-	for (j = 0, client = svs.clients; j < maxclients->value; j++, client++)
-	{
-		if (client->state != cs_spawned)
-		{
-			continue;
-		}
-
-		SV_ClientPrintf(client, PRINT_CHAT, "%s\n", text);
-	}
+void SV_ConSay_f(void){
+    if(!svs.initialized){
+        Com_Printf("No server running.\n");
+        return;
+    }
+    if(Cmd_Argc() < 2){
+        return;
+    }
+    char text[1024];
+    strcpy(text, "console: ");
+    char* p = Cmd_Args();
+    if(*p == '"'){
+        p++;
+        p[strlen(p) - 1] = 0;
+    }
+    strcat(text, p);
+    const char* chat_text = text;
+    ClientsMapForEach(^void(client_t* cl){
+        if(cl->state != cs_spawned){
+            return;
+        }
+        SV_ClientPrintf(cl, PRINT_CHAT, "%s\n", chat_text);
+    });
 }
 
 void
@@ -373,9 +331,7 @@ SV_Heartbeat_f(void)
 /*
  * Examine or change the serverinfo string
  */
-void
-SV_Serverinfo_f(void)
-{
+void SV_Serverinfo_f(void){
 	Com_Printf("Server info settings:\n");
 	Info_Print(Cvar_Serverinfo());
 }

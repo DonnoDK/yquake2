@@ -226,16 +226,12 @@ SV_SpawnServer(char *server, char *spawnpoint, server_state_t serverstate,
 	strcpy(sv.name, server);
 
 	/* leave slots at start for clients only */
-	for (i = 0; i < maxclients->value; i++)
-	{
-		/* needs to reconnect */
-		if (svs.clients[i].state > cs_connected)
-		{
-			svs.clients[i].state = cs_connected;
+    ClientsMapForEach(^void(client_t* c){
+		if(c->state > cs_connected){
+			c->state = cs_connected;
 		}
-
-		svs.clients[i].lastframe = -1;
-	}
+		c->lastframe = -1;
+    });
 
 	sv.time = 1000;
 

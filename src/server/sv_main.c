@@ -73,12 +73,11 @@ void SV_DropClient(client_t *drop){
     drop->name[0] = 0;
 }
 
-static void ClientsMapForEach(void(*f)(client_t* c)){
+void ClientsMapForEach(void(^f)(client_t* c)){
     for(int i = 0; i < maxclients->value; i++){
         f(&svs.clients[i]);
     }
 }
-
 /*
  * Builds the string that is sent as heartbeats and status replies
  */
@@ -103,36 +102,27 @@ char* SV_StatusString(void) {
     return status;
 }
 
-static void SV_ClientCalcPings(client_t* cl){
-    if(cl->state != cs_spawned){
-        return;
-    }
-    int total = 0;
-    int count = 0;
-    for(int j = 0; j < LATENCY_COUNTS; j++){
-        if(cl->frame_latency[j] > 0){
-            count++;
-            total += cl->frame_latency[j];
-        }
-    }
-    if(!count){
-        cl->ping = 0;
-    }else{
-        cl->ping = total / count;
-    }
-    /* let the game dll know about the ping */
-    cl->edict->client->ping = cl->ping;
-}
-
-static void SV_ClientGiveMsecs(client_t* cl){
-    if(cl->state == cs_free){
-        return;
-    }
-    cl->commandMsec = 1800; /* 1600 + some slop */
-}
-
 static void SV_CalcPings(void){
-    ClientsMapForEach(SV_ClientCalcPings);
+    ClientsMapForEach(^void(client_t* c){
+        if(c->state != cs_spawned){
+            return;
+        }
+        int total = 0;
+        int count = 0;
+        for(int j = 0; j < LATENCY_COUNTS; j++){
+            if(c->frame_latency[j] > 0){
+                count++;
+                total += c->frame_latency[j];
+            }
+        }
+        if(!count){
+            c->ping = 0;
+        }else{
+            c->ping = total / count;
+        }
+        /* let the game dll know about the ping */
+        c->edict->client->ping = c->ping;
+    });
 }
 
 /*
@@ -143,7 +133,12 @@ static void SV_GiveMsec(void){
     if(sv.framenum & 15){
         return;
     }
-    ClientsMapForEach(SV_ClientGiveMsecs);
+    ClientsMapForEach(^void(client_t* c){
+        if(c->state == cs_free){
+            return;
+        }
+        c->commandMsec = 1800; /* 1600 + some slop */
+    });
 }
 
 static void SV_ReadPackets(void){
@@ -460,6 +455,8 @@ static void SV_FinalMessage(char *message, qboolean reconnect){
         }
     }
 }
+
+
 
 /*
  * Called when each game quits,

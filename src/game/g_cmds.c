@@ -979,128 +979,75 @@ Cmd_Wave_f(edict_t *ent)
 	}
 }
 
-void
-Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0)
-{
-	int i, j;
-	edict_t *other;
-	char *p;
-	char text[2048];
-	gclient_t *cl;
-
-	if (!ent)
-	{
-		return;
-	}
-
-	if ((gi.argc() < 2) && !arg0)
-	{
-		return;
-	}
-
-	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
-	{
-		team = false;
-	}
-
-	if (team)
-	{
-		Com_sprintf(text, sizeof(text), "(%s): ", ent->client->pers.netname);
-	}
-	else
-	{
-		Com_sprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
-	}
-
-	if (arg0)
-	{
-		strcat(text, gi.argv(0));
-		strcat(text, " ");
-		strcat(text, gi.args());
-	}
-	else
-	{
-		p = gi.args();
-
-		if (*p == '"')
-		{
-			p++;
-			p[strlen(p) - 1] = 0;
-		}
-
-		strcat(text, p);
-	}
-
-	/* don't let text be too long for malicious reasons */
-	if (strlen(text) > 150)
-	{
-		text[150] = 0;
-	}
-
-	strcat(text, "\n");
-
-	if (flood_msgs->value)
-	{
-		cl = ent->client;
-
-		if (level.time < cl->flood_locktill)
-		{
-			gi.cprintf(ent, PRINT_HIGH, "You can't talk for %d more seconds\n",
-					(int)(cl->flood_locktill - level.time));
-			return;
-		}
-
-		i = cl->flood_whenhead - flood_msgs->value + 1;
-
-		if (i < 0)
-		{
-			i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
-		}
-
-		if (cl->flood_when[i] &&
-			(level.time - cl->flood_when[i] < flood_persecond->value))
-		{
-			cl->flood_locktill = level.time + flood_waitdelay->value;
-			gi.cprintf(ent, PRINT_CHAT,
-					"Flood protection:  You can't talk for %d seconds.\n",
-					(int)flood_waitdelay->value);
-			return;
-		}
-
-		cl->flood_whenhead = (cl->flood_whenhead + 1) %
-							 (sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
-		cl->flood_when[cl->flood_whenhead] = level.time;
-	}
-
-	if (dedicated->value)
-	{
-		gi.cprintf(NULL, PRINT_CHAT, "%s", text);
-	}
-
-	for (j = 1; j <= game.maxclients; j++)
-	{
-		other = &g_edicts[j];
-
-		if (!other->inuse)
-		{
-			continue;
-		}
-
-		if (!other->client)
-		{
-			continue;
-		}
-
-		if (team)
-		{
-			if (!OnSameTeam(ent, other))
-			{
-				continue;
-			}
-		}
-
-		gi.cprintf(other, PRINT_CHAT, "%s", text);
-	}
+void Cmd_Say_f(edict_t *ent, qboolean team, qboolean arg0){
+    if(!ent){
+        return;
+    }
+    if((gi.argc() < 2) && !arg0){
+        return;
+    }
+    char text[2048];
+    if(!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS))){
+        team = false;
+    }
+    if(team){
+        Com_sprintf(text, sizeof(text), "(%s): ", ent->client->pers.netname);
+    }else{
+        Com_sprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
+    }
+    if(arg0){
+        strcat(text, gi.argv(0));
+        strcat(text, " ");
+        strcat(text, gi.args());
+    }else{
+        char* p = gi.args();
+        if(*p == '"'){
+            p++;
+            p[strlen(p) - 1] = 0;
+        }
+        strcat(text, p);
+    }
+    /* don't let text be too long for malicious reasons */
+    if(strlen(text) > 150){
+        text[150] = 0;
+    }
+    strcat(text, "\n");
+    if(flood_msgs->value){
+        gclient_t* cl = ent->client;
+        if(level.time < cl->flood_locktill){
+            gi.cprintf(ent, PRINT_HIGH, "You can't talk for %d more seconds\n", (int)(cl->flood_locktill - level.time));
+            return;
+        }
+        int i = cl->flood_whenhead - flood_msgs->value + 1;
+        if(i < 0){
+            i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
+        }
+        if(cl->flood_when[i] && (level.time - cl->flood_when[i] < flood_persecond->value)){
+            cl->flood_locktill = level.time + flood_waitdelay->value;
+            gi.cprintf(ent, PRINT_CHAT, "Flood protection:  You can't talk for %d seconds.\n", (int)flood_waitdelay->value);
+            return;
+        }
+        cl->flood_whenhead = (cl->flood_whenhead + 1) % (sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
+        cl->flood_when[cl->flood_whenhead] = level.time;
+    }
+    if(dedicated->value){
+        gi.cprintf(NULL, PRINT_CHAT, "%s", text);
+    }
+    for(int j = 1; j <= game.maxclients; j++){
+        edict_t* other = &g_edicts[j];
+        if(!other->inuse){
+            continue;
+        }
+        if(!other->client){
+            continue;
+        }
+        if(team){
+            if(!OnSameTeam(ent, other)){
+                continue;
+            }
+        }
+        gi.cprintf(other, PRINT_CHAT, "%s", text);
+    }
 }
 
 void
