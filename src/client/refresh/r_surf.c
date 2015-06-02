@@ -449,7 +449,7 @@ R_RenderBrushPoly(msurface_t *fa)
 			smax = (fa->extents[0] >> 4) + 1;
 			tmax = (fa->extents[1] >> 4) + 1;
 
-			R_BuildLightMap(fa, (void *)temp, smax * 4);
+			R_BuildLightMap(fa, (unsigned char *)temp, smax * 4);
 			R_SetCacheState(fa);
 
 			R_Bind(gl_state.lightmap_textures + fa->lightmaptexturenum);
@@ -670,7 +670,7 @@ R_RenderLightmappedPoly(msurface_t *surf)
 			smax = (surf->extents[0] >> 4) + 1;
 			tmax = (surf->extents[1] >> 4) + 1;
 
-			R_BuildLightMap(surf, (void *)temp, smax * 4);
+			R_BuildLightMap(surf, (unsigned char *)temp, smax * 4);
 			R_SetCacheState(surf);
 
 			R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + surf->lightmaptexturenum);
@@ -685,7 +685,7 @@ R_RenderLightmappedPoly(msurface_t *surf)
 			smax = (surf->extents[0] >> 4) + 1;
 			tmax = (surf->extents[1] >> 4) + 1;
 
-			R_BuildLightMap(surf, (void *)temp, smax * 4);
+			R_BuildLightMap(surf, (unsigned char *)temp, smax * 4);
 
 			R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + 0);
 

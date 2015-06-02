@@ -333,7 +333,7 @@ SVC_RemoteCommand(void)
 	}
 
 	Com_BeginRedirect(RD_PACKET, sv_outputbuf,
-			SV_OUTPUTBUF_LENGTH, SV_FlushRedirect);
+			SV_OUTPUTBUF_LENGTH, (void(*))SV_FlushRedirect);
 
 	if (!Rcon_Validate())
 	{

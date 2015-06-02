@@ -69,7 +69,7 @@ void Z_FreeTags(int tag){
 void* Z_TagMalloc(int size, int tag){
     zhead_t *z;
     size = size + sizeof(zhead_t);
-    z = malloc(size);
+    z = (zhead_t*)malloc(size);
     if(!z){
         Com_Error(ERR_FATAL, "Z_Malloc: failed on allocation of %i bytes", size);
     }

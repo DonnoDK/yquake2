@@ -101,7 +101,7 @@ cvar_t * Cvar_Get(const char *var_name, const char *var_value, int flags){
             return NULL;
         }
     }
-    var = Z_Malloc(sizeof(*var));
+    var = (cvar_t*)Z_Malloc(sizeof(*var));
     var->name = CopyString(var_name);
     var->string = CopyString(var_value);
     var->modified = true;

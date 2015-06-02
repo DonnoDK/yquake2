@@ -69,7 +69,7 @@ void COM_InitArgv(int argc, char **argv){
 }
 
 char* CopyString(const char *in){
-    char* out = Z_Malloc((int)strlen(in) + 1);
+    char* out = (char*)Z_Malloc((int)strlen(in) + 1);
     strcpy(out, in);
     return out;
 }

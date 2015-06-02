@@ -542,7 +542,7 @@ CL_ParsePlayerstate(frame_t *oldframe, frame_t *newframe)
 	/* parse the pmove_state_t */
 	if (flags & PS_M_TYPE)
 	{
-		state->pmove.pm_type = MSG_ReadByte(&net_message);
+		state->pmove.pm_type = (pmtype_t)MSG_ReadByte(&net_message);
 	}
 
 	if (flags & PS_M_ORIGIN)
@@ -1136,6 +1136,7 @@ void CL_ParseServerMessage(sizebuf_t* message){
         /* other commands */
         int i;
         const char* s;
+        struct serverdataPacket_t packet;
         switch(cmd){
             default:
                 Com_Error(ERR_DROP, "CL_ParseServerMessage: Illegible server message\n");
@@ -1174,7 +1175,7 @@ void CL_ParseServerMessage(sizebuf_t* message){
                 break;
             case svc_serverdata:
                 Cbuf_Execute();  /* make sure any stuffed commands are done */
-                struct serverdataPacket_t packet = CL_ServerPacketForMessage(message);
+                packet = CL_ServerPacketForMessage(message);
                 CL_ParseServerData(&packet);
                 break;
             case svc_configstring:

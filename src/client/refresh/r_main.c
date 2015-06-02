@@ -1040,7 +1040,7 @@ R_SetMode(void)
 	vid.width = gl_customwidth->value;
 	vid.height = gl_customheight->value;
 
-	if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value,
+	if ((err = (rserr_t)GLimp_SetMode(&vid.width, &vid.height, gl_mode->value,
 					 fullscreen)) == rserr_ok)
 	{
 		if (gl_mode->value == -1)
@@ -1060,7 +1060,7 @@ R_SetMode(void)
 			vid_fullscreen->modified = false;
 			VID_Printf(PRINT_ALL, "ref_gl::R_SetMode() - fullscreen unavailable in this mode\n");
 
-			if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, false)) == rserr_ok)
+			if ((err = (rserr_t)GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, false)) == rserr_ok)
 			{
 				return true;
 			}
@@ -1073,7 +1073,7 @@ R_SetMode(void)
 		}
 
 		/* try setting it back to something safe */
-		if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_state.prev_mode, false)) != rserr_ok)
+		if ((err = (rserr_t)GLimp_SetMode(&vid.width, &vid.height, gl_state.prev_mode, false)) != rserr_ok)
 		{
 			VID_Printf(PRINT_ALL, "ref_gl::R_SetMode() - could not revert to safe mode\n");
 			return false;
@@ -1169,8 +1169,8 @@ R_Init(void *hinstance, void *hWnd)
 	if (strstr(gl_config.extensions_string, "GL_EXT_compiled_vertex_array"))
 	{
 		VID_Printf(PRINT_ALL, "...using GL_EXT_compiled_vertex_array\n");
-		qglLockArraysEXT = ( void * ) GLimp_GetProcAddress ( "glLockArraysEXT" );
-		qglUnlockArraysEXT = ( void * ) GLimp_GetProcAddress ( "glUnlockArraysEXT" );
+		qglLockArraysEXT = ( void(*)(int,int)) GLimp_GetProcAddress ( "glLockArraysEXT" );
+		qglUnlockArraysEXT = ( void(*)() ) GLimp_GetProcAddress ( "glUnlockArraysEXT" );
 	}
 	else
 	{
@@ -1223,9 +1223,9 @@ R_Init(void *hinstance, void *hWnd)
 		if (gl_ext_multitexture->value)
 		{
 			VID_Printf(PRINT_ALL, "...using GL_ARB_multitexture\n");
-			qglMultiTexCoord2fARB = ( void * ) GLimp_GetProcAddress ( "glMultiTexCoord2fARB" );
-			qglActiveTextureARB = ( void * ) GLimp_GetProcAddress ( "glActiveTextureARB" );
-			qglClientActiveTextureARB = ( void * ) GLimp_GetProcAddress ( "glClientActiveTextureARB" );
+			qglMultiTexCoord2fARB = (void (*)(GLenum, GLfloat, GLfloat)) GLimp_GetProcAddress ( "glMultiTexCoord2fARB" );
+			qglActiveTextureARB = (void (*)(GLenum)) GLimp_GetProcAddress ( "glActiveTextureARB" );
+			qglClientActiveTextureARB = (void (*)(GLenum)) GLimp_GetProcAddress ( "glClientActiveTextureARB" );
 		}
 		else
 		{

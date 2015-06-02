@@ -51,7 +51,6 @@ static int alias_count; /* for detecting runaway loops */
 static cmdalias_t *cmd_alias;
 static qboolean cmd_wait;
 static int cmd_argc;
-static int cmd_argc;
 static char *cmd_argv[MAX_STRING_TOKENS];
 static char *cmd_null_string = "";
 static char cmd_args[MAX_STRING_CHARS];
@@ -93,7 +92,7 @@ void Cbuf_InsertText(const char *text){
     int templen = cmd_text.cursize;
     char *temp;
     if(templen){
-        temp = Z_Malloc(templen);
+        temp = (char*)Z_Malloc(templen);
         memcpy(temp, cmd_text.data, templen);
         SZ_Clear(&cmd_text);
     }else{
@@ -205,7 +204,7 @@ qboolean Cbuf_AddLateCommands(int argc, const char** argv){
     if(s == 0){
         return false;
     }
-    char* text = Z_Malloc(s + 1);
+    char* text = (char*)Z_Malloc(s + 1);
     text[0] = 0;
     for(int i = 1; i < argc; i++){
         strcat(text, argv[i]);
@@ -214,7 +213,7 @@ qboolean Cbuf_AddLateCommands(int argc, const char** argv){
         }
     }
     /* pull out the commands */
-    char* build = Z_Malloc(s + 1);
+    char* build = (char*)Z_Malloc(s + 1);
     build[0] = 0;
     for(int i = 0; i < s - 1; i++){
         if(text[i] == '+'){
@@ -252,7 +251,7 @@ void Cmd_Exec_f(int argc, const char** argv){
     }
     Com_Printf("execing %s\n", argv[1]);
     /* the file doesn't have a trailing 0, so we need to copy it off */
-    char* f2 = Z_Malloc(len + 1);
+    char* f2 = (char*)Z_Malloc(len + 1);
     memcpy(f2, f, len);
     f2[len] = 0;
     Cbuf_InsertText(f2);
@@ -300,7 +299,7 @@ void Cmd_Alias_f(int argc, const char** argv){
     if(a){
         Z_Free(a->value);
     }else{
-        a = Z_Malloc(sizeof(cmdalias_t));
+        a = (cmdalias_t*)Z_Malloc(sizeof(cmdalias_t));
         a->next = cmd_alias;
         cmd_alias = a;
     }
@@ -440,7 +439,7 @@ void Cmd_TokenizeString(const char *text, qboolean macroExpand){
             return;
         }
         if(cmd_argc < MAX_STRING_TOKENS){
-            cmd_argv[cmd_argc] = Z_Malloc(strlen(com_token) + 1);
+            cmd_argv[cmd_argc] = (char*)Z_Malloc(strlen(com_token) + 1);
             strcpy(cmd_argv[cmd_argc], com_token);
             cmd_argc++;
         }
@@ -466,7 +465,7 @@ void Cmd_AddArgsCommand(char* cmd_name, xcommand_with_args_t function){
         Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
         return;
     }
-    cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
+    cmd_function_t* cmd = (cmd_function_t*)Z_Malloc(sizeof(cmd_function_t));
     cmd->name = cmd_name;
     cmd->function = NULL;
     cmd->function_with_args = function;
@@ -489,7 +488,7 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function){
         Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
         return;
     }
-    cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
+    cmd_function_t* cmd = (cmd_function_t*)Z_Malloc(sizeof(cmd_function_t));
     cmd->name = cmd_name;
     cmd->function = function;
     cmd->function_with_args = NULL;
@@ -558,7 +557,7 @@ const char* Cmd_CompleteCommand(const char *partial){
     }
     for(alias = cmd_alias; alias; alias = alias->next){
         if(!strncmp(partial, alias->name, len)){
-            pmatch[i] = alias->name;
+            pmatch[i] = (char*)alias->name;
             i++;
         }
     }

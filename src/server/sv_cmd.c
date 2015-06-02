@@ -168,7 +168,7 @@ void SV_GameMap_f(void){
             /* clear all the client inuse flags before saving so that
                when the level is re-entered, the clients will spawn
                at spawn points instead of occupying body shells */
-            qboolean* savedInuse = malloc(maxclients->value * sizeof(qboolean));
+            qboolean* savedInuse = (qboolean*)malloc(maxclients->value * sizeof(qboolean));
             __block int i = 0;
             ClientsMapForEach(^void(client_t* cl){
                 savedInuse[i] = cl->edict->inuse;

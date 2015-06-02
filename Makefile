@@ -79,7 +79,7 @@ OSX_ARCH:=-arch $(shell uname -m | sed -e s/i.86/i386/)
 # The app-bundle itself will not be created, but the runtime paths
 # will be set to expect the game-data in *.app/
 # Contents/Resources
-OSX_APP:=yes
+OSX_APP:=no
 
 # This is an optional configuration file, it'll be used in
 # case of presence.
@@ -180,6 +180,7 @@ endif
 ifeq ($(OSTYPE),Windows)
 CC := gcc
 endif
+CC := clang
 
 # ----------
 

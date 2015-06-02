@@ -180,7 +180,7 @@ Default_MenuKey(menuframework_s *m, int key)
 
     if (m)
     {
-        if ((item = Menu_ItemAtCursor(m)) != 0)
+        if ((item = (menucommon_s*)Menu_ItemAtCursor(m)) != 0)
         {
             if (item->type == MTYPE_FIELD)
             {
@@ -1904,7 +1904,12 @@ M_Credits_Key(int key)
     return menu_out_sound;
 }
 
-extern int Developer_searchpath(void);
+#ifdef __cplusplus
+extern "C"
+#else
+extern
+#endif
+int Developer_searchpath(void);
 
 static void
 M_Menu_Credits_f(void)
@@ -2815,7 +2820,7 @@ static void StartServer_MenuInit(void){
             fseek(fp, 0, SEEK_END);
             length = ftell(fp);
             fseek(fp, 0, SEEK_SET);
-            buffer = malloc(length);
+            buffer = (char*)malloc(length);
             fread(buffer, length, 1, fp);
         }
 
@@ -2838,7 +2843,7 @@ static void StartServer_MenuInit(void){
             Com_Error(ERR_DROP, "no maps in maps.lst\n");
         }
 
-        mapnames = malloc(sizeof(char *) * (nummaps + 1));
+        mapnames = (char**)malloc(sizeof(char *) * (nummaps + 1));
         memset(mapnames, 0, sizeof(char *) * (nummaps + 1));
 
         s = buffer;
@@ -2861,7 +2866,7 @@ static void StartServer_MenuInit(void){
             strcpy(longname, COM_Parse(&s));
             Com_sprintf(scratch, sizeof(scratch), "%s\n%s", longname, shortname);
 
-            mapnames[i] = malloc(strlen(scratch) + 1);
+            mapnames[i] = (char*)malloc(strlen(scratch) + 1);
             strcpy(mapnames[i], scratch);
         }
 
@@ -3859,7 +3864,7 @@ PlayerConfig_ScanDirectories(void)
 			continue;
 		}
 
-		skinnames = malloc(sizeof(char *) * (nskins + 1));
+		skinnames = (char**)malloc(sizeof(char *) * (nskins + 1));
 		memset(skinnames, 0, sizeof(char *) * (nskins + 1));
 
 		/* copy the valid skins */
