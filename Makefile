@@ -180,7 +180,7 @@ endif
 ifeq ($(OSTYPE),Windows)
 CC := gcc
 endif
-CC := clang++
+CC := clang++ -std=c++14
 
 # ----------
 

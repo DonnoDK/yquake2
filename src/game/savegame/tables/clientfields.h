@@ -25,7 +25,7 @@
  * =======================================================================
  */
 
-{"pers.weapon", CLOFS(pers.weapon), F_ITEM},
-{"pers.lastweapon", CLOFS(pers.lastweapon), F_ITEM},
-{"newweapon", CLOFS(newweapon), F_ITEM},
+{"pers.weapon", (int)CLOFS(pers.weapon), F_ITEM},
+{"pers.lastweapon", (int)CLOFS(pers.lastweapon), F_ITEM},
+{"newweapon", (int)CLOFS(newweapon), F_ITEM},
 {NULL, 0, F_INT}
