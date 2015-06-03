@@ -489,6 +489,9 @@ mmove_t infantry_move_death3 =
    	infantry_dead
 };
 
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 infantry_die(edict_t *self, edict_t *inflictor /* unused */,
 		edict_t *attacker /* unused */, int damage,

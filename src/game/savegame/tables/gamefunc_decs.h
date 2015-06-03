@@ -25,14 +25,22 @@
  * =======================================================================
  */
 
-extern void ReadLevel ( const char * filename ) ;
 extern void ReadLevelLocals ( FILE * f ) ;
 extern void ReadEdict ( FILE * f , edict_t * ent ) ;
+#ifdef __cplusplus
+extern "C"{
+#endif
+extern void ReadLevel ( const char * filename ) ;
 extern void WriteLevel ( const char * filename ) ;
-extern void WriteLevelLocals ( FILE * f ) ;
-extern void WriteEdict ( FILE * f , edict_t * ent ) ;
+extern void SP_info_player_intermission ( void ) ;
 extern void ReadGame ( const char * filename ) ;
 extern void WriteGame ( const char * filename , qboolean autosave ) ;
+extern game_export_t * GetGameAPI ( game_import_t * import ) ;
+#ifdef __cplusplus
+}
+#endif
+extern void WriteLevelLocals ( FILE * f ) ;
+extern void WriteEdict ( FILE * f , edict_t * ent ) ;
 extern void ReadClient ( FILE * f , gclient_t * client ) ;
 extern void WriteClient ( FILE * f , gclient_t * client ) ;
 extern void ReadField ( FILE * f , field_t * field , byte * base ) ;
@@ -192,7 +200,6 @@ extern void ClientObituary ( edict_t * self , edict_t * inflictor , edict_t * at
 extern qboolean IsNeutral ( edict_t * ent ) ;
 extern qboolean IsFemale ( edict_t * ent ) ;
 extern void player_pain ( edict_t * self , edict_t * other , float kick , int damage ) ;
-extern void SP_info_player_intermission ( void ) ;
 extern void SP_info_player_coop ( edict_t * self ) ;
 extern void SP_info_player_deathmatch ( edict_t * self ) ;
 extern void SP_info_player_start ( edict_t * self ) ;
@@ -371,7 +378,13 @@ extern void infantry_dodge ( edict_t * self , edict_t * attacker , float eta ) ;
 extern void infantry_duck_up ( edict_t * self ) ;
 extern void infantry_duck_hold ( edict_t * self ) ;
 extern void infantry_duck_down ( edict_t * self ) ;
+#ifdef __cplusplus
+extern "C"{
+#endif
 extern void infantry_die ( edict_t * self , edict_t * inflictor , edict_t * attacker , int damage , vec3_t point ) ;
+#ifdef __cplusplus
+}
+#endif
 extern void infantry_dead ( edict_t * self ) ;
 extern void infantry_sight ( edict_t * self , edict_t * other ) ;
 extern void InfantryMachineGun ( edict_t * self ) ;
@@ -723,9 +736,15 @@ extern void SVCmd_AddIP_f ( void ) ;
 extern qboolean SV_FilterPacket ( char * from ) ;
 extern void Svcmd_Test_f ( void ) ;
 extern void SP_worldspawn ( edict_t * ent ) ;
-extern void SpawnEntities ( const char * mapname , char * entities , const char * spawnpoint ) ;
 extern void G_FindTeams ( void ) ;
+#ifdef __cplusplus
+extern "C"{
+#endif
 extern char * ED_ParseEdict ( char * data , edict_t * ent ) ;
+extern void SpawnEntities ( const char * mapname , char * entities , const char * spawnpoint ) ;
+#ifdef __cplusplus
+}
+#endif
 extern void ED_ParseField ( const char * key , const char * value , edict_t * ent ) ;
 extern char * ED_NewString ( const char * string ) ;
 extern void ED_CallSpawn ( edict_t * ent ) ;
@@ -868,7 +887,6 @@ extern edict_t * CreateTargetChangeLevel ( char * map ) ;
 extern void ClientEndServerFrames ( void ) ;
 extern void Com_Printf ( char * msg , ... ) ;
 extern void Sys_Error ( char * error , ... ) ;
-extern game_export_t * GetGameAPI ( game_import_t * import ) ;
 extern void ShutdownGame ( void ) ;
 extern void SetItemNames ( void ) ;
 extern void InitItems ( void ) ;

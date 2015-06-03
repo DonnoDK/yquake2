@@ -207,7 +207,7 @@ typedef struct
 	/* ReadLevel is called after the default
 	   map information has been loaded with
 	   SpawnEntities */
-	void (*WriteLevel)(char *filename);
+    void (*WriteLevel)(char *filename);
 	void (*ReadLevel)(char *filename);
 
 	qboolean (*ClientConnect)(edict_t *ent, char *userinfo);
@@ -236,4 +236,7 @@ typedef struct
 	int max_edicts;
 } game_export_t;
 
+#ifdef __cplusplus
+extern "C"
+#endif
 game_export_t *GetGameAPI(game_import_t *import);

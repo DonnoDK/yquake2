@@ -1086,7 +1086,7 @@ ai_run(edict_t *self, float dist)
 	vec3_t v;
 	edict_t *tempgoal;
 	edict_t *save;
-	qboolean new;
+	qboolean monster_new;
 	edict_t *marker;
 	float d1, d2;
 	trace_t tr;
@@ -1158,14 +1158,14 @@ ai_run(edict_t *self, float dist)
 	tempgoal = G_Spawn();
 	self->goalentity = tempgoal;
 
-	new = false;
+	monster_new= false;
 
 	if (!(self->monsterinfo.aiflags & AI_LOST_SIGHT))
 	{
 		/* just lost sight of the player, decide where to go first */
 		self->monsterinfo.aiflags |= (AI_LOST_SIGHT | AI_PURSUIT_LAST_SEEN);
 		self->monsterinfo.aiflags &= ~(AI_PURSUE_NEXT | AI_PURSUE_TEMP);
-		new = true;
+		monster_new = true;
 	}
 
 	if (self->monsterinfo.aiflags & AI_PURSUE_NEXT)
@@ -1181,7 +1181,7 @@ ai_run(edict_t *self, float dist)
 			marker = NULL;
 			VectorCopy(self->monsterinfo.saved_goal,
 					self->monsterinfo.last_sighting);
-			new = true;
+			monster_new = true;
 		}
 		else if (self->monsterinfo.aiflags & AI_PURSUIT_LAST_SEEN)
 		{
@@ -1198,7 +1198,7 @@ ai_run(edict_t *self, float dist)
 			VectorCopy(marker->s.origin, self->monsterinfo.last_sighting);
 			self->monsterinfo.trail_time = marker->timestamp;
 			self->s.angles[YAW] = self->ideal_yaw = marker->s.angles[YAW];
-			new = true;
+			monster_new = true;
 		}
 	}
 
@@ -1213,7 +1213,7 @@ ai_run(edict_t *self, float dist)
 
 	VectorCopy(self->monsterinfo.last_sighting, self->goalentity->s.origin);
 
-	if (new)
+	if (monster_new)
 	{
 		tr = gi.trace(self->s.origin, self->mins, self->maxs,
 				self->monsterinfo.last_sighting, self,

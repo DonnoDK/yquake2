@@ -256,13 +256,13 @@ InitGame(void)
 
 	/* initialize all entities for this game */
 	game.maxentities = maxentities->value;
-	g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts = (edict_t*)gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 	globals.max_edicts = game.maxentities;
 
 	/* initialize all clients for this game */
 	game.maxclients = maxclients->value;
-	game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = (gclient_t*)gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	globals.num_edicts = game.maxclients + 1;
 }
 
@@ -592,7 +592,7 @@ ReadField(FILE *f, field_t *field, byte *base)
 			}
 			else
 			{
-				*(char **)p = gi.TagMalloc(32 + len, TAG_LEVEL);
+				*(char **)p = (char*)gi.TagMalloc(32 + len, TAG_LEVEL);
 				fread(*(char **)p, len, 1, f);
 			}
 
@@ -802,6 +802,9 @@ WriteGame(const char *filename, qboolean autosave)
  * a file. Called when ever a
  * savegames is loaded.
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 ReadGame(const char *filename)
 {
@@ -849,11 +852,11 @@ ReadGame(const char *filename)
 		gi.error("Savegame from an other architecure.\n");
 	}
 
-	g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts = (edict_t*)gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 
 	fread(&game, sizeof(game), 1, f);
-	game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]),
+	game.clients = (gclient_t*)gi.TagMalloc(game.maxclients * sizeof(game.clients[0]),
 			TAG_GAME);
 
 	for (i = 0; i < game.maxclients; i++)
@@ -930,9 +933,10 @@ WriteLevelLocals(FILE *f)
  * Writes the current level
  * into a file.
  */
-void
-WriteLevel(const char *filename)
-{
+#ifdef __cplusplus
+    extern "C"
+#endif
+void WriteLevel(const char *filename){
 	int i;
 	edict_t *ent;
 	FILE *f;
@@ -1020,6 +1024,9 @@ ReadLevelLocals(FILE *f)
  * this function is called, no clients
  * are connected to the server.
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 ReadLevel(const char *filename)
 {

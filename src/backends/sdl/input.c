@@ -73,18 +73,18 @@ static int old_mouse_x, old_mouse_y;
 static qboolean mlooking;
 
 /* CVars */
-cvar_t *vid_fullscreen;
+static cvar_t *vid_fullscreen;
 static cvar_t *in_grab;
 static cvar_t *in_mouse;
 static cvar_t *exponential_speedup;
 cvar_t *freelook;
-cvar_t *lookstrafe;
-cvar_t *m_forward;
+static cvar_t *lookstrafe;
+static cvar_t *m_forward;
 static cvar_t *m_filter;
-cvar_t *m_pitch;
-cvar_t *m_side;
-cvar_t *m_yaw;
-cvar_t *sensitivity;
+static cvar_t *m_pitch;
+static cvar_t *m_side;
+static cvar_t *m_yaw;
+static cvar_t *sensitivity;
 static cvar_t *windowed_mouse;
 
 /* ------------------------------------------------------------------ */

@@ -1034,15 +1034,18 @@ ControlsSetMenuItemValues(void)
 
     s_options_quality_list.curvalue = (Cvar_VariableValue("s_loadas8bit") == 0);
 
-    s_options_sensitivity_slider.curvalue = sensitivity->value * 2;
+    //s_options_sensitivity_slider.curvalue = sensitivity->value * 2;
+    s_options_sensitivity_slider.curvalue = Cvar_Get("sensitivity", "3", 0)->value * 2;
 
     s_options_alwaysrun_box.curvalue = (cl_run->value != 0);
 
-    s_options_invertmouse_box.curvalue = (m_pitch->value < 0);
+    //s_options_invertmouse_box.curvalue = (m_pitch->value < 0);
+    s_options_invertmouse_box.curvalue = (Cvar_Get("m_pitch", "0.022", 0)->value < 0);
 
     s_options_lookspring_box.curvalue = (lookspring->value != 0);
 
-    s_options_lookstrafe_box.curvalue = (lookstrafe->value != 0);
+    //s_options_lookstrafe_box.curvalue = (lookstrafe->value != 0);
+    s_options_lookstrafe_box.curvalue = (Cvar_Get("lookstrafe", "0", 0)->value != 0);
 
     const cvar_t* freelook = Cvar_Get("freelook", "1", CVAR_ARCHIVE);
     s_options_freelook_box.curvalue = (freelook->value != 0);
@@ -1063,7 +1066,7 @@ ControlsResetDefaultsFunc(void *unused)
 static void
 InvertMouseFunc(void *unused)
 {
-    Cvar_SetValue("m_pitch", -m_pitch->value);
+    Cvar_SetValue("m_pitch", -(Cvar_Get("m_pitch", "0.022", 0)->value));
 }
 
 static void
@@ -1075,7 +1078,8 @@ LookspringFunc(void *unused)
 static void
 LookstrafeFunc(void *unused)
 {
-    Cvar_SetValue("lookstrafe", (float)!lookstrafe->value);
+    //Cvar_SetValue("lookstrafe", (float)!lookstrafe->value);
+    Cvar_SetValue("lookstrafe", (float)!Cvar_Get("lookstrafe", "0", 0)->value);
 }
 
 static void

@@ -254,7 +254,7 @@ extern cvar_t *gl_saturatelighting;
 extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_msaa_samples;
 
-extern cvar_t *vid_fullscreen;
+//extern cvar_t *vid_fullscreen;
 extern cvar_t *vid_gamma;
 
 extern cvar_t *intensity;
