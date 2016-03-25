@@ -291,7 +291,7 @@ void Char_Event(int key);
 void Key_Event(int key, qboolean down, qboolean special);
 void Key_Init(void);
 void Key_WriteBindings(FILE *f);
-void Key_SetBinding(int keynum, char *binding);
+void Key_SetBinding(int keynum, const char *binding);
 void Key_MarkAllUp(void);
 int Key_GetKey(void);
 

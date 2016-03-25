@@ -181,6 +181,7 @@ ifeq ($(OSTYPE),Windows)
 CC := gcc
 endif
 CC := clang++ -std=c++14
+#CC := clang
 
 # ----------
 

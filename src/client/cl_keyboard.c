@@ -622,9 +622,7 @@ Key_KeynumToString(int keynum)
 	return "<UNKNOWN KEYNUM>";
 }
 
-void
-Key_SetBinding(int keynum, char *binding)
-{
+void Key_SetBinding(int keynum, const char *binding){
 	char *new_binding;
 	int l;
 
@@ -675,57 +673,34 @@ Key_Unbindall_f(void)
 	}
 }
 
-void
-Key_Bind_f(void)
-{
-	int i, c, b;
-	char cmd[1024];
-
-	c = Cmd_Argc();
-
-	if (c < 2)
-	{
-		Com_Printf("bind <key> [command] : attach a command to a key\n");
-		return;
-	}
-
-	b = Key_StringToKeynum(Cmd_Argv(1));
-
-	if (b == -1)
-	{
-		Com_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(1));
-		return;
-	}
-
-	if (c == 2)
-	{
-		if (keybindings[b])
-		{
-			Com_Printf("\"%s\" = \"%s\"\n", Cmd_Argv(1), keybindings[b]);
-		}
-
-		else
-		{
-			Com_Printf("\"%s\" is not bound\n", Cmd_Argv(1));
-		}
-
-		return;
-	}
-
-	/* copy the rest of the command line */
-	cmd[0] = 0; /* start out with a null string */
-
-	for (i = 2; i < c; i++)
-	{
-		strcat(cmd, Cmd_Argv(i));
-
-		if (i != (c - 1))
-		{
-			strcat(cmd, " ");
-		}
-	}
-
-	Key_SetBinding(b, cmd);
+static void Key_Bind_f(void){
+    char cmd[1024];
+    if(Cmd_Argc() < 2){
+        Com_Printf("bind <key> [command] : attach a command to a key\n");
+        return;
+    }
+    int b = Key_StringToKeynum(Cmd_Argv(1));
+    if(b == -1){
+        Com_Printf("\"%s\" isn't a valid key\n", Cmd_Argv(1));
+        return;
+    }
+    if(Cmd_Argc() == 2){
+        if(keybindings[b]){
+            Com_Printf("\"%s\" = \"%s\"\n", Cmd_Argv(1), keybindings[b]);
+        }else{
+            Com_Printf("\"%s\" is not bound\n", Cmd_Argv(1));
+        }
+        return;
+    }
+    /* copy the rest of the command line */
+    cmd[0] = 0; /* start out with a null string */
+    for(int i = 2; i < Cmd_Argc(); i++){
+        strcat(cmd, Cmd_Argv(i));
+        if(i != (Cmd_Argc() - 1)){
+            strcat(cmd, " ");
+        }
+    }
+    Key_SetBinding(b, cmd);
 }
 
 /*

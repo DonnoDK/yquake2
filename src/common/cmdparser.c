@@ -37,7 +37,6 @@ typedef struct cmd_function_s{
     xcommand_t function;
     xcommand_with_args_t function_with_args;
 } cmd_function_t;
-
 static cmd_function_t *cmd_functions; /* possible commands to execute */
 
 typedef struct cmdalias_s{
@@ -58,6 +57,42 @@ static sizebuf_t cmd_text;
 static byte cmd_text_buf[8192];
 static char defer_text_buf[8192];
 
+#ifdef __cplusplus
+#include <deque>
+#include <string>
+#include <vector>
+#include <iostream>
+#include <functional>
+static auto text_strings = std::deque<std::string>();
+static auto text_strings_defer = std::deque<std::string>();
+
+class Command{
+public:
+    const std::function<void(const std::vector<std::string>)> func;
+    const std::string name;
+    Command(const std::function<void(const std::vector<std::string>)> func, std::string name) : func(func), name(name){}
+};
+static auto commands = std::vector<Command*>();
+
+std::vector<std::string> split(const std::string& str, const char* delim) {
+    std::vector<std::string> v;
+    std::string tmp;
+    bool inQuotes = false;
+    for(std::string::const_iterator i = str.begin(); i <= str.end(); ++i){
+        if(*i == '"') inQuotes = !inQuotes;
+        if((inQuotes == false && *i == *delim) || *i == '\n' || i == str.end()){
+            if(tmp.length() > 0){
+                v.push_back(tmp);
+            }
+            tmp = "";
+        }else{
+            tmp += *i;
+        }
+    }
+    return v;
+}
+#endif
+
 /*
  * Causes execution of the remainder of the command buffer to be delayed
  * until next frame.  This allows commands like: bind g "impulse 5 ;
@@ -68,19 +103,26 @@ static void Cmd_Wait_f(int argc, const char** argv){
 }
 
 void Cbuf_Init(void){
+#ifndef __cplusplus
     SZ_Init(&cmd_text, cmd_text_buf, sizeof(cmd_text_buf));
+#endif
 }
 
 /*
  * Adds command text at the end of the buffer
  */
 void Cbuf_AddText(const char *text){
+#ifdef __cplusplus
+    auto strings = split(text, ";");
+    text_strings.insert(text_strings.end(), strings.begin(), strings.end());
+#else
     int l = strlen(text);
     if(cmd_text.cursize + l >= cmd_text.maxsize){
         Com_Printf("Cbuf_AddText: overflow\n");
         return;
     }
     SZ_Write(&cmd_text, text, strlen(text));
+#endif
 }
 
 /*
@@ -88,6 +130,10 @@ void Cbuf_AddText(const char *text){
  * Adds a \n to the text
  */
 void Cbuf_InsertText(const char *text){
+#ifdef __cplusplus
+    auto strings = split(text, ";");
+    text_strings.insert(text_strings.begin(), strings.begin(), strings.end());
+#else
     /* copy off any commands still remaining in the exec buffer */
     int templen = cmd_text.cursize;
     char *temp;
@@ -105,25 +151,49 @@ void Cbuf_InsertText(const char *text){
         SZ_Write(&cmd_text, temp, templen);
         Z_Free(temp);
     }
+#endif
 }
 
 void Cbuf_CopyToDefer(void){
+#ifdef __cplusplus
+    text_strings_defer = text_strings;
+    text_strings = std::deque<std::string>();
+#else
     memcpy(defer_text_buf, cmd_text_buf, cmd_text.cursize);
     defer_text_buf[cmd_text.cursize] = 0;
     cmd_text.cursize = 0;
+#endif
 }
 
 void Cbuf_InsertFromDefer(void){
+#ifdef __cplusplus
+    text_strings.insert(text_strings.begin(), text_strings_defer.begin(), text_strings_defer.end());
+    text_strings_defer = std::deque<std::string>();
+#else
     Cbuf_InsertText(defer_text_buf);
     defer_text_buf[0] = 0;
+#endif
 }
 
 void Cbuf_Execute(void){
+#ifdef __cplusplus
+    while(text_strings.size() > 0){
+        std::string cmd = text_strings[0];
+        text_strings.erase(text_strings.begin());
+        Cmd_ExecuteString(cmd.c_str());
+        if(cmd_wait){
+            /* skip out while text still remains in buffer,
+               leaving it for next frame */
+            cmd_wait = false;
+            break;
+        }
+    }
+#else
     char line[1024];
     alias_count = 0; /* don't allow infinite alias loops */
     while(cmd_text.cursize){
         /* find a \n or ; line break */
-        char* text = (char *)cmd_text.data;
+        const char* text = (char *)cmd_text.data;
         int quotes = 0;
         int i;
         for(i = 0; i < cmd_text.cursize; i++){
@@ -150,7 +220,7 @@ void Cbuf_Execute(void){
         }else{
             i++;
             cmd_text.cursize -= i;
-            memmove(text, text + i, cmd_text.cursize);
+            memmove((void*)text, text + i, cmd_text.cursize);
         }
         /* execute the command line */
         Cmd_ExecuteString(line);
@@ -161,6 +231,7 @@ void Cbuf_Execute(void){
             break;
         }
     }
+#endif
 }
 
 /*
@@ -269,6 +340,7 @@ void Cmd_Echo_f(int argc, const char** argv){
     Com_Printf("\n");
 }
 
+
 static cmdalias_t* Cmd_AliasNamed(const char* name){
     for(cmdalias_t* alias = cmd_alias; alias; alias = alias->next){
         if(!strcmp(name, alias->name)){
@@ -308,6 +380,7 @@ void Cmd_Alias_f(int argc, const char** argv){
     char cmd[1024];
     cmd[0] = 0; /* start out with a null string */
     for(int i = 2; i < argc; i++){
+        printf("%s\n", argv[i]);
         strcat(cmd, argv[i]);
         if(i != (argc - 1)){
             strcat(cmd, " ");
@@ -338,13 +411,13 @@ char* Cmd_Args(void){
 const char* Cmd_MacroExpandString(const char *text){
     static char expanded[MAX_STRING_CHARS];
     char temporary[MAX_STRING_CHARS];
-    const char* scan = text;
-    int len = strlen(scan);
+    int len = strlen(text);
     if (len >= MAX_STRING_CHARS){
         Com_Printf("Line exceeded %i chars, discarded.\n", MAX_STRING_CHARS);
         return NULL;
     }
     int count = 0;
+    const char* scan = text;
     qboolean inquote = false;
     for(int i = 0; i < len; i++){
         if (scan[i] == '"'){
@@ -386,6 +459,7 @@ const char* Cmd_MacroExpandString(const char *text){
         return NULL;
     }
 
+    printf("macroexpanded: %s\n", scan);
     return scan;
 }
 
@@ -395,8 +469,8 @@ const char* Cmd_MacroExpandString(const char *text){
  */
 void Cmd_TokenizeString(const char *text, qboolean macroExpand){
     /* clear the args from the last string */
-    int i;
-    for(i = 0; i < cmd_argc; i++){
+    printf("before tokenize: %s\n", text);
+    for(int i = 0; i < cmd_argc; i++){
         Z_Free(cmd_argv[i]);
     }
     cmd_argc = 0;
@@ -435,6 +509,7 @@ void Cmd_TokenizeString(const char *text, qboolean macroExpand){
             }
         }
         const char* com_token = COM_Parse(&text);
+        printf("token: %s\n", com_token);
         if(!text){
             return;
         }
@@ -446,6 +521,15 @@ void Cmd_TokenizeString(const char *text, qboolean macroExpand){
     }
 }
 
+#ifdef __cplusplus
+static Command* CommandNamed(const char* name){
+    for(const auto& a : commands){
+        if(!strcmp(name, a->name.c_str())) return a;
+    }
+    return NULL;
+}
+#endif
+
 static const cmd_function_t* Cmd_CommandNamed(const char* name){
     for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next){
         if(!strcmp(name, cmd->name)){
@@ -454,6 +538,11 @@ static const cmd_function_t* Cmd_CommandNamed(const char* name){
     }
     return NULL;
 }
+
+#ifdef __cplusplus
+void CommandAdd(std::function<void(const std::vector<std::string>)> args, const std::string name){
+}
+#endif
 
 void Cmd_AddArgsCommand(char* cmd_name, xcommand_with_args_t function){
     /* fail if the command is a variable name */
@@ -622,6 +711,7 @@ void Cmd_ExecuteString(const char *text){
         return; /* no tokens */
     }
     /* check functions */
+    printf("%s\n", cmd_argv[0]);
     const cmd_function_t* command = Cmd_CommandNamed(cmd_argv[0]);
     if(command != NULL){
         if(command->function != NULL){
@@ -629,6 +719,7 @@ void Cmd_ExecuteString(const char *text){
         }else if(command->function_with_args != NULL){
             command->function_with_args(cmd_argc, (const char**)cmd_argv);
         }else{
+            printf("TEST TEST TEST\n");
             Cmd_ExecuteString(va("cmd %s", text));
         }
         return;
