@@ -34,10 +34,41 @@
 #include "../../common/header/common.h"
 #include "header/unix.h"
 
+void print_settings(){
+#ifndef DEDICATED_ONLY
+	printf("Client build options:\n");
+#ifdef SDL2
+	printf(" + SDL2\n");
+#else
+	printf(" - SDL2 (using 1.2)\n");
+#endif
+
+#ifdef CDA
+	printf(" + CD audio\n");
+#else
+	printf(" - CD audio\n");
+#endif
+#ifdef OGG
+	printf(" + OGG/Vorbis\n");
+#else
+	printf(" - OGG/Vorbis\n");
+#endif
+#ifdef USE_OPENAL
+	printf(" + OpenAL audio\n");
+#else
+	printf(" - OpenAL audio\n");
+#endif
+#ifdef ZIP
+	printf(" + Zip file support\n");
+#else
+	printf(" - Zip file support\n");
+#endif
+#endif
+}
+
 int
 main(int argc, char **argv)
 {
-	int time, oldtime, newtime;
 	int verLen, i;
 	const char* versionString;
 
@@ -80,36 +111,8 @@ main(int argc, char **argv)
 	}
 	puts("\n");
 
-#ifndef DEDICATED_ONLY
-	printf("Client build options:\n");
-#ifdef SDL2
-	printf(" + SDL2\n");
-#else
-	printf(" - SDL2 (using 1.2)\n");
-#endif
 
-#ifdef CDA
-	printf(" + CD audio\n");
-#else
-	printf(" - CD audio\n");
-#endif
-#ifdef OGG
-	printf(" + OGG/Vorbis\n");
-#else
-	printf(" - OGG/Vorbis\n");
-#endif
-#ifdef USE_OPENAL
-	printf(" + OpenAL audio\n");
-#else
-	printf(" - OpenAL audio\n");
-#endif
-#ifdef ZIP
-	printf(" + Zip file support\n");
-#else
-	printf(" - Zip file support\n");
-#endif
-#endif
-
+    print_settings();
 	printf("Platform: %s\n", BUILDSTRING);
 	printf("Architecture: %s\n", CPUSTRING);
 
@@ -122,23 +125,17 @@ main(int argc, char **argv)
 	/* Do not delay reads on stdin*/
 	fcntl(fileno(stdin), F_SETFL, fcntl(fileno(stdin), F_GETFL, NULL) | FNDELAY);
 
-	oldtime = Sys_Milliseconds();
-
-	/* The legendary Quake II mainloop */
-	while (1)
-	{
+	int time, newtime;
+	int oldtime = Sys_Milliseconds();
+	while(1){
 		/* find time spent rendering last frame */
-		do
-		{
+		do{
 			newtime = Sys_Milliseconds();
 			time = newtime - oldtime;
-		}
-		while (time < 1);
-
+		} while (time < 1);
 		Qcommon_Frame(time);
 		oldtime = newtime;
 	}
-
 	return 0;
 }
 

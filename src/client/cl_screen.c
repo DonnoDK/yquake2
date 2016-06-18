@@ -332,30 +332,19 @@ SCR_CheckDrawCenterString(void)
 /*
  * Sets scr_vrect, the coordinates of the rendered window
  */
-static void
-SCR_CalcVrect(void)
-{
-	int size;
-
+static void SCR_CalcVrect(void){
 	/* bound viewsize */
-	if (scr_viewsize->value < 40)
-	{
+	if (scr_viewsize->value < 40){
 		Cvar_Set("viewsize", "40");
 	}
-
-	if (scr_viewsize->value > 100)
-	{
+	if (scr_viewsize->value > 100){
 		Cvar_Set("viewsize", "100");
 	}
-
-	size = scr_viewsize->value;
-
+	int size = scr_viewsize->value;
 	scr_vrect.width = viddef.width * size / 100;
 	scr_vrect.width &= ~1;
-
 	scr_vrect.height = viddef.height * size / 100;
 	scr_vrect.height &= ~1;
-
 	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
 	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
 }
@@ -710,112 +699,72 @@ SCR_DirtyScreen(void)
 /*
  * Clear any parts of the tiled background that were drawn on last frame
  */
-void
-SCR_TileClear(void)
-{
-	int i;
-	int top, bottom, left, right;
-	dirty_t clear;
-
-	if (scr_con_current == 1.0)
-	{
+void SCR_TileClear(void){
+	if (scr_con_current == 1.0){
 		return; /* full screen console */
 	}
-
-	if (scr_viewsize->value == 100)
-	{
+	if (scr_viewsize->value == 100){
 		return; /* full screen rendering */
 	}
-
-	if (cl.cinematictime > 0)
-	{
+	if (cl.cinematictime > 0){
 		return; /* full screen cinematic */
 	}
-
 	/* erase rect will be the union of the past three
 	   frames so tripple buffering works properly */
-	clear = scr_dirty;
-
-	for (i = 0; i < 2; i++)
-	{
-		if (scr_old_dirty[i].x1 < clear.x1)
-		{
+	dirty_t clear = scr_dirty;
+	for (int i = 0; i < 2; i++){
+		if (scr_old_dirty[i].x1 < clear.x1){
 			clear.x1 = scr_old_dirty[i].x1;
 		}
-
-		if (scr_old_dirty[i].x2 > clear.x2)
-		{
+		if (scr_old_dirty[i].x2 > clear.x2){
 			clear.x2 = scr_old_dirty[i].x2;
 		}
-
-		if (scr_old_dirty[i].y1 < clear.y1)
-		{
+		if (scr_old_dirty[i].y1 < clear.y1){
 			clear.y1 = scr_old_dirty[i].y1;
 		}
-
-		if (scr_old_dirty[i].y2 > clear.y2)
-		{
+		if (scr_old_dirty[i].y2 > clear.y2){
 			clear.y2 = scr_old_dirty[i].y2;
 		}
 	}
-
 	scr_old_dirty[1] = scr_old_dirty[0];
 	scr_old_dirty[0] = scr_dirty;
-
 	scr_dirty.x1 = 9999;
 	scr_dirty.x2 = -9999;
 	scr_dirty.y1 = 9999;
 	scr_dirty.y2 = -9999;
-
 	/* don't bother with anything convered by the console */
-	top = (int)(scr_con_current * viddef.height);
-
-	if (top >= clear.y1)
-	{
+	int top = (int)(scr_con_current * viddef.height);
+	if (top >= clear.y1){
 		clear.y1 = top;
 	}
-
-	if (clear.y2 <= clear.y1)
-	{
+	if (clear.y2 <= clear.y1) {
 		return; /* nothing disturbed */
 	}
-
 	top = scr_vrect.y;
-	bottom = top + scr_vrect.height - 1;
-	left = scr_vrect.x;
-	right = left + scr_vrect.width - 1;
-
-	if (clear.y1 < top)
-	{
+	int bottom = top + scr_vrect.height - 1;
+	int left = scr_vrect.x;
+	int right = left + scr_vrect.width - 1;
+	if (clear.y1 < top) {
 		/* clear above view screen */
-		i = clear.y2 < top - 1 ? clear.y2 : top - 1;
-		Draw_TileClear(clear.x1, clear.y1,
-				clear.x2 - clear.x1 + 1, i - clear.y1 + 1, "backtile");
+		int i = clear.y2 < top - 1 ? clear.y2 : top - 1;
+		Draw_TileClear(clear.x1, clear.y1, clear.x2 - clear.x1 + 1, i - clear.y1 + 1, "backtile");
 		clear.y1 = top;
 	}
-
-	if (clear.y2 > bottom)
-	{
+	if (clear.y2 > bottom){
 		/* clear below view screen */
-		i = clear.y1 > bottom + 1 ? clear.y1 : bottom + 1;
-		Draw_TileClear(clear.x1, i,
-				clear.x2 - clear.x1 + 1, clear.y2 - i + 1, "backtile");
+		int i = clear.y1 > bottom + 1 ? clear.y1 : bottom + 1;
+		Draw_TileClear(clear.x1, i, clear.x2 - clear.x1 + 1, clear.y2 - i + 1, "backtile");
 		clear.y2 = bottom;
 	}
-
-	if (clear.x1 < left)
-	{
+	if (clear.x1 < left) {
 		/* clear left of view screen */
-		i = clear.x2 < left - 1 ? clear.x2 : left - 1;
-		Draw_TileClear(clear.x1, clear.y1,
-				i - clear.x1 + 1, clear.y2 - clear.y1 + 1, "backtile");
+		int i = clear.x2 < left - 1 ? clear.x2 : left - 1;
+		Draw_TileClear(clear.x1, clear.y1, i - clear.x1 + 1, clear.y2 - clear.y1 + 1, "backtile");
 		clear.x1 = left;
 	}
-
-	if (clear.x2 > right)
-	{
+	if (clear.x2 > right) {
 		/* clear left of view screen */
-		i = clear.x1 > right + 1 ? clear.x1 : right + 1;
+		int i = clear.x1 > right + 1 ? clear.x1 : right + 1;
 		Draw_TileClear(i, clear.y1,
 				clear.x2 - i + 1, clear.y2 - clear.y1 + 1, "backtile");
 		clear.x2 = right;
@@ -1415,140 +1364,91 @@ SCR_DrawLayout(void)
  * This is called every frame, and can also be called
  * explicitly to flush text to the screen.
  */
-void
-SCR_UpdateScreen(void)
-{
-	int numframes;
-	int i;
-	float separation[2] = {0, 0};
-	float scale = SCR_GetMenuScale();
-
+void SCR_UpdateScreen(void){
 	/* if the screen is disabled (loading plaque is
 	   up, or vid mode changing) do nothing at all */
-	if (cls.disable_screen)
-	{
-		if (Sys_Milliseconds() - cls.disable_screen > 120000)
-		{
+	if (cls.disable_screen){
+		if (Sys_Milliseconds() - cls.disable_screen > 120000){
 			cls.disable_screen = 0;
 			Com_Printf("Loading plaque timed out.\n");
 		}
-
 		return;
 	}
-
-	if (!scr_initialized || !con.initialized)
-	{
+	if (!scr_initialized || !con.initialized){
 		return; /* not initialized yet */
 	}
 
-	separation[0] = 0;
-	separation[1] = 0;
-	numframes = 1;
-
-	for (i = 0; i < numframes; i++)
-	{
+	float separation[2] = {0, 0};
+	int numframes = 1;
+	float scale = SCR_GetMenuScale();
+	for (int i = 0; i < numframes; i++){
 		R_BeginFrame(separation[i]);
-
-		if (scr_draw_loading == 2)
-		{
+		if (scr_draw_loading == 2){
 			/* loading plaque over black screen */
-			int w, h;
-
 			R_SetPalette(NULL);
 			scr_draw_loading = false;
+            /* TODO: return a struct */
+			int w, h;
 			Draw_GetPicSize(&w, &h, "loading");
+            /* NOTE: draw the loading plaque */
 			Draw_PicScaled((viddef.width - w * scale) / 2, (viddef.height - h * scale) / 2, "loading", scale);
 		}
-
 		/* if a cinematic is supposed to be running,
 		   handle menus and console specially */
-		else if (cl.cinematictime > 0)
-		{
-			if (cls.key_dest == key_menu)
-			{
-				if (cl.cinematicpalette_active)
-				{
+		else if (cl.cinematictime > 0){
+			if (cls.key_dest == key_menu){
+				if (cl.cinematicpalette_active){
 					R_SetPalette(NULL);
 					cl.cinematicpalette_active = false;
 				}
-
 				M_Draw();
-			}
-			else if (cls.key_dest == key_console)
-			{
-				if (cl.cinematicpalette_active)
-				{
+			} else if (cls.key_dest == key_console) {
+				if (cl.cinematicpalette_active) {
 					R_SetPalette(NULL);
 					cl.cinematicpalette_active = false;
 				}
-
 				SCR_DrawConsole();
-			}
-			else
-			{
+			} else {
 				SCR_DrawCinematic();
 			}
-		}
-		else
-		{
+		} else {
+            /* NOTE: normal game rendering */
 			/* make sure the game palette is active */
-			if (cl.cinematicpalette_active)
-			{
+			if (cl.cinematicpalette_active) {
 				R_SetPalette(NULL);
 				cl.cinematicpalette_active = false;
 			}
-
 			/* do 3D refresh drawing, and then update the screen */
 			SCR_CalcVrect();
-
 			/* clear any dirty part of the background */
 			SCR_TileClear();
-
 			V_RenderView(separation[i]);
-
 			SCR_DrawStats();
-
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1)
-			{
+			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1) {
 				SCR_DrawLayout();
 			}
-
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2)
-			{
+			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 2) {
 				CL_DrawInventory();
 			}
-
 			SCR_DrawNet();
 			SCR_CheckDrawCenterString();
-
-			if (cl_drawfps->value)
-			{
+			if (cl_drawfps->value) {
 				char s[8];
 				sprintf(s, "%3.0ffps", 1 / cls.frametime);
 				DrawString(viddef.width - 64, 0, s);
 			}
-
-			if (scr_timegraph->value)
-			{
+			if (scr_timegraph->value) {
 				SCR_DebugGraph(cls.frametime * 300, 0);
 			}
-
-			if (scr_debuggraph->value || scr_timegraph->value ||
-				scr_netgraph->value)
-			{
+			if (scr_debuggraph->value || scr_timegraph->value || scr_netgraph->value) {
 				SCR_DrawDebugGraph();
 			}
-
 			SCR_DrawPause();
-
 			SCR_DrawConsole();
-
 			M_Draw();
-
 			SCR_DrawLoading();
 		}
 	}
-
 	GLimp_EndFrame();
 }
 

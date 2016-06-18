@@ -375,66 +375,45 @@ SV_RunGameFrame(void)
 #endif
 }
 
-void
-SV_Frame(int msec)
-{
+void SV_Frame(int msec){
 #ifndef DEDICATED_ONLY
 	time_before_game = time_after_game = 0;
 #endif
-
 	/* if server is not active, do nothing */
-	if (!svs.initialized)
-	{
+	if (!svs.initialized){
 		return;
 	}
-
 	svs.realtime += msec;
-
 	/* keep the random time dependent */
 	randk();
-
 	/* check timeouts */
 	SV_CheckTimeouts();
-
 	/* get packets from clients */
 	SV_ReadPackets();
-
 	/* move autonomous things around if enough time has passed */
-	if (!sv_timedemo->value && (svs.realtime < sv.time))
-	{
+	if (!sv_timedemo->value && (svs.realtime < sv.time)){
 		/* never let the time get too far off */
-		if (sv.time - svs.realtime > 100)
-		{
-			if (sv_showclamp->value)
-			{
+		if (sv.time - svs.realtime > 100){
+			if (sv_showclamp->value){
 				Com_Printf("sv lowclamp\n");
 			}
-
 			svs.realtime = sv.time - 100;
 		}
-
 		NET_Sleep(sv.time - svs.realtime);
 		return;
 	}
-
 	/* update ping based on the last known frame from all clients */
 	SV_CalcPings();
-
 	/* give the clients some timeslices */
 	SV_GiveMsec();
-
 	/* let everything in the world think and move */
 	SV_RunGameFrame();
-
 	/* send messages back to the clients that had packets read this frame */
 	SV_SendClientMessages();
-
 	/* save the entire world state if recording a serverdemo */
 	SV_RecordDemoMessage();
-
 	/* send a heartbeat to the master if needed */
 	Master_Heartbeat();
-
 	/* clear teleport flags, etc for next frame */
 	SV_PrepWorldFrame();
 }
@@ -443,47 +422,35 @@ SV_Frame(int msec)
  * Send a message to the master every few minutes to
  * let it know we are alive, and log information
  */
-void
-Master_Heartbeat(void)
-{
-	char *string;
-	int i;
-
-	if (!dedicated || !dedicated->value)
-	{
+void Master_Heartbeat(void){
+	if (!dedicated || !dedicated->value){
 		return; /* only dedicated servers send heartbeats */
 	}
 
-	if (!public_server || !public_server->value)
-	{
+	if (!public_server || !public_server->value) {
 		return; /* a private dedicated game */
 	}
 
 	/* check for time wraparound */
-	if (svs.last_heartbeat > svs.realtime)
-	{
+	if (svs.last_heartbeat > svs.realtime) {
 		svs.last_heartbeat = svs.realtime;
 	}
 
-	if (svs.realtime - svs.last_heartbeat < HEARTBEAT_SECONDS * 1000)
-	{
+	if (svs.realtime - svs.last_heartbeat < HEARTBEAT_SECONDS * 1000) {
 		return; /* not time to send yet */
 	}
 
 	svs.last_heartbeat = svs.realtime;
 
 	/* send the same string that we would give for a status OOB command */
-	string = SV_StatusString();
+	char* string = SV_StatusString();
 
 	/* send to group master */
-	for (i = 0; i < MAX_MASTERS; i++)
-	{
-		if (master_adr[i].port)
-		{
-			Com_Printf("Sending heartbeat to %s\n",
-					NET_AdrToString(master_adr[i]));
-			Netchan_OutOfBandPrint(NS_SERVER, master_adr[i],
-					"heartbeat\n%s", string);
+	int i;
+	for (i = 0; i < MAX_MASTERS; i++) {
+		if (master_adr[i].port) {
+			Com_Printf("Sending heartbeat to %s\n", NET_AdrToString(master_adr[i]));
+			Netchan_OutOfBandPrint(NS_SERVER, master_adr[i], "heartbeat\n%s", string);
 		}
 	}
 }

@@ -277,7 +277,7 @@ void R_TexEnv(GLenum value);
 void R_EnableMultitexture(qboolean enable);
 void R_SelectTexture(GLenum);
 
-void R_LightPoint(vec3_t p, vec3_t color);
+void R_LightPoint(vec3_t p, vec3_t color, const entity_t* e);
 void R_PushDlights(void);
 
 extern model_t *r_worldmodel;
@@ -291,11 +291,11 @@ void R_ScreenShot(void);
 void R_DrawAliasModel(entity_t *e);
 void R_DrawBrushModel(entity_t *e);
 void R_DrawSpriteModel(entity_t *e);
-void R_DrawBeam(entity_t *e);
+void R_DrawBeam(const entity_t *e);
 void R_DrawWorld(void);
 void R_RenderDlights(void);
 void R_DrawAlphaSurfaces(void);
-void R_RenderBrushPoly(msurface_t *fa);
+void R_RenderBrushPoly(msurface_t *fa, int frame);
 void R_InitParticleTexture(void);
 void Draw_InitLocal(void);
 void R_SubdivideSurface(msurface_t *fa);

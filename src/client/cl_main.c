@@ -739,122 +739,75 @@ CL_SendCommand(void)
 	CL_CheckForResend();
 }
 
-void
-CL_Frame(int msec)
-{
+void CL_Frame(int msec){
 	static int extratime;
 	static int lasttimecalled;
-
-	if (dedicated->value)
-	{
+	if (dedicated->value){
 		return;
 	}
-
 	extratime += msec;
-
-	if (!cl_timedemo->value)
-	{
-		if ((cls.state == ca_connected) && (extratime < 100))
-		{
+	if(!cl_timedemo->value){
+		if((cls.state == ca_connected) && (extratime < 100)){
 			return; /* don't flood packets out while connecting */
 		}
-
-		if (extratime < 1000 / cl_maxfps->value)
-		{
+		if(extratime < 1000 / cl_maxfps->value){
 			return; /* framerate is too high */
 		}
 	}
-
 	/* decide the simulation time */
 	cls.frametime = extratime / 1000.0;
-
 	cl.time += extratime;
-
 	cls.realtime = curtime;
-
 	extratime = 0;
-
-	if (cls.frametime > (1.0 / 5))
-	{
+	if (cls.frametime > (1.0 / 5)){
 		cls.frametime = (1.0 / 5);
 	}
-
 	/* if in the debugger last frame, don't timeout */
-	if (msec > 5000)
-	{
+	if (msec > 5000) {
 		cls.netchan.last_received = Sys_Milliseconds();
 	}
-
 	/* fetch results from server */
 	CL_ReadPackets();
-
 	/* send a new command message to the server */
 	CL_SendCommand();
-
 	/* predict all unacknowledged movements */
 	CL_PredictMovement();
-
 	/* allow renderer DLL change */
 	VID_CheckChanges();
-
-	if (!cl.refresh_prepped && (cls.state == ca_active))
-	{
+	if (!cl.refresh_prepped && (cls.state == ca_active)){
 		CL_PrepRefresh();
 	}
-
 	/* update the screen */
-	if (host_speeds->value)
-	{
+	if (host_speeds->value){
 		time_before_ref = Sys_Milliseconds();
 	}
-
 	SCR_UpdateScreen();
-
-	if (host_speeds->value)
-	{
+	if (host_speeds->value){
 		time_after_ref = Sys_Milliseconds();
 	}
-
 	/* update audio */
 	S_Update(cl.refdef.vieworg, cl.v_forward, cl.v_right, cl.v_up);
 #ifdef CDA
 	CDAudio_Update();
 #endif
-
 	/* advance local effects for next frame */
 	CL_RunDLights();
-
 	CL_RunLightStyles();
-
 	SCR_RunCinematic();
-
 	SCR_RunConsole();
-
 	cls.framecount++;
-
-	if (log_stats->value)
-	{
-		if (cls.state == ca_active)
-		{
-			if (!lasttimecalled)
-			{
+	if (log_stats->value){
+		if (cls.state == ca_active){
+			if (!lasttimecalled){
 				lasttimecalled = Sys_Milliseconds();
-
-				if (log_stats_file)
-				{
+				if (log_stats_file){
 					fprintf(log_stats_file, "0\n");
 				}
-			}
-
-			else
-			{
+			} else {
 				int now = Sys_Milliseconds();
-
-				if (log_stats_file)
-				{
+				if (log_stats_file) {
 					fprintf(log_stats_file, "%d\n", now - lasttimecalled);
 				}
-
 				lasttimecalled = now;
 			}
 		}

@@ -256,150 +256,79 @@ R_DrawSpriteModel(entity_t *e)
 	glColor4f(1, 1, 1, 1);
 }
 
-void
-R_DrawNullModel(void)
-{
+void R_DrawNullModel(const entity_t* e){
 	vec3_t shadelight;
-	int i;
-
-	if (currententity->flags & RF_FULLBRIGHT)
-	{
+	if(e->flags & RF_FULLBRIGHT){
 		shadelight[0] = shadelight[1] = shadelight[2] = 1.0F;
+	}else{
+		R_LightPoint(e->origin, shadelight, e);
 	}
-	else
-	{
-		R_LightPoint(currententity->origin, shadelight);
-	}
-
 	glPushMatrix();
-	R_RotateForEntity(currententity);
-
+	R_RotateForEntity(e);
 	glDisable(GL_TEXTURE_2D);
 	glColor3fv(shadelight);
-
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex3f(0, 0, -16);
-
-	for (i = 0; i <= 4; i++)
-	{
+	for(int i = 0; i <= 4; i++){
 		glVertex3f(16 * cos(i * M_PI / 2), 16 * sin(i * M_PI / 2), 0);
 	}
-
 	glEnd();
-
 	glBegin(GL_TRIANGLE_FAN);
 	glVertex3f(0, 0, 16);
-
-	for (i = 4; i >= 0; i--)
-	{
+	for(int i = 4; i >= 0; i--){
 		glVertex3f(16 * cos(i * M_PI / 2), 16 * sin(i * M_PI / 2), 0);
 	}
-
 	glEnd();
-
 	glColor3f(1, 1, 1);
 	glPopMatrix();
 	glEnable(GL_TEXTURE_2D);
 }
 
-void
-R_DrawEntitiesOnList(void)
-{
-	int i;
+void R_DrawEntity(const entity_t* e, qboolean isTransparent){
+    if ((e->flags & RF_TRANSLUCENT) != isTransparent) {
+        return;
+    }
+    if (e->flags & RF_BEAM) {
+        R_DrawBeam(e);
+    } else {
+        currentmodel = e->model;
+        if (!currentmodel) {
+            R_DrawNullModel(e);
+            return;
+        }
+        switch (currentmodel->type) {
+            case mod_alias:
+                R_DrawAliasModel(e);
+                break;
+            case mod_brush:
+                R_DrawBrushModel(e);
+                break;
+            case mod_sprite:
+                R_DrawSpriteModel(e);
+                break;
+            default:
+                VID_Error(ERR_DROP, "Bad modeltype");
+                break;
+        }
+    }
+}
 
-	if (!gl_drawentities->value)
-	{
+/* TODO: take list as param */
+void R_DrawEntitiesOnList(void) {
+	if (!gl_drawentities->value) {
 		return;
 	}
-
 	/* draw non-transparent first */
-	for (i = 0; i < r_newrefdef.num_entities; i++)
-	{
+	for (int i = 0; i < r_newrefdef.num_entities; i++) {
 		currententity = &r_newrefdef.entities[i];
-
-		if (currententity->flags & RF_TRANSLUCENT)
-		{
-			continue; /* solid */
-		}
-
-		if (currententity->flags & RF_BEAM)
-		{
-			R_DrawBeam(currententity);
-		}
-		else
-		{
-			currentmodel = currententity->model;
-
-			if (!currentmodel)
-			{
-				R_DrawNullModel();
-				continue;
-			}
-
-			switch (currentmodel->type)
-			{
-				case mod_alias:
-					R_DrawAliasModel(currententity);
-					break;
-				case mod_brush:
-					R_DrawBrushModel(currententity);
-					break;
-				case mod_sprite:
-					R_DrawSpriteModel(currententity);
-					break;
-				default:
-					VID_Error(ERR_DROP, "Bad modeltype");
-					break;
-			}
-		}
+        R_DrawEntity(currententity, false);
 	}
-
-	/* draw transparent entities
-	   we could sort these if it ever
-	   becomes a problem... */
+	/* draw transparent entities. We could sort these if it ever becomes a problem... */
 	glDepthMask(0);
-
-	for (i = 0; i < r_newrefdef.num_entities; i++)
-	{
+	for (int i = 0; i < r_newrefdef.num_entities; i++) {
 		currententity = &r_newrefdef.entities[i];
-
-		if (!(currententity->flags & RF_TRANSLUCENT))
-		{
-			continue; /* solid */
-		}
-
-		if (currententity->flags & RF_BEAM)
-		{
-			R_DrawBeam(currententity);
-		}
-		else
-		{
-			currentmodel = currententity->model;
-
-			if (!currentmodel)
-			{
-				R_DrawNullModel();
-				continue;
-			}
-
-			switch (currentmodel->type)
-			{
-				case mod_alias:
-					R_DrawAliasModel(currententity);
-					break;
-				case mod_brush:
-					R_DrawBrushModel(currententity);
-					break;
-				case mod_sprite:
-					R_DrawSpriteModel(currententity);
-					break;
-				default:
-					VID_Error(ERR_DROP, "Bad modeltype");
-					break;
-			}
-		}
+        R_DrawEntity(currententity, true);
 	}
-
 	glDepthMask(1); /* back to writing */
 }
 
@@ -564,102 +493,64 @@ R_SignbitsForPlane(cplane_t *out)
 	return bits;
 }
 
-void
-R_SetFrustum(void)
-{
-	int i;
-
+void R_SetFrustum(void) {
 	/* rotate VPN right by FOV_X/2 degrees */
-	RotatePointAroundVector(frustum[0].normal, vup, vpn,
-			-(90 - r_newrefdef.fov_x / 2));
+	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90 - r_newrefdef.fov_x / 2));
 	/* rotate VPN left by FOV_X/2 degrees */
-	RotatePointAroundVector(frustum[1].normal,
-			vup, vpn, 90 - r_newrefdef.fov_x / 2);
+	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90 - r_newrefdef.fov_x / 2);
 	/* rotate VPN up by FOV_X/2 degrees */
-	RotatePointAroundVector(frustum[2].normal,
-			vright, vpn, 90 - r_newrefdef.fov_y / 2);
+	RotatePointAroundVector(frustum[2].normal, vright, vpn, 90 - r_newrefdef.fov_y / 2);
 	/* rotate VPN down by FOV_X/2 degrees */
-	RotatePointAroundVector(frustum[3].normal, vright, vpn,
-			-(90 - r_newrefdef.fov_y / 2));
-
-	for (i = 0; i < 4; i++)
-	{
+	RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90 - r_newrefdef.fov_y / 2));
+	for (int i = 0; i < 4; i++) {
 		frustum[i].type = PLANE_ANYZ;
 		frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
 		frustum[i].signbits = R_SignbitsForPlane(&frustum[i]);
 	}
 }
 
-void
-R_SetupFrame(void)
-{
-	int i;
-	mleaf_t *leaf;
-
+void R_SetupFrame(void) {
 	r_framecount++;
-
 	/* build the transformation matrix for the given view angles */
 	VectorCopy(r_newrefdef.vieworg, r_origin);
-
 	AngleVectors(r_newrefdef.viewangles, vpn, vright, vup);
-
 	/* current viewcluster */
-	if (!(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
-	{
+	if (!(r_newrefdef.rdflags & RDF_NOWORLDMODEL)) {
 		r_oldviewcluster = r_viewcluster;
 		r_oldviewcluster2 = r_viewcluster2;
-		leaf = Mod_PointInLeaf(r_origin, r_worldmodel);
+		mleaf_t* leaf = Mod_PointInLeaf(r_origin, r_worldmodel);
 		r_viewcluster = r_viewcluster2 = leaf->cluster;
-
 		/* check above and below so crossing solid water doesn't draw wrong */
-		if (!leaf->contents)
-		{
+		if (!leaf->contents) {
 			/* look down a bit */
 			vec3_t temp;
-
 			VectorCopy(r_origin, temp);
 			temp[2] -= 16;
 			leaf = Mod_PointInLeaf(temp, r_worldmodel);
-
-			if (!(leaf->contents & CONTENTS_SOLID) &&
-				(leaf->cluster != r_viewcluster2))
-			{
+			if (!(leaf->contents & CONTENTS_SOLID) && (leaf->cluster != r_viewcluster2)) {
 				r_viewcluster2 = leaf->cluster;
 			}
-		}
-		else
-		{
+		} else {
 			/* look up a bit */
 			vec3_t temp;
-
 			VectorCopy(r_origin, temp);
 			temp[2] += 16;
 			leaf = Mod_PointInLeaf(temp, r_worldmodel);
-
-			if (!(leaf->contents & CONTENTS_SOLID) &&
-				(leaf->cluster != r_viewcluster2))
-			{
+			if (!(leaf->contents & CONTENTS_SOLID) && (leaf->cluster != r_viewcluster2)) {
 				r_viewcluster2 = leaf->cluster;
 			}
 		}
 	}
-
-	for (i = 0; i < 4; i++)
-	{
+	for (int i = 0; i < 4; i++) {
 		v_blend[i] = r_newrefdef.blend[i];
 	}
-
 	c_brush_polys = 0;
 	c_alias_polys = 0;
-
 	/* clear out the portion of the screen that the NOWORLDMODEL defines */
-	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL)
-	{
+	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL) {
 		glEnable(GL_SCISSOR_TEST);
 		glClearColor(0.3, 0.3, 0.3, 1);
-		glScissor(r_newrefdef.x,
-				vid.height - r_newrefdef.height - r_newrefdef.y,
-				r_newrefdef.width, r_newrefdef.height);
+		glScissor(r_newrefdef.x, vid.height - r_newrefdef.height - r_newrefdef.y, r_newrefdef.width, r_newrefdef.height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glClearColor(1, 0, 0.5, 0.5);
 		glDisable(GL_SCISSOR_TEST);
@@ -684,63 +575,40 @@ R_MYgluPerspective(GLdouble fovy, GLdouble aspect,
 	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
-void
-R_SetupGL(void)
-{
-	float screenaspect;
-	int x, x2, y2, y, w, h;
-
+void R_SetupGL(void) {
 	/* set up viewport */
-	x = floor(r_newrefdef.x * vid.width / vid.width);
-	x2 = ceil((r_newrefdef.x + r_newrefdef.width) * vid.width / vid.width);
-	y = floor(vid.height - r_newrefdef.y * vid.height / vid.height);
-	y2 = ceil(vid.height -
-			  (r_newrefdef.y + r_newrefdef.height) * vid.height / vid.height);
-
-	w = x2 - x;
-	h = y - y2;
-
+	int x = floor(r_newrefdef.x * vid.width / vid.width);
+	int x2 = ceil((r_newrefdef.x + r_newrefdef.width) * vid.width / vid.width);
+	int y = floor(vid.height - r_newrefdef.y * vid.height / vid.height);
+	int y2 = ceil(vid.height - (r_newrefdef.y + r_newrefdef.height) * vid.height / vid.height);
+	int w = x2 - x;
+	int h = y - y2;
 	glViewport(x, y2, w, h);
-
 	/* set up projection matrix */
-	screenaspect = (float)r_newrefdef.width / r_newrefdef.height;
+	float screenaspect = (float)r_newrefdef.width / r_newrefdef.height;
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-
-	if (gl_farsee->value == 0)
-	{
+	if (gl_farsee->value == 0) {
 		R_MYgluPerspective(r_newrefdef.fov_y, screenaspect, 4, 4096);
-	}
-	else
-	{
+	} else {
 		R_MYgluPerspective(r_newrefdef.fov_y, screenaspect, 4, 8192);
 	}
-
 	glCullFace(GL_FRONT);
-
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
 	glRotatef(-90, 1, 0, 0); /* put Z going up */
 	glRotatef(90, 0, 0, 1); /* put Z going up */
 	glRotatef(-r_newrefdef.viewangles[2], 1, 0, 0);
 	glRotatef(-r_newrefdef.viewangles[0], 0, 1, 0);
 	glRotatef(-r_newrefdef.viewangles[1], 0, 0, 1);
-	glTranslatef(-r_newrefdef.vieworg[0], -r_newrefdef.vieworg[1],
-			-r_newrefdef.vieworg[2]);
-
+	glTranslatef(-r_newrefdef.vieworg[0], -r_newrefdef.vieworg[1], -r_newrefdef.vieworg[2]);
 	glGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
-
 	/* set drawing parms */
-	if (gl_cull->value)
-	{
+	if (gl_cull->value) {
 		glEnable(GL_CULL_FACE);
-	}
-	else
-	{
+	} else {
 		glDisable(GL_CULL_FACE);
 	}
-
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
 	glEnable(GL_DEPTH_TEST);
@@ -820,56 +688,33 @@ R_Flash(void)
 /*
  * r_newrefdef must be set before the first call
  */
-void
-R_RenderView(refdef_t *fd)
-{
-	if (gl_norefresh->value)
-	{
+void R_RenderView(refdef_t *fd){
+	if (gl_norefresh->value){
 		return;
 	}
-
 	r_newrefdef = *fd;
-
-	if (!r_worldmodel && !(r_newrefdef.rdflags & RDF_NOWORLDMODEL))
-	{
+	if (!r_worldmodel && !(r_newrefdef.rdflags & RDF_NOWORLDMODEL)) {
 		VID_Error(ERR_DROP, "R_RenderView: NULL worldmodel");
 	}
-
-	if (gl_speeds->value)
-	{
+	if (gl_speeds->value) {
 		c_brush_polys = 0;
 		c_alias_polys = 0;
 	}
-
 	R_PushDlights();
-
-	if (gl_finish->value)
-	{
+	if (gl_finish->value) {
 		glFinish();
 	}
-
 	R_SetupFrame();
-
 	R_SetFrustum();
-
 	R_SetupGL();
-
 	R_MarkLeaves(); /* done here so we know if we're in water */
-
 	R_DrawWorld();
-
 	R_DrawEntitiesOnList();
-
 	R_RenderDlights();
-
 	R_DrawParticles();
-
 	R_DrawAlphaSurfaces();
-
 	R_Flash();
-
-	if (gl_speeds->value)
-	{
+	if (gl_speeds->value) {
 		VID_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
 				c_brush_polys, c_alias_polys, c_visible_textures,
 				c_visible_lightmaps);
@@ -893,48 +738,31 @@ R_SetGL2D(void)
 	glColor4f(1, 1, 1, 1);
 }
 
-void
-R_SetLightLevel(void)
-{
-	vec3_t shadelight;
-
-	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL)
-	{
+void R_SetLightLevel(void){
+	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL) {
 		return;
 	}
-
+	vec3_t shadelight;
 	/* save off light value for server to look at */
-	R_LightPoint(r_newrefdef.vieworg, shadelight);
-
+	R_LightPoint(r_newrefdef.vieworg, shadelight, currententity);
 	/* pick the greatest component, which should be the
 	 * same as the mono value returned by software */
-	if (shadelight[0] > shadelight[1])
-	{
-		if (shadelight[0] > shadelight[2])
-		{
+	if (shadelight[0] > shadelight[1]) {
+		if (shadelight[0] > shadelight[2]) {
 			gl_lightlevel->value = 150 * shadelight[0];
-		}
-		else
-		{
+		} else {
 			gl_lightlevel->value = 150 * shadelight[2];
 		}
-	}
-	else
-	{
-		if (shadelight[1] > shadelight[2])
-		{
+	} else {
+		if (shadelight[1] > shadelight[2]) {
 			gl_lightlevel->value = 150 * shadelight[1];
-		}
-		else
-		{
+		} else {
 			gl_lightlevel->value = 150 * shadelight[2];
 		}
 	}
 }
 
-void
-R_RenderFrame(refdef_t *fd)
-{
+void R_RenderFrame(refdef_t *fd){
 	R_RenderView(fd);
 	R_SetLightLevel();
 	R_SetGL2D();
@@ -1445,17 +1273,10 @@ R_SetPalette(const unsigned char *palette)
 }
 
 /* R_DrawBeam */
-void
-R_DrawBeam(entity_t *e)
-{
-	int i;
-	float r, g, b;
-
-	vec3_t perpvec;
+void R_DrawBeam(const entity_t *e){
 	vec3_t direction, normalized_direction;
 	vec3_t start_points[NUM_BEAM_SEGS], end_points[NUM_BEAM_SEGS];
 	vec3_t oldorigin, origin;
-
 	oldorigin[0] = e->oldorigin[0];
 	oldorigin[1] = e->oldorigin[1];
 	oldorigin[2] = e->oldorigin[2];
@@ -1468,48 +1289,37 @@ R_DrawBeam(entity_t *e)
 	normalized_direction[1] = direction[1] = oldorigin[1] - origin[1];
 	normalized_direction[2] = direction[2] = oldorigin[2] - origin[2];
 
-	if (VectorNormalize(normalized_direction) == 0)
-	{
+	if (VectorNormalize(normalized_direction) == 0) {
 		return;
 	}
-
+	vec3_t perpvec;
 	PerpendicularVector(perpvec, normalized_direction);
 	VectorScale(perpvec, e->frame / 2, perpvec);
-
-	for (i = 0; i < 6; i++)
-	{
-		RotatePointAroundVector(start_points[i], normalized_direction, perpvec,
-				(360.0 / NUM_BEAM_SEGS) * i);
+	for (int i = 0; i < 6; i++) {
+		RotatePointAroundVector(start_points[i], normalized_direction, perpvec, (360.0 / NUM_BEAM_SEGS) * i);
 		VectorAdd(start_points[i], origin, start_points[i]);
 		VectorAdd(start_points[i], direction, end_points[i]);
 	}
-
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glDepthMask(GL_FALSE);
-
-	r = (LittleLong(d_8to24table[e->skinnum & 0xFF])) & 0xFF;
-	g = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 8) & 0xFF;
-	b = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 16) & 0xFF;
+	float r = (LittleLong(d_8to24table[e->skinnum & 0xFF])) & 0xFF;
+	float g = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 8) & 0xFF;
+	float b = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 16) & 0xFF;
 
 	r *= 1 / 255.0F;
 	g *= 1 / 255.0F;
 	b *= 1 / 255.0F;
 
 	glColor4f(r, g, b, e->alpha);
-
 	glBegin(GL_TRIANGLE_STRIP);
-
-	for (i = 0; i < NUM_BEAM_SEGS; i++)
-	{
+	for (int i = 0; i < NUM_BEAM_SEGS; i++){
 		glVertex3fv(start_points[i]);
 		glVertex3fv(end_points[i]);
 		glVertex3fv(start_points[(i + 1) % NUM_BEAM_SEGS]);
 		glVertex3fv(end_points[(i + 1) % NUM_BEAM_SEGS]);
 	}
-
 	glEnd();
-
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
