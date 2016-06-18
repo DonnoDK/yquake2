@@ -34,71 +34,41 @@ cplane_t *lightplane; /* used as shadow plane */
 vec3_t lightspot;
 static float s_blocklights[34 * 34 * 3];
 
-void
-R_RenderDlight(dlight_t *light)
-{
-	int i, j;
-	float a;
+void R_RenderDlight(dlight_t *light){
+	float rad = light->intensity * 0.35;
 	vec3_t v;
-	float rad;
-
-	rad = light->intensity * 0.35;
-
 	VectorSubtract(light->origin, r_origin, v);
-
 	glBegin(GL_TRIANGLE_FAN);
-	glColor3f(light->color[0] * 0.2, light->color[1] * 0.2,
-			light->color[2] * 0.2);
-
-	for (i = 0; i < 3; i++)
-	{
+	glColor3f(light->color[0] * 0.2, light->color[1] * 0.2, light->color[2] * 0.2);
+	for (int i = 0; i < 3; i++) {
 		v[i] = light->origin[i] - vpn[i] * rad;
 	}
-
 	glVertex3fv(v);
 	glColor3f(0, 0, 0);
-
-	for (i = 16; i >= 0; i--)
-	{
-		a = i / 16.0 * M_PI * 2;
-
-		for (j = 0; j < 3; j++)
-		{
-			v[j] = light->origin[j] + vright[j] * cos(a) * rad
-				   + vup[j] * sin(a) * rad;
+	for (int i = 16; i >= 0; i--) {
+		float a = i / 16.0 * M_PI * 2;
+		for (int j = 0; j < 3; j++) {
+			v[j] = light->origin[j] + vright[j] * cos(a) * rad + vup[j] * sin(a) * rad;
 		}
-
 		glVertex3fv(v);
 	}
-
 	glEnd();
 }
 
-void
-R_RenderDlights(void)
-{
-	int i;
-	dlight_t *l;
-
-	if (!gl_flashblend->value)
-	{
+void R_RenderDlights(const dlight_t* lights, int count){
+	if (!gl_flashblend->value){
 		return;
 	}
-
 	/* because the count hasn't advanced yet for this frame */
 	r_dlightframecount = r_framecount + 1;
-
 	glDepthMask(0);
 	glDisable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	l = r_newrefdef.dlights;
-
-	for (i = 0; i < r_newrefdef.num_dlights; i++, l++)
-	{
-		R_RenderDlight(l);
+	for (int i = 0; i < count; i++) {
+		R_RenderDlight(&lights[i]);
 	}
 
 	glColor3f(1, 1, 1);

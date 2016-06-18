@@ -293,7 +293,7 @@ void R_DrawBrushModel(entity_t *e);
 void R_DrawSpriteModel(entity_t *e);
 void R_DrawBeam(const entity_t *e);
 void R_DrawWorld(void);
-void R_RenderDlights(void);
+void R_RenderDlights(const dlight_t* lights, int count);
 void R_DrawAlphaSurfaces(void);
 void R_RenderBrushPoly(msurface_t *fa, int frame);
 void R_InitParticleTexture(void);
@@ -343,8 +343,9 @@ void R_TextureSolidMode(char *string);
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
 /* GL extension emulation functions */
-void R_DrawParticles2(int n,
-		const particle_t particles[],
+void R_DrawParticles2(
+        const particle_t* particles,
+        int count,
 		const unsigned colortable[768]);
 
 /*

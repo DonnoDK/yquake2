@@ -117,9 +117,6 @@ typedef struct {
 	particle_t	*particles;
 } refdef_t;
 
-// Soon to be deleted
-//void R_GetRefAPI(void);
-
 /*
  * Refresh API
  */

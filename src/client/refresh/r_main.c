@@ -314,32 +314,24 @@ void R_DrawEntity(const entity_t* e, qboolean isTransparent){
 }
 
 /* TODO: take list as param */
-void R_DrawEntitiesOnList(void) {
+void R_DrawEntitiesOnList(const entity_t* entities, int count) {
 	if (!gl_drawentities->value) {
 		return;
 	}
 	/* draw non-transparent first */
-	for (int i = 0; i < r_newrefdef.num_entities; i++) {
-		currententity = &r_newrefdef.entities[i];
-        R_DrawEntity(currententity, false);
+	for (int i = 0; i < count; i++) {
+        R_DrawEntity(&entities[i], false);
 	}
 	/* draw transparent entities. We could sort these if it ever becomes a problem... */
 	glDepthMask(0);
-	for (int i = 0; i < r_newrefdef.num_entities; i++) {
-		currententity = &r_newrefdef.entities[i];
-        R_DrawEntity(currententity, true);
+	for (int i = 0; i < count; i++) {
+        R_DrawEntity(&entities[i], true);
 	}
-	glDepthMask(1); /* back to writing */
+    /* back to writing */
+	glDepthMask(1);
 }
 
-void
-R_DrawParticles2(int num_particles, const particle_t particles[],
-		const unsigned colortable[768])
-{
-	const particle_t *p;
-	int i;
-	vec3_t up, right;
-	float scale;
+void R_DrawParticles2(const particle_t* particles, int count, const unsigned colortable[768]) {
 	byte color[4];
 
 	R_Bind(r_particletexture->texnum);
@@ -348,44 +340,35 @@ R_DrawParticles2(int num_particles, const particle_t particles[],
 	R_TexEnv(GL_MODULATE);
 	glBegin(GL_TRIANGLES);
 
+	vec3_t up, right;
 	VectorScale(vup, 1.5, up);
 	VectorScale(vright, 1.5, right);
 
-	for (p = particles, i = 0; i < num_particles; i++, p++)
-	{
+	for (int i = 0; i < count; i++) {
 		/* hack a scale up to keep particles from disapearing */
-		scale = (p->origin[0] - r_origin[0]) * vpn[0] +
-				(p->origin[1] - r_origin[1]) * vpn[1] +
+        const particle_t *p = &particles[i];
+		float scale = (p->origin[0] - r_origin[0]) * vpn[0] + (p->origin[1] - r_origin[1]) * vpn[1] +
 				(p->origin[2] - r_origin[2]) * vpn[2];
 
-		if (scale < 20)
-		{
+		if (scale < 20) {
 			scale = 1;
-		}
-		else
-		{
+		} else {
 			scale = 1 + scale * 0.004;
 		}
-
 		*(int *)color = colortable[p->color];
 		color[3] = p->alpha * 255;
-
 		glColor4ubv(color);
-
 		glTexCoord2f(0.0625, 0.0625);
 		glVertex3fv(p->origin);
-
 		glTexCoord2f(1.0625, 0.0625);
 		glVertex3f(p->origin[0] + up[0] * scale,
 				p->origin[1] + up[1] * scale,
 				p->origin[2] + up[2] * scale);
-
 		glTexCoord2f(0.0625, 1.0625);
 		glVertex3f(p->origin[0] + right[0] * scale,
 				p->origin[1] + right[1] * scale,
 				p->origin[2] + right[2] * scale);
 	}
-
 	glEnd();
 	glDisable(GL_BLEND);
 	glColor4f(1, 1, 1, 1);
@@ -393,44 +376,28 @@ R_DrawParticles2(int num_particles, const particle_t particles[],
 	R_TexEnv(GL_REPLACE);
 }
 
-void
-R_DrawParticles(void)
-{
-	if (gl_ext_pointparameters->value && qglPointParameterfEXT)
-	{
-		int i;
-		unsigned char color[4];
-		const particle_t *p;
-
+void R_DrawParticles(const particle_t* particles, int count) {
+	if (gl_ext_pointparameters->value && qglPointParameterfEXT) {
 		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		glDisable(GL_TEXTURE_2D);
-
 		glPointSize(LittleFloat(gl_particle_size->value));
-
 		glBegin(GL_POINTS);
-
-		for (i = 0, p = r_newrefdef.particles;
-			 i < r_newrefdef.num_particles;
-			 i++, p++)
-		{
-			*(int *)color = d_8to24table[p->color & 0xFF];
-			color[3] = p->alpha * 255;
+		unsigned char color[4];
+		for (int i = 0; i < count; i++) {
+            const particle_t* particle = &particles[i];
+			*(int *)color = d_8to24table[particle->color & 0xFF];
+			color[3] = particle->alpha * 255;
 			glColor4ubv(color);
-			glVertex3fv(p->origin);
+			glVertex3fv(particle->origin);
 		}
-
 		glEnd();
-
 		glDisable(GL_BLEND);
 		glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 		glDepthMask(GL_TRUE);
 		glEnable(GL_TEXTURE_2D);
-	}
-	else
-	{
-		R_DrawParticles2(r_newrefdef.num_particles,
-				r_newrefdef.particles, d_8to24table);
+	}else{
+		R_DrawParticles2(particles, count, d_8to24table);
 	}
 }
 
@@ -688,12 +655,14 @@ R_Flash(void)
 /*
  * r_newrefdef must be set before the first call
  */
+/* NOTE: codesmell in above comment. Lets get rid of the global var _r_newrefdef_ */
 void R_RenderView(refdef_t *fd){
 	if (gl_norefresh->value){
 		return;
 	}
+    /* NOTE: Aha! Lets get rid of this global var */
 	r_newrefdef = *fd;
-	if (!r_worldmodel && !(r_newrefdef.rdflags & RDF_NOWORLDMODEL)) {
+	if (!r_worldmodel && !(fd->rdflags & RDF_NOWORLDMODEL)) {
 		VID_Error(ERR_DROP, "R_RenderView: NULL worldmodel");
 	}
 	if (gl_speeds->value) {
@@ -709,9 +678,9 @@ void R_RenderView(refdef_t *fd){
 	R_SetupGL();
 	R_MarkLeaves(); /* done here so we know if we're in water */
 	R_DrawWorld();
-	R_DrawEntitiesOnList();
-	R_RenderDlights();
-	R_DrawParticles();
+	R_DrawEntitiesOnList(fd->entities, fd->num_entities);
+	R_RenderDlights(fd->dlights, fd->num_dlights);
+	R_DrawParticles(fd->particles, fd->num_particles);
 	R_DrawAlphaSurfaces();
 	R_Flash();
 	if (gl_speeds->value) {
@@ -744,7 +713,7 @@ void R_SetLightLevel(void){
 	}
 	vec3_t shadelight;
 	/* save off light value for server to look at */
-	R_LightPoint(r_newrefdef.vieworg, shadelight, currententity);
+	R_LightPoint(r_newrefdef.vieworg, shadelight, &r_newrefdef.entities[0]);
 	/* pick the greatest component, which should be the
 	 * same as the mono value returned by software */
 	if (shadelight[0] > shadelight[1]) {
