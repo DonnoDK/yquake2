@@ -548,7 +548,7 @@ void R_DrawAliasModel(entity_t *e){
 			shadelight[i] = 1.0;
 		}
 	} else {
-		R_LightPoint(e->origin, shadelight, e);
+		R_LightPoint(e->origin, shadelight, e, r_newrefdef.dlights, r_newrefdef.num_dlights, r_newrefdef.lightstyles);
 		/* player lighting hack for communication back to server */
 		if (e->flags & RF_WEAPONMODEL) {
 			/* pick the greatest component, which should be

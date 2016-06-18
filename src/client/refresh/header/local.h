@@ -277,8 +277,8 @@ void R_TexEnv(GLenum value);
 void R_EnableMultitexture(qboolean enable);
 void R_SelectTexture(GLenum);
 
-void R_LightPoint(vec3_t p, vec3_t color, const entity_t* e);
-void R_PushDlights(void);
+void R_LightPoint(vec3_t p, vec3_t color, const entity_t* e, const dlight_t* dlights, int count, const lightstyle_t* lightstyles);
+void R_PushDlights(const dlight_t* dlights, int count);
 
 extern model_t *r_worldmodel;
 extern unsigned d_8to24table[256];

@@ -261,7 +261,7 @@ void R_DrawNullModel(const entity_t* e){
 	if(e->flags & RF_FULLBRIGHT){
 		shadelight[0] = shadelight[1] = shadelight[2] = 1.0F;
 	}else{
-		R_LightPoint(e->origin, shadelight, e);
+		R_LightPoint(e->origin, shadelight, e, r_newrefdef.dlights, r_newrefdef.num_dlights, r_newrefdef.lightstyles);
 	}
 	glPushMatrix();
 	R_RotateForEntity(e);
@@ -669,7 +669,7 @@ void R_RenderView(refdef_t *fd){
 		c_brush_polys = 0;
 		c_alias_polys = 0;
 	}
-	R_PushDlights();
+	R_PushDlights(fd->dlights, fd->num_dlights);
 	if (gl_finish->value) {
 		glFinish();
 	}
@@ -713,7 +713,8 @@ void R_SetLightLevel(void){
 	}
 	vec3_t shadelight;
 	/* save off light value for server to look at */
-	R_LightPoint(r_newrefdef.vieworg, shadelight, &r_newrefdef.entities[0]);
+	R_LightPoint(r_newrefdef.vieworg, shadelight, &r_newrefdef.entities[0], r_newrefdef.dlights,
+	r_newrefdef.num_dlights, r_newrefdef.lightstyles);
 	/* pick the greatest component, which should be the
 	 * same as the mono value returned by software */
 	if (shadelight[0] > shadelight[1]) {
