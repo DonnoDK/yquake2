@@ -1452,147 +1452,82 @@ void SCR_UpdateScreen(void){
 	GLimp_EndFrame();
 }
 
-static float
-SCR_ClampScale(float scale)
-{
-	float f;
-
-	f = viddef.width / 320.0f;
-	if (scale > f)
-	{
-		scale = f;
-	}
-
+static float SCR_ClampScale(float scale){
+	float f = viddef.width / 320.0f;
+    scale = fmin(scale, f);
 	f = viddef.height / 240.0f;
-	if (scale > f)
-	{
-		scale = f;
-	}
-
-	if (scale < 1)
-	{
-		scale = 1;
-	}
-
-	return scale;
+    scale = fmin(scale, f);
+    return fmax(scale, f);
 }
 
-static float
-SCR_GetDefaultScale(void)
-{
+static float SCR_GetDefaultScale(void){
 	int i = viddef.width / 640;
 	int j = viddef.height / 240;
-
-	if (i > j)
-	{
+	if (i > j) {
 		i = j;
 	}
-	if (i < 1)
-	{
+	if (i < 1) {
 		i = 1;
 	}
-
 	return i;
 }
 
-void
-SCR_DrawCrosshair(void)
-{
-	float scale;
-
-	if (!crosshair->value)
-	{
+void SCR_DrawCrosshair(void){
+	if (!crosshair->value) {
 		return;
 	}
-
-	if (crosshair->modified)
-	{
+	if (crosshair->modified) {
 		crosshair->modified = false;
 		SCR_TouchPics();
 	}
-
-	if (!crosshair_pic[0])
-	{
+	if (!crosshair_pic[0]) {
 		return;
 	}
-
-	if (crosshair_scale->value < 0)
-	{
+	float scale;
+	if (crosshair_scale->value < 0) {
 		scale = SCR_GetDefaultScale();
-	}
-	else
-	{
+	} else {
 		scale = SCR_ClampScale(crosshair_scale->value);
 	}
-
 	Draw_PicScaled(scr_vrect.x + (scr_vrect.width - crosshair_width * scale) / 2,
 			scr_vrect.y + (scr_vrect.height - crosshair_height * scale) / 2,
 			crosshair_pic, scale);
 }
 
-float
-SCR_GetHUDScale(void)
-{
+float SCR_GetHUDScale(void) {
 	float scale;
-
-	if (!scr_initialized)
-	{
+	if (!scr_initialized) {
 		scale = 1;
-	}
-	else if (gl_hudscale->value < 0)
-	{
+	} else if (gl_hudscale->value < 0) {
 		scale = SCR_GetDefaultScale();
-	}
-	else if (gl_hudscale->value == 0) /* HACK: allow scale 0 to hide the HUD */
-	{
+	} else if (gl_hudscale->value == 0) /* HACK: allow scale 0 to hide the HUD */ {
 		scale = 0;
-	}
-	else
-	{
+	} else {
 		scale = SCR_ClampScale(gl_hudscale->value);
 	}
-
 	return scale;
 }
 
-float
-SCR_GetConsoleScale(void)
-{
+float SCR_GetConsoleScale(void) {
 	float scale;
-
-	if (!scr_initialized)
-	{
+	if (!scr_initialized) {
 		scale = 1;
-	}
-	else if (gl_consolescale->value < 0)
-	{
+	} else if (gl_consolescale->value < 0) {
 		scale = SCR_GetDefaultScale();
-	}
-	else
-	{
+	} else {
 		scale = SCR_ClampScale(gl_consolescale->value);
 	}
-
 	return scale;
 }
 
-float
-SCR_GetMenuScale(void)
-{
+float SCR_GetMenuScale(void) {
 	float scale;
-
-	if (!scr_initialized)
-	{
+	if (!scr_initialized) {
 		scale = 1;
-	}
-	else if (gl_menuscale->value < 0)
-	{
+	} else if (gl_menuscale->value < 0) {
 		scale = SCR_GetDefaultScale();
-	}
-	else
-	{
+	} else {
 		scale = SCR_ClampScale(gl_menuscale->value);
 	}
-
 	return scale;
 }

@@ -274,35 +274,20 @@ SV_ReadPackets(void)
  * for a few seconds to make sure any final reliable message gets resent
  * if necessary
  */
-void
-SV_CheckTimeouts(void)
-{
-	int i;
-	client_t *cl;
-	int droppoint;
-	int zombiepoint;
-
-	droppoint = svs.realtime - 1000 * timeout->value;
-	zombiepoint = svs.realtime - 1000 * zombietime->value;
-
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
+void SV_CheckTimeouts(const client_t* clients, int count){
+	int droppoint = svs.realtime - 1000 * timeout->value;
+	int zombiepoint = svs.realtime - 1000 * zombietime->value;
+	for (int i = 0; i < count; i++) {
+        client_t* cl = &clients[i];
 		/* message times may be wrong across a changelevel */
-		if (cl->lastmessage > svs.realtime)
-		{
+		if (cl->lastmessage > svs.realtime) {
 			cl->lastmessage = svs.realtime;
 		}
-
-		if ((cl->state == cs_zombie) &&
-			(cl->lastmessage < zombiepoint))
-		{
+		if ((cl->state == cs_zombie) && (cl->lastmessage < zombiepoint)) {
 			cl->state = cs_free; /* can now be reused */
 			continue;
 		}
-
-		if (((cl->state == cs_connected) || (cl->state == cs_spawned)) &&
-			(cl->lastmessage < droppoint))
-		{
+		if (((cl->state == cs_connected) || (cl->state == cs_spawned)) && (cl->lastmessage < droppoint)) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s timed out\n", cl->name);
 			SV_DropClient(cl);
 			cl->state = cs_free; /* don't bother with zombie state */
@@ -387,7 +372,7 @@ void SV_Frame(int msec){
 	/* keep the random time dependent */
 	randk();
 	/* check timeouts */
-	SV_CheckTimeouts();
+	SV_CheckTimeouts(svs.clients, maxclients->value);
 	/* get packets from clients */
 	SV_ReadPackets();
 	/* move autonomous things around if enough time has passed */
