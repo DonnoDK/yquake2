@@ -839,26 +839,17 @@ MSG_ReadShort(sizebuf_t *msg_read)
 	return c;
 }
 
-int
-MSG_ReadLong(sizebuf_t *msg_read)
-{
+int MSG_ReadLong(sizebuf_t *msg_read){
 	int c;
-
-	if (msg_read->readcount + 4 > msg_read->cursize)
-	{
+	if (msg_read->readcount + 4 > msg_read->cursize){
 		c = -1;
-	}
-
-	else
-	{
+	} else {
 		c = msg_read->data[msg_read->readcount]
 			+ (msg_read->data[msg_read->readcount + 1] << 8)
 			+ (msg_read->data[msg_read->readcount + 2] << 16)
 			+ (msg_read->data[msg_read->readcount + 3] << 24);
 	}
-
 	msg_read->readcount += 4;
-
 	return c;
 }
 

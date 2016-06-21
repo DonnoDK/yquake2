@@ -510,71 +510,42 @@ NET_SendLoopPacket(netsrc_t sock, int length, void *data, netadr_t to)
 	loop->msgs[i].datalen = length;
 }
 
-qboolean
-NET_GetPacket(netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
-{
-	int ret;
-	struct sockaddr_storage from;
-	socklen_t fromlen;
-	int net_socket;
-	int protocol;
-	int err;
-
-	if (NET_GetLoopPacket(sock, net_from, net_message))
-	{
+qboolean NET_GetPacket(netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message){
+	if (NET_GetLoopPacket(sock, net_from, net_message)) {
 		return true;
 	}
 
-	for (protocol = 0; protocol < 3; protocol++)
-	{
-		if (protocol == 0)
-		{
+	int net_socket;
+	for (int protocol = 0; protocol < 3; protocol++) {
+		if (protocol == 0) {
 			net_socket = ip_sockets[sock];
-		}
-		else if (protocol == 1)
-		{
+		} else if (protocol == 1) {
 			net_socket = ip6_sockets[sock];
-		}
-		else
-		{
+		} else {
 			net_socket = ipx_sockets[sock];
 		}
-
-		if (!net_socket)
-		{
+		if (!net_socket) {
 			continue;
 		}
-
-		fromlen = sizeof(from);
-		ret = recvfrom(net_socket, net_message->data, net_message->maxsize,
-				0, (struct sockaddr *)&from, &fromlen);
-
+        struct sockaddr_storage from;
+		socklen_t fromlen = sizeof(from);
+		int ret = recvfrom(net_socket, net_message->data, net_message->maxsize, 0, (struct sockaddr *)&from, &fromlen);
 		SockadrToNetadr(&from, net_from);
-
-		if (ret == -1)
-		{
-			err = errno;
-
-			if ((err == EWOULDBLOCK) || (err == ECONNREFUSED))
-			{
+		if (ret == -1) {
+			int err = errno;
+			if ((err == EWOULDBLOCK) || (err == ECONNREFUSED)) {
 				continue;
 			}
-
-			Com_Printf("NET_GetPacket: %s from %s\n", NET_ErrorString(),
-					NET_AdrToString(*net_from));
+			Com_Printf("NET_GetPacket: %s from %s\n", NET_ErrorString(), NET_AdrToString(*net_from));
 			continue;
 		}
-
-		if (ret == net_message->maxsize)
-		{
+		if (ret == net_message->maxsize) {
 			Com_Printf("Oversize packet from %s\n", NET_AdrToString(*net_from));
 			continue;
 		}
-
 		net_message->cursize = ret;
 		return true;
 	}
-
 	return false;
 }
 

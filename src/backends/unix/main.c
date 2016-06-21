@@ -66,65 +66,44 @@ void print_settings(){
 #endif
 }
 
-int
-main(int argc, char **argv)
-{
-	int verLen, i;
-	const char* versionString;
-
+int main(int argc, char **argv) {
 	/* register signal handler */
 	registerHandler();
-
 	/* Prevent running Quake II as root. Only very mad
 	   minded or stupid people even think about it. :) */
-	if (getuid() == 0)
-	{
+	if (getuid() == 0) {
 		printf("Quake II shouldn't be run as root! Backing out to save your ass. If\n");
 		printf("you really know what you're doing, edit src/unix/main.c and remove\n");
 		printf("this check. But don't complain if Quake II eats your dog afterwards!\n");
-
 		return 1;
 	}
-
 	/* Enforce the real UID to
 	   prevent setuid crap */
-	if (getuid() != geteuid())
-	{
+	if (getuid() != geteuid()) {
 		printf("The effective UID is not the real UID! Your binary is probably marked\n");
 		printf("'setuid'. That is not good idea, please fix it :) If you really know\n");
 		printf("what you're doing edit src/unix/main.c and remove this check. Don't\n");
 		printf("complain if Quake II eats your dog afterwards!\n");
-
 		return 1;
 	}
-
 	/* enforce C locale */
 	setenv("LC_ALL", "C", 1);
-
-	versionString = va("Yamagi Quake II v%s", YQ2VERSION);
-	verLen = strlen(versionString);
-
+	const char* versionString = va("Yamagi Quake II v%s", YQ2VERSION);
+	int verLen = strlen(versionString);
 	printf("\n%s\n", versionString);
-	for(i=0; i<verLen; ++i)
-	{
+	for(int i=0; i<verLen; ++i) {
 		putc('=', stdout);
 	}
 	puts("\n");
-
-
     print_settings();
 	printf("Platform: %s\n", BUILDSTRING);
 	printf("Architecture: %s\n", CPUSTRING);
-
 	/* Seed PRNG */
 	randk_seed();
-
 	/* Initialze the game */
 	Qcommon_Init(argc, argv);
-
 	/* Do not delay reads on stdin*/
 	fcntl(fileno(stdin), F_SETFL, fcntl(fileno(stdin), F_GETFL, NULL) | FNDELAY);
-
 	int time, newtime;
 	int oldtime = Sys_Milliseconds();
 	while(1){
