@@ -284,10 +284,7 @@ void R_DrawNullModel(const entity_t* e){
 	glEnable(GL_TEXTURE_2D);
 }
 
-void R_DrawEntity(const entity_t* e, qboolean isTransparent){
-    if ((e->flags & RF_TRANSLUCENT) != isTransparent) {
-        return;
-    }
+void R_DrawEntity(const entity_t* e){
     if (e->flags & RF_BEAM) {
         R_DrawBeam(e);
     } else {
@@ -320,12 +317,18 @@ void R_DrawEntitiesOnList(const entity_t* entities, int count) {
 	}
 	/* draw non-transparent first */
 	for (int i = 0; i < count; i++) {
-        R_DrawEntity(&entities[i], false);
+        const entity_t* e = &entities[i];
+        if(!(e->flags & RF_TRANSLUCENT)){
+            R_DrawEntity(&entities[i]);
+        }
 	}
 	/* draw transparent entities. We could sort these if it ever becomes a problem... */
 	glDepthMask(0);
 	for (int i = 0; i < count; i++) {
-        R_DrawEntity(&entities[i], true);
+        const entity_t* e = &entities[i];
+        if((e->flags & RF_TRANSLUCENT)){
+            R_DrawEntity(&entities[i]);
+        }
 	}
     /* back to writing */
 	glDepthMask(1);
