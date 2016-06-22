@@ -95,9 +95,7 @@ S_RegisterSexedModel(entity_state_t *ent, char *base)
 
 extern int Developer_searchpath(int who);
 
-void
-CL_AddPacketEntities(frame_t *frame)
-{
+void CL_AddPacketEntities(frame_t *frame) {
 	entity_t ent = {0};
 	entity_state_t *s1;
 	float autorotate;
@@ -635,70 +633,45 @@ CL_AddPacketEntities(frame_t *frame)
 	}
 }
 
-void
-CL_AddViewWeapon(player_state_t *ps, player_state_t *ops)
-{
+void CL_AddViewWeapon(player_state_t *ps, player_state_t *ops){
 	entity_t gun = {0}; /* view model */
 	int i;
-
 	/* allow the gun to be completely removed */
-	if (!cl_gun->value)
-	{
+	if (!cl_gun->value){
 		return;
 	}
-
 	/* don't draw gun if in wide angle view and drawing not forced */
-	if (ps->fov > 90)
-	{
-		if (cl_gun->value < 2)
-		{
+	if (ps->fov > 90){
+		if (cl_gun->value < 2){
 			return;
 		}
 	}
-
-	if (gun_model)
-	{
+	if (gun_model){
 		gun.model = gun_model;
-	}
-
-	else
-	{
+	} else {
 		gun.model = cl.model_draw[ps->gunindex];
 	}
-
-	if (!gun.model)
-	{
+	if (!gun.model) {
 		return;
 	}
-
 	/* set up gun position */
-	for (i = 0; i < 3; i++)
-	{
+	for (i = 0; i < 3; i++) {
 		gun.origin[i] = cl.refdef.vieworg[i] + ops->gunoffset[i]
 			+ cl.lerpfrac * (ps->gunoffset[i] - ops->gunoffset[i]);
 		gun.angles[i] = cl.refdef.viewangles[i] + LerpAngle(ops->gunangles[i],
 			ps->gunangles[i], cl.lerpfrac);
 	}
-
-	if (gun_frame)
-	{
+	if (gun_frame) {
 		gun.frame = gun_frame;
 		gun.oldframe = gun_frame;
-	}
-	else
-	{
+	} else {
 		gun.frame = ps->gunframe;
-
-		if (gun.frame == 0)
-		{
+		if (gun.frame == 0) {
 			gun.oldframe = 0; /* just changed weapons, don't lerp from old */
-		}
-		else
-		{
+		} else {
 			gun.oldframe = ops->gunframe;
 		}
 	}
-
 	gun.flags = RF_MINLIGHT | RF_DEPTHHACK | RF_WEAPONMODEL;
 	gun.backlerp = 1.0f - cl.lerpfrac;
 	VectorCopy(gun.origin, gun.oldorigin); /* don't lerp at all */
@@ -730,26 +703,19 @@ AdaptFov(float fov, float w, float h)
 /*
  * Sets cl.refdef view values
  */
-void
-CL_CalcViewValues(void)
-{
+void CL_CalcViewValues(void){
 	int i;
 	float lerp, backlerp, ifov;
 	frame_t *oldframe;
 	player_state_t *ps, *ops;
-
 	/* find the previous frame to interpolate from */
 	ps = &cl.frame.playerstate;
 	i = (cl.frame.serverframe - 1) & UPDATE_MASK;
 	oldframe = &cl.frames[i];
-
-	if ((oldframe->serverframe != cl.frame.serverframe - 1) || !oldframe->valid)
-	{
+	if ((oldframe->serverframe != cl.frame.serverframe - 1) || !oldframe->valid) {
 		oldframe = &cl.frame; /* previous frame was dropped or invalid */
 	}
-
 	ops = &oldframe->playerstate;
-
 	/* see if the player entity was teleported this frame */
 	if ((abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256 * 8) ||
 		(abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256 * 8) ||
@@ -757,12 +723,9 @@ CL_CalcViewValues(void)
 	{
 		ops = ps; /* don't interpolate */
 	}
-
 	lerp = cl.lerpfrac;
-
 	/* calculate the origin */
-	if ((cl_predict->value) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION))
-	{
+	if ((cl_predict->value) && !(cl.frame.playerstate.pmove.pm_flags & PMF_NO_PREDICTION)) {
 		/* use predicted values */
 		unsigned delta;
 
@@ -846,44 +809,28 @@ CL_CalcViewValues(void)
 /*
  * Emits all entities, particles, and lights to the refresh
  */
-void
-CL_AddEntities(void)
-{
-	if (cls.state != ca_active)
-	{
+void CL_AddEntities(void){
+	if (cls.state != ca_active){
 		return;
 	}
-
-	if (cl.time > cl.frame.servertime)
-	{
-		if (cl_showclamp->value)
-		{
+	if (cl.time > cl.frame.servertime){
+		if (cl_showclamp->value){
 			Com_Printf("high clamp %i\n", cl.time - cl.frame.servertime);
 		}
-
 		cl.time = cl.frame.servertime;
 		cl.lerpfrac = 1.0;
-	}
-	else if (cl.time < cl.frame.servertime - 100)
-	{
-		if (cl_showclamp->value)
-		{
+	} else if (cl.time < cl.frame.servertime - 100){
+		if (cl_showclamp->value){
 			Com_Printf("low clamp %i\n", cl.frame.servertime - 100 - cl.time);
 		}
-
 		cl.time = cl.frame.servertime - 100;
 		cl.lerpfrac = 0;
-	}
-	else
-	{
+	} else {
 		cl.lerpfrac = 1.0 - (cl.frame.servertime - cl.time) * 0.01f;
 	}
-
-	if (cl_timedemo->value)
-	{
+	if (cl_timedemo->value) {
 		cl.lerpfrac = 1.0;
 	}
-
 	CL_CalcViewValues();
 	CL_AddPacketEntities(&cl.frame);
 	CL_AddTEnts();

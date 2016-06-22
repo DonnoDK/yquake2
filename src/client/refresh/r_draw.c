@@ -35,12 +35,9 @@ extern unsigned r_rawpalette[256];
 
 static cvar_t *gl_nolerp_list;
 
-void
-Draw_InitLocal(void)
-{
+void Draw_InitLocal(void){
 	/* don't bilerp characters and crosshairs */
 	gl_nolerp_list = Cvar_Get("gl_nolerp_list", "pics/conchars.pcx pics/ch1.pcx pics/ch2.pcx pics/ch3.pcx", 0);
-
 	/* load console characters */
 	draw_chars = R_FindImage("pics/conchars.pcx", it_pic);
 }
@@ -50,10 +47,22 @@ Draw_InitLocal(void)
  * It can be clipped to the top of the screen to allow the console to be
  * smoothly scrolled off.
  */
-void
-Draw_Char(int x, int y, int num)
-{
+void Draw_Char(int x, int y, int num){
 	Draw_CharScaled(x, y, num, 1.0f);
+}
+
+void GLRenderTexturedQuad(int texnum, int x, int y, int w, int h, float sl, float tl, float sh, float th){
+	R_Bind(texnum);
+	glBegin(GL_QUADS);
+        glTexCoord2f(sl, tl);
+        glVertex2f(x, y);
+        glTexCoord2f(sh, tl);
+        glVertex2f(x + w, y);
+        glTexCoord2f(sh, th);
+        glVertex2f(x + w, y + h);
+        glTexCoord2f(sl, th);
+        glVertex2f(x, y + h);
+	glEnd();
 }
 
 /*
@@ -61,152 +70,76 @@ Draw_Char(int x, int y, int num)
  * It can be clipped to the top of the screen to allow the console to be
  * smoothly scrolled off.
  */
-void
-Draw_CharScaled(int x, int y, int num, float scale)
-{
+void Draw_CharScaled(int x, int y, int num, float scale){
 	int row, col;
 	float frow, fcol, size, scaledSize;
-
 	num &= 255;
-
-	if ((num & 127) == 32)
-	{
+	if ((num & 127) == 32) {
 		return; /* space */
 	}
-
-	if (y <= -8)
-	{
+	if (y <= -8) {
 		return; /* totally off screen */
 	}
-
 	row = num >> 4;
 	col = num & 15;
-
 	frow = row * 0.0625;
 	fcol = col * 0.0625;
 	size = 0.0625;
-
 	scaledSize = 8*scale;
-
-	R_Bind(draw_chars->texnum);
-
-	glBegin(GL_QUADS);
-	glTexCoord2f(fcol, frow);
-	glVertex2f(x, y);
-	glTexCoord2f(fcol + size, frow);
-	glVertex2f(x + scaledSize, y);
-	glTexCoord2f(fcol + size, frow + size);
-	glVertex2f(x + scaledSize, y + scaledSize);
-	glTexCoord2f(fcol, frow + size);
-	glVertex2f(x, y + scaledSize);
-	glEnd();
+    GLRenderTexturedQuad(draw_chars->texnum, x, y, scaledSize, scaledSize, fcol, frow, fcol + size, frow + size);
 }
 
-image_t *
-Draw_FindPic(char *name)
-{
+image_t * Draw_FindPic(char *name){
 	image_t *gl;
 	char fullname[MAX_QPATH];
-
-	if ((name[0] != '/') && (name[0] != '\\'))
-	{
+	if ((name[0] != '/') && (name[0] != '\\')){
 		Com_sprintf(fullname, sizeof(fullname), "pics/%s.pcx", name);
 		gl = R_FindImage(fullname, it_pic);
-	}
-	else
-	{
+	} else {
 		gl = R_FindImage(name + 1, it_pic);
 	}
-
 	return gl;
 }
 
-void
-Draw_GetPicSize(int *w, int *h, char *pic)
-{
-	image_t *gl;
-
-	gl = Draw_FindPic(pic);
-
-	if (!gl)
-	{
+void Draw_GetPicSize(int *w, int *h, char *pic){
+	image_t* gl = Draw_FindPic(pic);
+	if (!gl) {
 		*w = *h = -1;
 		return;
 	}
-
 	*w = gl->width;
 	*h = gl->height;
 }
 
-void
-Draw_StretchPic(int x, int y, int w, int h, char *pic)
-{
-	image_t *gl;
-
-	gl = Draw_FindPic(pic);
-
-	if (!gl)
-	{
+void Draw_StretchPic(int x, int y, int w, int h, char *pic){
+	image_t* gl = Draw_FindPic(pic);
+	if (!gl) {
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
 		return;
 	}
-
-	if (scrap_dirty)
-	{
+	if (scrap_dirty) {
 		Scrap_Upload();
 	}
-
-	R_Bind(gl->texnum);
-	glBegin(GL_QUADS);
-	glTexCoord2f(gl->sl, gl->tl);
-	glVertex2f(x, y);
-	glTexCoord2f(gl->sh, gl->tl);
-	glVertex2f(x + w, y);
-	glTexCoord2f(gl->sh, gl->th);
-	glVertex2f(x + w, y + h);
-	glTexCoord2f(gl->sl, gl->th);
-	glVertex2f(x, y + h);
-	glEnd();
+    GLRenderTexturedQuad(gl->texnum, x, y, w, h, gl->sl, gl->tl, gl->sh, gl->th);
 }
 
-void
-Draw_Pic(int x, int y, char *pic)
-{
+void Draw_Pic(int x, int y, char *pic){
 	Draw_PicScaled(x, y, pic, 1.0f);
 }
 
-void
-Draw_PicScaled(int x, int y, char *pic, float factor)
-{
-	image_t *gl;
-
-	gl = Draw_FindPic(pic);
-
-	if (!gl)
-	{
+void Draw_PicScaled(int x, int y, char *pic, float factor) {
+	image_t* gl = Draw_FindPic(pic);
+	if (!gl) {
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
 		return;
 	}
-
-	if (scrap_dirty)
-	{
+	if (scrap_dirty) {
 		Scrap_Upload();
 	}
-
 	GLfloat w = gl->width*factor;
 	GLfloat h = gl->height*factor;
-
-	R_Bind(gl->texnum);
-	glBegin(GL_QUADS);
-	glTexCoord2f(gl->sl, gl->tl);
-	glVertex2f(x, y);
-	glTexCoord2f(gl->sh, gl->tl);
-	glVertex2f(x + w, y);
-	glTexCoord2f(gl->sh, gl->th);
-	glVertex2f(x + w, y + h);
-	glTexCoord2f(gl->sl, gl->th);
-	glVertex2f(x, y + h);
-	glEnd();
+    //Draw_StretchPic(x, y, w, h, pic);
+    GLRenderTexturedQuad(gl->texnum, x, y, w, h, gl->sl, gl->tl, gl->sh, gl->th);
 }
 
 /*
@@ -214,19 +147,12 @@ Draw_PicScaled(int x, int y, char *pic, float factor)
  * the screen around a sized down
  * refresh window.
  */
-void
-Draw_TileClear(int x, int y, int w, int h, char *pic)
-{
-	image_t *image;
-
-	image = Draw_FindPic(pic);
-
-	if (!image)
-	{
+void Draw_TileClear(int x, int y, int w, int h, char *pic){
+	image_t* image = Draw_FindPic(pic);
+	if (!image) {
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);
 		return;
 	}
-
 	R_Bind(image->texnum);
 	glBegin(GL_QUADS);
 	glTexCoord2f(x / 64.0, y / 64.0);
@@ -400,38 +326,23 @@ Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 	glEnd();
 }
 
-int
-Draw_GetPalette(void)
-{
-	int i;
-	int r, g, b;
-	unsigned v;
-	byte *pic, *pal;
+int Draw_GetPalette(void){
 	int width, height;
-
-	/* get the palette */
+	byte *pic, *pal;
 	LoadPCX("pics/colormap.pcx", &pic, &pal, &width, &height);
-
-	if (!pal)
-	{
+	if (!pal) {
 		VID_Error(ERR_FATAL, "Couldn't load pics/colormap.pcx");
 	}
-
-	for (i = 0; i < 256; i++)
-	{
-		r = pal[i * 3 + 0];
-		g = pal[i * 3 + 1];
-		b = pal[i * 3 + 2];
-
-		v = (255 << 24) + (r << 0) + (g << 8) + (b << 16);
+	for (int i = 0; i < 256; i++) {
+		int r = pal[i * 3 + 0];
+		int g = pal[i * 3 + 1];
+		int b = pal[i * 3 + 2];
+		unsigned int v = (255 << 24) + (r << 0) + (g << 8) + (b << 16);
 		d_8to24table[i] = LittleLong(v);
 	}
-
 	d_8to24table[255] &= LittleLong(0xffffff); /* 255 is transparent */
-
 	free(pic);
 	free(pal);
-
 	return 0;
 }
 

@@ -1837,9 +1837,8 @@ CL_ProcessSustain()
 	}
 }
 
-void
-CL_AddTEnts(void)
-{
+/* NOTE: probably transparent entities */
+void CL_AddTEnts(void){
 	CL_AddBeams();
 	CL_AddPlayerBeams();
 	CL_AddExplosions();

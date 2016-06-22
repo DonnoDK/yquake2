@@ -78,65 +78,39 @@ void R_RenderDlights(const dlight_t* lights, int count){
 	glDepthMask(1);
 }
 
-void
-R_MarkLights(dlight_t *light, int bit, mnode_t *node)
-{
-	cplane_t *splitplane;
-	float dist;
-	msurface_t *surf;
-	int i;
-	int sidebit;
-
-	if (node->contents != -1)
-	{
+void R_MarkLights(dlight_t *light, int bit, mnode_t *node){
+	if (node->contents != -1){
 		return;
 	}
-
-	splitplane = node->plane;
-	dist = DotProduct(light->origin, splitplane->normal) - splitplane->dist;
-
-	if (dist > light->intensity - DLIGHT_CUTOFF)
-	{
+	cplane_t* splitplane = node->plane;
+	float dist = DotProduct(light->origin, splitplane->normal) - splitplane->dist;
+	if (dist > light->intensity - DLIGHT_CUTOFF) {
 		R_MarkLights(light, bit, node->children[0]);
 		return;
 	}
-
-	if (dist < -light->intensity + DLIGHT_CUTOFF)
-	{
+	if (dist < -light->intensity + DLIGHT_CUTOFF) {
 		R_MarkLights(light, bit, node->children[1]);
 		return;
 	}
-
 	/* mark the polygons */
-	surf = r_worldmodel->surfaces + node->firstsurface;
-
-	for (i = 0; i < node->numsurfaces; i++, surf++)
-	{
+	msurface_t* surf = r_worldmodel->surfaces + node->firstsurface;
+	for (int i = 0; i < node->numsurfaces; i++, surf++) {
 		dist = DotProduct(light->origin, surf->plane->normal) - surf->plane->dist;
-
-		if (dist >= 0)
-		{
+        int sidebit;
+		if (dist >= 0) {
 			sidebit = 0;
-		}
-		else
-		{
+		} else {
 			sidebit = SURF_PLANEBACK;
 		}
-
-		if ((surf->flags & SURF_PLANEBACK) != sidebit)
-		{
+		if ((surf->flags & SURF_PLANEBACK) != sidebit) {
 			continue;
 		}
-
-		if (surf->dlightframe != r_dlightframecount)
-		{
+		if (surf->dlightframe != r_dlightframecount) {
 			surf->dlightbits = 0;
 			surf->dlightframe = r_dlightframecount;
 		}
-
 		surf->dlightbits |= bit;
 	}
-
 	R_MarkLights(light, bit, node->children[0]);
 	R_MarkLights(light, bit, node->children[1]);
 }

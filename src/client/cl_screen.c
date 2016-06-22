@@ -332,21 +332,22 @@ SCR_CheckDrawCenterString(void)
 /*
  * Sets scr_vrect, the coordinates of the rendered window
  */
-static void SCR_CalcVrect(void){
+static vrect_t SCR_CalcVrect(int viewsize, const viddef_t* vd){
 	/* bound viewsize */
-	if (scr_viewsize->value < 40){
+	if (viewsize < 40){
 		Cvar_Set("viewsize", "40");
 	}
-	if (scr_viewsize->value > 100){
+	if (viewsize > 100){
 		Cvar_Set("viewsize", "100");
 	}
-	int size = scr_viewsize->value;
-	scr_vrect.width = viddef.width * size / 100;
-	scr_vrect.width &= ~1;
-	scr_vrect.height = viddef.height * size / 100;
-	scr_vrect.height &= ~1;
-	scr_vrect.x = (viddef.width - scr_vrect.width) / 2;
-	scr_vrect.y = (viddef.height - scr_vrect.height) / 2;
+    vrect_t rect;
+	rect.width = vd->width * viewsize / 100;
+	rect.width &= ~1;
+	rect.height = vd->height * viewsize / 100;
+	rect.height &= ~1;
+	rect.x = (vd->width - rect.width) / 2;
+	rect.y = (vd->height - rect.height) / 2;
+    return rect;
 }
 
 /*
@@ -699,6 +700,7 @@ SCR_DirtyScreen(void)
 /*
  * Clear any parts of the tiled background that were drawn on last frame
  */
+/* TODO: consider removing this method, along with "frame" resizing */
 void SCR_TileClear(void){
 	if (scr_con_current == 1.0){
 		return; /* full screen console */
@@ -1419,7 +1421,7 @@ void SCR_UpdateScreen(void){
 				cl.cinematicpalette_active = false;
 			}
 			/* do 3D refresh drawing, and then update the screen */
-			SCR_CalcVrect();
+			scr_vrect = SCR_CalcVrect(scr_viewsize->value, &viddef);
 			/* clear any dirty part of the background */
 			SCR_TileClear();
 			V_RenderView(separation[i]);

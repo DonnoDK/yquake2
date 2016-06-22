@@ -197,22 +197,12 @@ CL_RunDLights(void)
 	}
 }
 
-void
-CL_AddDLights(void)
-{
-	int i;
-	cdlight_t *dl;
-
-	dl = cl_dlights;
-
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-	{
-		if (!dl->radius)
-		{
-			continue;
+void CL_AddDLights(void){
+	cdlight_t* dl = cl_dlights;
+	for (int i = 0; i < MAX_DLIGHTS; i++, dl++) {
+		if(dl->radius){
+            V_AddLight(dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
 		}
-
-		V_AddLight(dl->origin, dl->radius, dl->color[0], dl->color[1], dl->color[2]);
 	}
 }
 
