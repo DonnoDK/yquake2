@@ -131,6 +131,39 @@ Cbuf_InsertText(char *text)
 	}
 }
 
+cmd_function_t* Cmd_GetCommand(const char* name){
+	for(cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
+		if(!strcmp(name, cmd->name)) return cmd;
+	}
+	return NULL;
+}
+
+cmdalias_t* Cmd_GetAlias(const char* name){
+	for(cmdalias_t* a = cmd_alias; a; a = a->next){
+		if(!strcmp(name, a->name)) return a;
+	}
+    return NULL;
+}
+
+cvar_t* Cmd_GetCvar(const char* name){
+	for (cvar_t* cvar = cvar_vars; cvar; cvar = cvar->next){
+		if(!strcmp(name, cvar->name)) return cvar;
+	}
+    return NULL;
+}
+
+qboolean Cmd_CommandExists(char *name){
+    return Cmd_GetCommand(name) ? true : false;
+}
+
+qboolean Cmd_AliasExists(char *name){
+    return Cmd_GetAlias(name) ? true : false;
+}
+
+qboolean Cmd_CvarExists(char *name){
+    return Cmd_GetCvar(name) ? true : false;
+}
+
 void
 Cbuf_CopyToDefer(void)
 {
@@ -676,36 +709,22 @@ Cmd_TokenizeString(char *text, qboolean macroExpand)
 	}
 }
 
-void
-Cmd_AddCommand(char *cmd_name, xcommand_t function)
-{
-	cmd_function_t *cmd;
-	cmd_function_t **pos;
-
+void Cmd_AddCommand(char *cmd_name, xcommand_t function) {
 	/* fail if the command is a variable name */
-	if (Cvar_VariableString(cmd_name)[0])
-	{
+	if (Cvar_VariableString(cmd_name)[0]){
 		Cmd_RemoveCommand(cmd_name);
 	}
-
-	/* fail if the command already exists */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(cmd_name, cmd->name))
-		{
-			Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
-			return;
-		}
-	}
-
-	cmd = Z_Malloc(sizeof(cmd_function_t));
+    if(Cmd_CommandExists(cmd_name)){
+        Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
+        return;
+        
+    }
+	cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
 	cmd->name = cmd_name;
 	cmd->function = function;
-
 	/* link the command in */
-	pos = &cmd_functions;
-	while (*pos && strcmp((*pos)->name, cmd->name) < 0)
-	{
+	cmd_function_t** pos = &cmd_functions;
+	while (*pos && strcmp((*pos)->name, cmd->name) < 0) {
 		pos = &(*pos)->next;
 	}
 	cmd->next = *pos;
@@ -740,21 +759,6 @@ Cmd_RemoveCommand(char *cmd_name)
 	}
 }
 
-qboolean
-Cmd_Exists(char *cmd_name)
-{
-	cmd_function_t *cmd;
-
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(cmd_name, cmd->name))
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
 
 int
 qsort_strcomp(const void *s1, const void *s2)
@@ -762,78 +766,54 @@ qsort_strcomp(const void *s1, const void *s2)
 	return strcmp(*(char **)s1, *(char **)s2);
 }
 
-char *
-Cmd_CompleteCommand(char *partial)
-{
-	cmd_function_t *cmd;
-	int len, i, o, p;
-	cmdalias_t *a;
-	cvar_t *cvar;
+char * Cmd_CompleteCommand(char *partial) {
+	int i, o, p;
 	char *pmatch[1024];
 	qboolean diff = false;
 
-	len = strlen(partial);
-
-	if (!len)
-	{
+	int len = strlen(partial);
+	if (!len){
 		return NULL;
 	}
 
 	/* check for exact match */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(partial, cmd->name))
-		{
-			return cmd->name;
-		}
-	}
+    cmd_function_t* cmd = Cmd_GetCommand(partial);
+    if(cmd){
+        return cmd->name;
+    }
 
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strcmp(partial, a->name))
-		{
-			return a->name;
-		}
-	}
+    cmdalias_t* a = Cmd_GetAlias(partial);
+    if(a){
+        return a->name;
+    }
 
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strcmp(partial, cvar->name))
-		{
-			return cvar->name;
-		}
-	}
-
-	for (i = 0; i < 1024; i++)
-	{
-		pmatch[i] = NULL;
-	}
-
-	i = 0;
+    cvar_t* cvar = Cmd_GetCvar(partial);
+    if(cvar){
+        return cvar->name;
+    }
 
 	/* check for partial match */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strncmp(partial, cmd->name, len))
-		{
+	for(i = 0; i < 1024; i++){
+		pmatch[i] = NULL;
+	}
+	i = 0;
+
+	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
+		if (!strncmp(partial, cmd->name, len)) {
 			pmatch[i] = cmd->name;
 			i++;
 		}
 	}
 
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strncmp(partial, a->name, len))
-		{
+	for (cmdalias_t* a = cmd_alias; a; a = a->next) {
+		if (!strncmp(partial, a->name, len)) {
 			pmatch[i] = a->name;
 			i++;
 		}
 	}
 
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strncmp(partial, cvar->name, len))
-		{
+	for (cvar_t* cvar = cvar_vars; cvar; cvar = cvar->next) {
+		if (!strncmp(partial, cvar->name, len)) {
 			pmatch[i] = cvar->name;
 			i++;
 		}
@@ -886,38 +866,12 @@ Cmd_CompleteCommand(char *partial)
 	return NULL;
 }
 
-qboolean
-Cmd_IsComplete(char *command)
-{
-	cmd_function_t *cmd;
-	cmdalias_t *a;
-	cvar_t *cvar;
-
-	/* check for exact match */
-	for (cmd = cmd_functions; cmd; cmd = cmd->next)
-	{
-		if (!strcmp(command, cmd->name))
-		{
-			return true;
-		}
-	}
-
-	for (a = cmd_alias; a; a = a->next)
-	{
-		if (!strcmp(command, a->name))
-		{
-			return true;
-		}
-	}
-
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strcmp(command, cvar->name))
-		{
-			return true;
-		}
-	}
-
+qboolean Cmd_IsComplete(char *command){
+    if(Cmd_CommandExists(command) ||
+       Cmd_AliasExists(command)   ||
+       Cmd_CvarExists(command)){
+        return true;
+    }
 	return false;
 }
 

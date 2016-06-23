@@ -814,45 +814,27 @@ void CL_Frame(int msec){
 	}
 }
 
-void
-CL_Init(void)
-{
-	if (dedicated->value)
-	{
+void CL_Init(void) {
+	if (dedicated->value) {
 		return; /* nothing running on the client */
 	}
-
 	/* all archived variables will now be loaded */
 	Con_Init();
-
 	S_Init();
-
 	SCR_Init();
-
 	VID_Init();
-
 	IN_Init();
-
 	V_Init();
-
 	net_message.data = net_message_buffer;
-
 	net_message.maxsize = sizeof(net_message_buffer);
-
 	M_Init();
-
 	cls.disable_screen = true; /* don't draw yet */
-
 #ifdef CDA
 	CDAudio_Init();
 #endif
-
 	CL_InitLocal();
-
 	FS_ExecAutoexec();
-
 	Cbuf_Execute();
-
 	Key_ReadConsoleHistory();
 }
 

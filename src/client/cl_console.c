@@ -626,42 +626,27 @@ Con_DrawConsole(float frac)
 
 	scale = SCR_GetConsoleScale();
 	lines = viddef.height * frac;
-
-	if (lines <= 0)
-	{
+	if (lines <= 0) {
 		return;
 	}
-
-	if (lines > viddef.height)
-	{
+	if (lines > viddef.height) {
 		lines = viddef.height;
 	}
-
 	/* draw the background */
-	Draw_StretchPic(0, -viddef.height + lines, viddef.width,
-			viddef.height, "conback");
+	Draw_StretchPic(0, -viddef.height + lines, viddef.width, viddef.height, "conback");
 	SCR_AddDirtyPoint(0, 0);
 	SCR_AddDirtyPoint(viddef.width - 1, lines - 1);
 
 	Com_sprintf(version, sizeof(version), "Yamagi Quake II v%s", YQ2VERSION);
-
 	verLen = strlen(version);
-
-	for (x = 0; x < verLen; x++)
-	{
-		Draw_CharScaled(viddef.width - ((verLen*8+5) * scale) + x * 8 * scale, lines - 35 * scale, 128 + version[x], scale);
-	}
+    Draw_StringScaled(version, viddef.width - ((verLen*8+5) * scale), lines - 50 * scale, scale);
 
 	t = time(NULL);
 	today = localtime(&t);
 	strftime(timebuf, sizeof(timebuf), "%H:%M:%S - %m/%d/%Y", today);
 
 	Com_sprintf(tmpbuf, sizeof(tmpbuf), "%s", timebuf);
-
-	for (x = 0; x < 21; x++)
-	{
-		Draw_CharScaled(viddef.width - (173 * scale) + x * 8 * scale, lines - 25 * scale, 128 + tmpbuf[x], scale);
-	}
+    Draw_StringScaled(tmpbuf, viddef.width - (173 * scale), lines - 40 * scale, scale);
 
 	/* draw the text */
 	con.vislines = lines;

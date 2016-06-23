@@ -65,6 +65,13 @@ void GLRenderTexturedQuad(int texnum, int x, int y, int w, int h, float sl, floa
 	glEnd();
 }
 
+void Draw_StringScaled(const char* string, int fromx, int y, float scale){
+    int length = strlen(string);
+	for (int x = 0; x < length; x++){
+		Draw_CharScaled(fromx + x * 8 * scale, y, 128 + string[x], scale);
+	}
+}
+
 /*
  * Draws one 8*8 graphics character with 0 being transparent.
  * It can be clipped to the top of the screen to allow the console to be

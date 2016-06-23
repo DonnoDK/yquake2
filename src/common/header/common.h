@@ -470,11 +470,6 @@ const char *Cvar_VariableString(const char *var_name);
 
 /* returns an empty string if not defined */
 
-char *Cvar_CompleteVariable(char *partial);
-
-/* attempts to match a partial variable name for command line completion */
-/* returns NULL if nothing fits */
-
 void Cvar_GetLatchedVars(void);
 
 /* any CVAR_LATCHED variables that have been set will now take effect */

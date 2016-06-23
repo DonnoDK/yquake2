@@ -471,17 +471,11 @@ SCR_DrawPause(void)
 	Draw_PicScaled((viddef.width - w * scale) / 2, viddef.height / 2 + 8 * scale, "pause", scale);
 }
 
-void
-SCR_DrawLoading(void)
-{
-	int w, h;
-	float scale = SCR_GetMenuScale();
-
-	if (!scr_draw_loading)
-	{
+void SCR_DrawLoading(float scale){
+	if (!scr_draw_loading){
 		return;
 	}
-
+	int w, h;
 	scr_draw_loading = false;
 	Draw_GetPicSize(&w, &h, "loading");
 	Draw_PicScaled((viddef.width - w * scale) / 2, (viddef.height - h * scale) / 2, "loading", scale);
@@ -1379,7 +1373,6 @@ void SCR_UpdateScreen(void){
 	if (!scr_initialized || !con.initialized){
 		return; /* not initialized yet */
 	}
-
 	float separation[2] = {0, 0};
 	int numframes = 1;
 	float scale = SCR_GetMenuScale();
@@ -1388,12 +1381,7 @@ void SCR_UpdateScreen(void){
 		if (scr_draw_loading == 2){
 			/* loading plaque over black screen */
 			R_SetPalette(NULL);
-			scr_draw_loading = false;
-            /* TODO: return a struct */
-			int w, h;
-			Draw_GetPicSize(&w, &h, "loading");
-            /* NOTE: draw the loading plaque */
-			Draw_PicScaled((viddef.width - w * scale) / 2, (viddef.height - h * scale) / 2, "loading", scale);
+            SCR_DrawLoading(scale);
 		}
 		/* if a cinematic is supposed to be running,
 		   handle menus and console specially */
@@ -1438,7 +1426,7 @@ void SCR_UpdateScreen(void){
 				char s[8];
 				sprintf(s, "%3.0ffps", 1 / cls.frametime);
 				DrawString(viddef.width - 64, 0, s);
-			}
+            }
 			if (scr_timegraph->value) {
 				SCR_DebugGraph(cls.frametime * 300, 0);
 			}
@@ -1448,7 +1436,6 @@ void SCR_UpdateScreen(void){
 			SCR_DrawPause();
 			SCR_DrawConsole();
 			M_Draw();
-			SCR_DrawLoading();
 		}
 	}
 	GLimp_EndFrame();

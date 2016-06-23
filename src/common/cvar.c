@@ -95,198 +95,105 @@ Cvar_VariableString(const char *var_name)
 	return var->string;
 }
 
-char *
-Cvar_CompleteVariable(char *partial)
-{
-	cvar_t *cvar;
-	int len;
-
-	len = (int)strlen(partial);
-
-	if (!len)
-	{
-		return NULL;
-	}
-
-	/* check exact match */
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strcmp(partial, cvar->name))
-		{
-			return cvar->name;
-		}
-	}
-
-	/* check partial match */
-	for (cvar = cvar_vars; cvar; cvar = cvar->next)
-	{
-		if (!strncmp(partial, cvar->name, len))
-		{
-			return cvar->name;
-		}
-	}
-
-	return NULL;
-}
-
 /*
  * If the variable already exists, the value will not be set
  * The flags will be or'ed in if the variable exists.
  */
-cvar_t *
-Cvar_Get(char *var_name, char *var_value, int flags)
-{
-	cvar_t *var;
-	cvar_t **pos;
-
-	if (flags & (CVAR_USERINFO | CVAR_SERVERINFO))
-	{
-		if (!Cvar_InfoValidate(var_name))
-		{
+cvar_t* Cvar_Get(char *var_name, char *var_value, int flags){
+	if (flags & (CVAR_USERINFO | CVAR_SERVERINFO)) {
+		if (!Cvar_InfoValidate(var_name)) {
 			Com_Printf("invalid info cvar name\n");
 			return NULL;
 		}
 	}
-
-	var = Cvar_FindVar(var_name);
-
-	if (var)
-	{
+	cvar_t* var = Cvar_FindVar(var_name);
+	if (var) {
 		var->flags |= flags;
 		return var;
 	}
 
-	if (!var_value)
-	{
+	if (!var_value) {
 		return NULL;
 	}
-
-	if (flags & (CVAR_USERINFO | CVAR_SERVERINFO))
-	{
-		if (!Cvar_InfoValidate(var_value))
-		{
+	if (flags & (CVAR_USERINFO | CVAR_SERVERINFO)) {
+		if (!Cvar_InfoValidate(var_value)) {
 			Com_Printf("invalid info cvar value\n");
 			return NULL;
 		}
 	}
-
 	var = Z_Malloc(sizeof(*var));
 	var->name = CopyString(var_name);
 	var->string = CopyString(var_value);
 	var->modified = true;
 	var->value = strtod(var->string, (char **)NULL);
-
 	/* link the variable in */
-	pos = &cvar_vars;
-	while (*pos && strcmp((*pos)->name, var->name) < 0)
-	{
+	cvar_t** pos = &cvar_vars;
+	while (*pos && strcmp((*pos)->name, var->name) < 0) {
 		pos = &(*pos)->next;
 	}
 	var->next = *pos;
 	*pos = var;
-
 	var->flags = flags;
-
 	return var;
 }
 
-cvar_t *
-Cvar_Set2(char *var_name, char *value, qboolean force)
-{
+cvar_t * Cvar_Set2(char *var_name, char *value, qboolean force){
 	cvar_t *var;
-
 	var = Cvar_FindVar(var_name);
-
-	if (!var)
-	{
+	if (!var) {
 		return Cvar_Get(var_name, value, 0);
 	}
-
-	if (var->flags & (CVAR_USERINFO | CVAR_SERVERINFO))
-	{
-		if (!Cvar_InfoValidate(value))
-		{
+	if (var->flags & (CVAR_USERINFO | CVAR_SERVERINFO)) {
+		if (!Cvar_InfoValidate(value)) {
 			Com_Printf("invalid info cvar value\n");
 			return var;
 		}
 	}
-
-	if (!force)
-	{
-		if (var->flags & CVAR_NOSET)
-		{
+	if (!force) {
+		if (var->flags & CVAR_NOSET) {
 			Com_Printf("%s is write protected.\n", var_name);
 			return var;
 		}
-
-		if (var->flags & CVAR_LATCH)
-		{
-			if (var->latched_string)
-			{
-				if (strcmp(value, var->latched_string) == 0)
-				{
+		if (var->flags & CVAR_LATCH) {
+			if (var->latched_string) {
+				if (strcmp(value, var->latched_string) == 0) {
 					return var;
 				}
-
 				Z_Free(var->latched_string);
-			}
-
-			else
-			{
-				if (strcmp(value, var->string) == 0)
-				{
+			} else {
+				if (strcmp(value, var->string) == 0) {
 					return var;
 				}
 			}
-
-			if (Com_ServerState())
-			{
+			if (Com_ServerState()) {
 				Com_Printf("%s will be changed for next game.\n", var_name);
 				var->latched_string = CopyString(value);
-			}
-
-			else
-			{
+			} else {
 				var->string = CopyString(value);
 				var->value = (float)strtod(var->string, (char **)NULL);
-
-				if (!strcmp(var->name, "game"))
-				{
+				if (!strcmp(var->name, "game")) {
 					FS_SetGamedir(var->string);
 					FS_ExecAutoexec();
 				}
 			}
-
 			return var;
 		}
-	}
-
-	else
-	{
-		if (var->latched_string)
-		{
+	} else {
+		if (var->latched_string) {
 			Z_Free(var->latched_string);
 			var->latched_string = NULL;
 		}
 	}
-
-	if (!strcmp(value, var->string))
-	{
+	if (!strcmp(value, var->string)) {
 		return var;
 	}
-
 	var->modified = true;
-
-	if (var->flags & CVAR_USERINFO)
-	{
+	if (var->flags & CVAR_USERINFO) {
 		userinfo_modified = true;
 	}
-
 	Z_Free(var->string);
-
 	var->string = CopyString(value);
 	var->value = strtod(var->string, (char **)NULL);
-
 	return var;
 }
 
