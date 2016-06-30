@@ -695,7 +695,7 @@ SCR_DirtyScreen(void)
  * Clear any parts of the tiled background that were drawn on last frame
  */
 /* TODO: consider removing this method, along with "frame" resizing */
-void SCR_TileClear(void){
+void SCR_TileClear(vrect_t screenrect){
 	if (scr_con_current == 1.0){
 		return; /* full screen console */
 	}
@@ -1207,6 +1207,17 @@ SCR_ExecuteLayoutString(char *s)
 			}
 
 			SCR_DrawFieldScaled(x, y, color, width, value, scale);
+
+            /* NOTE: just for fun below */
+            {
+                int healthbar_x     = viddef.width / 4;
+                int healthbar_width = viddef.width / 2;
+                int healthbar_y = viddef.height / 20;
+                Draw_FilledRect(healthbar_x, healthbar_y, healthbar_width, 20, 255, 0, 0);
+                value = fmin(value, 100);
+                healthbar_width = ((float)healthbar_width) * value / 100;
+                Draw_FilledRect(healthbar_x, healthbar_y, healthbar_width, 20, 0, 255, 0);
+            }
 			continue;
 		}
 
@@ -1411,7 +1422,7 @@ void SCR_UpdateScreen(void){
 			/* do 3D refresh drawing, and then update the screen */
 			scr_vrect = SCR_CalcVrect(scr_viewsize->value, &viddef);
 			/* clear any dirty part of the background */
-			SCR_TileClear();
+			SCR_TileClear(scr_vrect);
 			V_RenderView(separation[i]);
 			SCR_DrawStats();
 			if (cl.frame.playerstate.stats[STAT_LAYOUTS] & 1) {

@@ -811,61 +811,41 @@ CL_ParseFrame(void)
 	}
 }
 
-void
-CL_ParseServerData(void)
-{
+void CL_ParseServerData(sizebuf_t* message){
 	extern cvar_t *fs_gamedirvar;
-	char *str;
-	int i;
-
 	Com_DPrintf("Serverdata packet received.\n");
-
 	/* wipe the client_state_t struct */
 	CL_ClearState();
 	cls.state = ca_connected;
-
 	/* parse protocol version number */
-	i = MSG_ReadLong(&net_message);
+	int i = MSG_ReadLong(message);
 	cls.serverProtocol = i;
-
 	/* another demo hack */
-	if (Com_ServerState() && (PROTOCOL_VERSION == 34))
-	{
+	if (Com_ServerState() && (PROTOCOL_VERSION == 34)) {
 	}
-	else if (i != PROTOCOL_VERSION)
-	{
+	else if (i != PROTOCOL_VERSION){
 		Com_Error(ERR_DROP, "Server returned version %i, not %i",
 				i, PROTOCOL_VERSION);
 	}
-
-	cl.servercount = MSG_ReadLong(&net_message);
-	cl.attractloop = MSG_ReadByte(&net_message);
-
+	cl.servercount = MSG_ReadLong(message);
+	cl.attractloop = MSG_ReadByte(message);
 	/* game directory */
-	str = MSG_ReadString(&net_message);
+	char* str = MSG_ReadString(message);
 	Q_strlcpy(cl.gamedir, str, sizeof(cl.gamedir));
-
 	/* set gamedir */
-	if ((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string ||
-		  strcmp(fs_gamedirvar->string, str))) ||
+	if ((*str && (!fs_gamedirvar->string || !*fs_gamedirvar->string || strcmp(fs_gamedirvar->string, str))) ||
 		(!*str && (fs_gamedirvar->string || *fs_gamedirvar->string)))
 	{
 		Cvar_Set("game", str);
 	}
-
 	/* parse player entity number */
-	cl.playernum = MSG_ReadShort(&net_message);
-
+	cl.playernum = MSG_ReadShort(message);
 	/* get the full level name */
-	str = MSG_ReadString(&net_message);
-
-	if (cl.playernum == -1)
-	{
+	str = MSG_ReadString(message);
+	if (cl.playernum == -1) {
 		/* playing a cinematic or showing a pic, not a level */
 		SCR_PlayCinematic(str);
-	}
-	else
-	{
+	} else {
 		/* seperate the printfs so the server
 		 * message can have a color */
 		Com_Printf("\n\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\37\n\n");
@@ -1239,57 +1219,33 @@ SHOWNET(char *s)
 	}
 }
 
-void
-CL_ParseServerMessage(void)
-{
-	int cmd;
-	char *s;
-	int i;
-
+void CL_ParseServerMessage(sizebuf_t* message){
 	/* if recording demos, copy the message out */
-	if (cl_shownet->value == 1)
-	{
-		Com_Printf("%i ", net_message.cursize);
-	}
-
-	else if (cl_shownet->value >= 2)
-	{
+	if (cl_shownet->value == 1){
+		Com_Printf("%i ", message->cursize);
+	}else if (cl_shownet->value >= 2){
 		Com_Printf("------------------\n");
 	}
-
 	/* parse the message */
-	while (1)
-	{
-		if (net_message.readcount > net_message.cursize)
-		{
+	while (1){
+		if (message->readcount > message->cursize){
 			Com_Error(ERR_DROP, "CL_ParseServerMessage: Bad server message");
 			break;
 		}
-
-		cmd = MSG_ReadByte(&net_message);
-
-		if (cmd == -1)
-		{
+		int cmd = MSG_ReadByte(message);
+		if (cmd == -1){
 			SHOWNET("END OF MESSAGE");
 			break;
 		}
-
-		if (cl_shownet->value >= 2)
-		{
-			if (!svc_strings[cmd])
-			{
-				Com_Printf("%3i:BAD CMD %i\n", net_message.readcount - 1, cmd);
-			}
-
-			else
-			{
+		if (cl_shownet->value >= 2){
+			if (!svc_strings[cmd]) {
+				Com_Printf("%3i:BAD CMD %i\n", message->readcount - 1, cmd);
+			} else{
 				SHOWNET(svc_strings[cmd]);
 			}
 		}
-
 		/* other commands */
-		switch (cmd)
-		{
+		switch (cmd) {
 			default:
 				Com_Error(ERR_DROP, "CL_ParseServerMessage: Illegible server message\n");
 				break;
@@ -1316,31 +1272,29 @@ CL_ParseServerMessage(void)
 				break;
 
 			case svc_print:
-				i = MSG_ReadByte(&net_message);
-
-				if (i == PRINT_CHAT)
-				{
+				if (MSG_ReadByte(message) == PRINT_CHAT) {
 					S_StartLocalSound("misc/talk.wav");
 					con.ormask = 128;
 				}
-
-				Com_Printf("%s", MSG_ReadString(&net_message));
+				Com_Printf("%s", MSG_ReadString(message));
 				con.ormask = 0;
 				break;
 
 			case svc_centerprint:
-				SCR_CenterPrint(MSG_ReadString(&net_message));
+				SCR_CenterPrint(MSG_ReadString(message));
 				break;
 
-			case svc_stufftext:
-				s = MSG_ReadString(&net_message);
-				Com_DPrintf("stufftext: %s\n", s);
-				Cbuf_AddText(s);
+            case svc_stufftext:
+                {
+                    char* s = MSG_ReadString(message);
+                    Com_DPrintf("stufftext: %s\n", s);
+                    Cbuf_AddText(s);
+                }
 				break;
 
 			case svc_serverdata:
 				Cbuf_Execute();  /* make sure any stuffed commands are done */
-				CL_ParseServerData();
+				CL_ParseServerData(&net_message);
 				break;
 
 			case svc_configstring:
@@ -1380,8 +1334,10 @@ CL_ParseServerMessage(void)
 				break;
 
 			case svc_layout:
-				s = MSG_ReadString(&net_message);
-				Q_strlcpy(cl.layout, s, sizeof(cl.layout));
+                {
+                    char* s = MSG_ReadString(message);
+                    Q_strlcpy(cl.layout, s, sizeof(cl.layout));
+                }
 				break;
 
 			case svc_playerinfo:

@@ -83,13 +83,9 @@ R_LerpVerts(int nverts, dtrivertx_t *v, dtrivertx_t *ov,
 /*
  * Interpolates between two frames and origins
  */
-void
-R_DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* e)
-{
+void R_DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* e) {
 	float l;
-	daliasframe_t *frame, *oldframe;
 	dtrivertx_t *v, *ov, *verts;
-	int *order;
 	int count;
 	float frontlerp;
 	float alpha;
@@ -99,132 +95,84 @@ R_DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* e)
 	int index_xyz;
 	float *lerp;
     float backlerp = e->backlerp;
-
-	frame = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames
-							  + e->frame * paliashdr->framesize);
+	daliasframe_t* frame = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + e->frame * paliashdr->framesize);
 	verts = v = frame->verts;
-
-	oldframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames
-				+ e->oldframe * paliashdr->framesize);
+	daliasframe_t* oldframe = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames + e->oldframe * paliashdr->framesize);
 	ov = oldframe->verts;
-
-	order = (int *)((byte *)paliashdr + paliashdr->ofs_glcmds);
-
-	if (e->flags & RF_TRANSLUCENT)
-	{
+	int* order = (int *)((byte *)paliashdr + paliashdr->ofs_glcmds);
+	if (e->flags & RF_TRANSLUCENT) {
 		alpha = e->alpha;
-	}
-	else
-	{
+	} else {
 		alpha = 1.0;
 	}
-
-	if (e->flags &
-		(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE |
+	if (e->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE |
 		 RF_SHELL_HALF_DAM))
 	{
 		glDisable(GL_TEXTURE_2D);
 	}
-
 	frontlerp = 1.0 - backlerp;
-
 	/* move should be the delta back to the previous frame * backlerp */
 	VectorSubtract(e->oldorigin, e->origin, delta);
 	AngleVectors(e->angles, vectors[0], vectors[1], vectors[2]);
-
 	move[0] = DotProduct(delta, vectors[0]); /* forward */
 	move[1] = -DotProduct(delta, vectors[1]); /* left */
 	move[2] = DotProduct(delta, vectors[2]); /* up */
-
 	VectorAdd(move, oldframe->translate, move);
-
-	for (i = 0; i < 3; i++)
-	{
+	for (i = 0; i < 3; i++) {
 		move[i] = backlerp * move[i] + frontlerp * frame->translate[i];
 	}
-
-	for (i = 0; i < 3; i++)
-	{
+	for (i = 0; i < 3; i++) {
 		frontv[i] = frontlerp * frame->scale[i];
 		backv[i] = backlerp * oldframe->scale[i];
 	}
-
 	lerp = s_lerped[0];
-
 	R_LerpVerts(paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv, e->flags);
-
-	if (gl_vertex_arrays->value)
-	{
+	if (gl_vertex_arrays->value) {
 		float colorArray[MAX_VERTS * 4];
-
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(3, GL_FLOAT, 16, s_lerped);
-
-		if (e->flags &
-			(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE |
+		if (e->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE |
 			 RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
 		{
 			glColor4f(shadelight[0], shadelight[1], shadelight[2], alpha);
-		}
-		else
-		{
+		} else {
 			glEnableClientState(GL_COLOR_ARRAY);
 			glColorPointer(3, GL_FLOAT, 0, colorArray);
-
 			/* pre light everything */
-			for (i = 0; i < paliashdr->num_xyz; i++)
-			{
+			for (i = 0; i < paliashdr->num_xyz; i++) {
 				float l = shadedots[verts[i].lightnormalindex];
-
 				colorArray[i * 3 + 0] = l * shadelight[0];
 				colorArray[i * 3 + 1] = l * shadelight[1];
 				colorArray[i * 3 + 2] = l * shadelight[2];
 			}
 		}
-
-		if (qglLockArraysEXT != 0)
-		{
+		if (qglLockArraysEXT != 0) {
 			qglLockArraysEXT(0, paliashdr->num_xyz);
 		}
-
-		while (1)
-		{
+		while (1) {
 			/* get the vertex count and primitive type */
 			count = *order++;
-
-			if (!count)
-			{
+			if (!count) {
 				break; /* done */
 			}
-
-			if (count < 0)
-			{
+			if (count < 0) {
 				count = -count;
 				glBegin(GL_TRIANGLE_FAN);
-			}
-			else
-			{
+			} else {
 				glBegin(GL_TRIANGLE_STRIP);
 			}
-
-			if (e->flags &
-				(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE |
+			if (e->flags & (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE |
 				 RF_SHELL_DOUBLE |
 				 RF_SHELL_HALF_DAM))
 			{
-				do
-				{
+				do {
 					index_xyz = order[2];
 					order += 3;
 
 					glVertex3fv(s_lerped[index_xyz]);
-				}
-				while (--count);
-			}
-			else
-			{
-				do
-				{
+				} while (--count);
+			} else {
+				do {
 					/* texture coordinates come from the draw list */
 					glTexCoord2f(((float *)order)[0], ((float *)order)[1]);
 					index_xyz = order[2];
@@ -232,15 +180,11 @@ R_DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* e)
 					order += 3;
 
 					glArrayElement(index_xyz);
-				}
-				while (--count);
+				} while (--count);
 			}
-
 			glEnd();
 		}
-
-		if (qglUnlockArraysEXT != 0)
-		{
+		if (qglUnlockArraysEXT != 0){
 			qglUnlockArraysEXT();
 		}
 	}

@@ -51,6 +51,21 @@ void Draw_Char(int x, int y, int num){
 	Draw_CharScaled(x, y, num, 1.0f);
 }
 
+void GLRenderFilledQuad(int x, int y, int w, int h, float r, float g, float b){
+	glEnable(GL_BLEND);
+	glDisable(GL_TEXTURE_2D);
+	glColor4f(r, g, b, 1);
+	glBegin(GL_QUADS);
+        glVertex2f(x, y);
+        glVertex2f(x + w, y);
+        glVertex2f(x + w, y + h);
+        glVertex2f(x, y + h);
+	glEnd();
+	glColor4f(1, 1, 1, 1);
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+}
+
 void GLRenderTexturedQuad(int texnum, int x, int y, int w, int h, float sl, float tl, float sh, float th){
 	R_Bind(texnum);
 	glBegin(GL_QUADS);
@@ -63,6 +78,10 @@ void GLRenderTexturedQuad(int texnum, int x, int y, int w, int h, float sl, floa
         glTexCoord2f(sl, th);
         glVertex2f(x, y + h);
 	glEnd();
+}
+
+void Draw_FilledRect(int x, int y, int w, int h, int r, int g, int b){
+    GLRenderFilledQuad(x, y, w, h, r / 255, g / 255, b / 255);
 }
 
 void Draw_StringScaled(const char* string, int fromx, int y, float scale){

@@ -1230,21 +1230,14 @@ SV_Physics_Step(edict_t *ent)
 
 /* ================================================================== */
 
-void
-G_RunEntity(edict_t *ent)
-{
-	if (!ent)
-	{
+void G_RunEntity(edict_t *ent){
+	if (!ent) {
 		return;
 	}
-
-	if (ent->prethink)
-	{
+	if (ent->prethink) {
 		ent->prethink(ent);
 	}
-
-	switch ((int)ent->movetype)
-	{
+	switch ((int)ent->movetype) {
 		case MOVETYPE_PUSH:
 		case MOVETYPE_STOP:
 			SV_Physics_Pusher(ent);

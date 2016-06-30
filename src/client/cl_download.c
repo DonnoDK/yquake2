@@ -551,82 +551,57 @@ CL_Download_f(void)
 /*
  * A download message has been received from the server
  */
-void
-CL_ParseDownload(void)
-{
-	int size, percent;
+void CL_ParseDownload(void) {
+    /* TODO: refactor this */
 	char name[MAX_OSPATH];
 	int r;
 
 	/* read the data */
-	size = MSG_ReadShort(&net_message);
-	percent = MSG_ReadByte(&net_message);
-
-	if (size == -1)
-	{
+	int size = MSG_ReadShort(&net_message);
+	int percent = MSG_ReadByte(&net_message);
+	if (size == -1) {
 		Com_Printf("Server does not have this file.\n");
-
-		if (cls.download)
-		{
+		if (cls.download) {
 			/* if here, we tried to resume a
 			 * file but the server said no */
 			fclose(cls.download);
 			cls.download = NULL;
 		}
-
 		CL_RequestNextDownload();
 		return;
 	}
-
 	/* open the file if not opened yet */
-	if (!cls.download)
-	{
+	if (!cls.download) {
 		CL_DownloadFileName(name, sizeof(name), cls.downloadtempname);
-
 		FS_CreatePath(name);
-
 		cls.download = fopen(name, "wb");
-
-		if (!cls.download)
-		{
+		if (!cls.download) {
 			net_message.readcount += size;
 			Com_Printf("Failed to open %s\n", cls.downloadtempname);
 			CL_RequestNextDownload();
 			return;
 		}
 	}
-
 	fwrite(net_message.data + net_message.readcount, 1, size, cls.download);
 	net_message.readcount += size;
-
-	if (percent != 100)
-	{
+	if (percent != 100) {
 		/* request next block */
 		cls.downloadpercent = percent;
-
 		MSG_WriteByte(&cls.netchan.message, clc_stringcmd);
 		SZ_Print(&cls.netchan.message, "nextdl");
-	}
-	else
-	{
+	} else {
 		char oldn[MAX_OSPATH];
 		char newn[MAX_OSPATH];
-
 		fclose(cls.download);
-
 		/* rename the temp file to it's final name */
 		CL_DownloadFileName(oldn, sizeof(oldn), cls.downloadtempname);
 		CL_DownloadFileName(newn, sizeof(newn), cls.downloadname);
 		r = rename(oldn, newn);
-
-		if (r)
-		{
+		if (r) {
 			Com_Printf("failed to rename.\n");
 		}
-
 		cls.download = NULL;
 		cls.downloadpercent = 0;
-
 		/* get another file if needed */
 		CL_RequestNextDownload();
 	}

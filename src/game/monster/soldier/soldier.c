@@ -342,6 +342,11 @@ soldier_run(edict_t *self)
 	{
 		self->monsterinfo.currentmove = &soldier_move_start_run;
 	}
+	Com_Printf("accel: %f\n",self->moveinfo.accel);
+	Com_Printf("speed: %f\n",self->moveinfo.speed);
+	Com_Printf("decel: %f\n",self->moveinfo.decel);
+	Com_Printf("distance: %f\n",self->moveinfo.distance);
+	Com_Printf("current_speed: %f\n",self->moveinfo.current_speed);
 }
 
 mframe_t soldier_frames_pain1[] = {

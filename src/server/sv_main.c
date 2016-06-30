@@ -124,43 +124,25 @@ SV_StatusString(void)
 /*
  * Updates the cl->ping variables
  */
-void
-SV_CalcPings(void)
-{
-	int i, j;
-	client_t *cl;
-	int total, count;
-
-	for (i = 0; i < maxclients->value; i++)
-	{
-		cl = &svs.clients[i];
-
-		if (cl->state != cs_spawned)
-		{
+void SV_CalcPings(client_t* const clients, int count){
+	for (int i = 0; i < count; i++){
+		client_t* cl = &clients[i];
+		if (cl->state != cs_spawned){
 			continue;
 		}
-
-		total = 0;
-		count = 0;
-
-		for (j = 0; j < LATENCY_COUNTS; j++)
-		{
-			if (cl->frame_latency[j] > 0)
-			{
+		int total = 0;
+		int count = 0;
+		for (int j = 0; j < LATENCY_COUNTS; j++){
+			if (cl->frame_latency[j] > 0){
 				count++;
 				total += cl->frame_latency[j];
 			}
 		}
-
-		if (!count)
-		{
+		if (!count){
 			cl->ping = 0;
-		}
-		else
-		{
+		} else{
 			cl->ping = total / count;
 		}
-
 		/* let the game dll know about the ping */
 		cl->edict->client->ping = cl->ping;
 	}
@@ -170,31 +152,20 @@ SV_CalcPings(void)
  * Every few frames, gives all clients an allotment of milliseconds
  * for their command moves. If they exceed it, assume cheating.
  */
-void
-SV_GiveMsec(void)
-{
-	int i;
-	client_t *cl;
-
-	if (sv.framenum & 15)
-	{
+void SV_GiveMsec(client_t* const clients, int count){
+	if (sv.framenum & 15){
 		return;
 	}
-
-	for (i = 0; i < maxclients->value; i++)
-	{
-		cl = &svs.clients[i];
-
-		if (cl->state == cs_free)
-		{
+	for (int i = 0; i < count; i++) {
+		client_t* cl = &clients[i];
+		if (cl->state == cs_free) {
 			continue;
 		}
-
 		cl->commandMsec = 1800; /* 1600 + some slop */
 	}
 }
 
-void SV_ReadPackets(const client_t* clients, int count){
+void SV_ReadPackets(client_t* const clients, int count){
 	while(NET_GetPacket(NS_SERVER, &net_from, &net_message)){
 		/* check for connectionless packet (0xffffffff) first */
 		if (*(int *)net_message.data == -1){
@@ -250,7 +221,7 @@ void SV_ReadPackets(const client_t* clients, int count){
  * for a few seconds to make sure any final reliable message gets resent
  * if necessary
  */
-void SV_CheckTimeouts(const client_t* clients, int count){
+void SV_CheckTimeouts(client_t* const clients, int count){
 	int droppoint = svs.realtime - 1000 * timeout->value;
 	int zombiepoint = svs.realtime - 1000 * zombietime->value;
 	for (int i = 0; i < count; i++) {
@@ -290,38 +261,26 @@ SV_PrepWorldFrame(void)
 	}
 }
 
-void
-SV_RunGameFrame(void)
-{
+void SV_RunGameFrame(void) {
 #ifndef DEDICATED_ONLY
-
-	if (host_speeds->value)
-	{
+	if (host_speeds->value) {
 		time_before_game = Sys_Milliseconds();
 	}
-
 #endif
-
 	/* we always need to bump framenum, even if we
 	   don't run the world, otherwise the delta
 	   compression can get confused when a client
 	   has the "current" frame */
 	sv.framenum++;
 	sv.time = sv.framenum * 100;
-
 	/* don't run if paused */
-	if (!sv_paused->value || (maxclients->value > 1))
-	{
+	if (!sv_paused->value || (maxclients->value > 1)) {
 		ge->RunFrame();
-
 		/* never get more than one tic behind */
-		if (sv.time < svs.realtime)
-		{
-			if (sv_showclamp->value)
-			{
+		if (sv.time < svs.realtime) {
+			if (sv_showclamp->value) {
 				Com_Printf("sv highclamp\n");
 			}
-
 			svs.realtime = sv.time;
 		}
 	}
@@ -364,9 +323,9 @@ void SV_Frame(int msec){
 		return;
 	}
 	/* update ping based on the last known frame from all clients */
-	SV_CalcPings();
+	SV_CalcPings(svs.clients, maxclients->value);
 	/* give the clients some timeslices */
-	SV_GiveMsec();
+	SV_GiveMsec(svs.clients, maxclients->value);
 	/* let everything in the world think and move */
 	SV_RunGameFrame();
 	/* send messages back to the clients that had packets read this frame */
@@ -407,8 +366,7 @@ void Master_Heartbeat(void){
 	char* string = SV_StatusString();
 
 	/* send to group master */
-	int i;
-	for (i = 0; i < MAX_MASTERS; i++) {
+	for (int i = 0; i < MAX_MASTERS; i++) {
 		if (master_adr[i].port) {
 			Com_Printf("Sending heartbeat to %s\n", NET_AdrToString(master_adr[i]));
 			Netchan_OutOfBandPrint(NS_SERVER, master_adr[i], "heartbeat\n%s", string);

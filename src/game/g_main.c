@@ -411,69 +411,44 @@ ExitLevel(void)
 /*
  * Advances the world by 0.1 seconds
  */
-void
-G_RunFrame(void)
-{
-	int i;
-	edict_t *ent;
-
+void G_RunFrame(void){
 	level.framenum++;
 	level.time = level.framenum * FRAMETIME;
-
 	/* choose a client for monsters to target this frame */
 	AI_SetSightClient();
-
 	/* exit intermissions */
-	if (level.exitintermission)
-	{
+	if (level.exitintermission) {
 		ExitLevel();
 		return;
 	}
-
 	/* treat each object in turn
 	   even the world gets a chance
 	   to think */
-	ent = &g_edicts[0];
-
-	for (i = 0; i < globals.num_edicts; i++, ent++)
-	{
-		if (!ent->inuse)
-		{
+	for (int i = 0; i < globals.num_edicts; i++) {
+        edict_t* ent = &g_edicts[i];
+		if (!ent->inuse) {
 			continue;
 		}
-
 		level.current_entity = ent;
-
 		VectorCopy(ent->s.origin, ent->s.old_origin);
-
 		/* if the ground entity moved, make sure we are still on it */
-		if ((ent->groundentity) &&
-			(ent->groundentity->linkcount != ent->groundentity_linkcount))
+		if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount))
 		{
 			ent->groundentity = NULL;
-
-			if (!(ent->flags & (FL_SWIM | FL_FLY)) &&
-				(ent->svflags & SVF_MONSTER))
-			{
+			if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->svflags & SVF_MONSTER)) {
 				M_CheckGround(ent);
 			}
 		}
-
-		if ((i > 0) && (i <= maxclients->value))
-		{
-			ClientBeginServerFrame(ent);
-			continue;
-		}
-
-		G_RunEntity(ent);
+        if(ent->client){
+            ClientBeginServerFrame(ent);
+        }else{
+            G_RunEntity(ent);
+        }
 	}
-
 	/* see if it is time to end a deathmatch */
 	CheckDMRules();
-
 	/* see if needpass needs updated */
 	CheckNeedPass();
-
 	/* build the playerstate_t structures for all players */
 	ClientEndServerFrames();
 }

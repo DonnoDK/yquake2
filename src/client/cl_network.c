@@ -668,7 +668,7 @@ void CL_ReadPackets(void) {
 		if (!Netchan_Process(&cls.netchan, &net_message)) {
 			continue; /* wasn't accepted for some reason */
 		}
-		CL_ParseServerMessage();
+		CL_ParseServerMessage(&net_message);
 	}
 	/* check timeout */
 	if ((cls.state >= ca_connected) && (cls.realtime - cls.netchan.last_received > cl_timeout->value * 1000)) {
