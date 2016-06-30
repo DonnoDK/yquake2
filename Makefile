@@ -42,7 +42,7 @@ WITH_OGG:=yes
 # To use it your system needs libopenal.so.1
 # or openal32.dll (we recommend openal-soft)
 # installed
-WITH_OPENAL:=yes
+WITH_OPENAL:=no
 
 # Use SDL2 instead of SDL1.2. Disables CD audio support,
 # because SDL2 has none. Use OGG/Vorbis music instead :-)
@@ -249,7 +249,7 @@ SDLLDFLAGS := -lSDL
 endif # SDL2
 else ifeq ($(OSTYPE), Darwin)
 ifeq ($(WITH_SDL2),yes)
-SDLLDFLAGS := -framework SDL2 -framework OpenGL -framework Cocoa
+SDLLDFLAGS := -lSDL2 -framework OpenGL -framework Cocoa
 else # not SDL2
 SDLLDFLAGS := -lSDL -framework OpenGL -framework Cocoa
 endif # SDL2
