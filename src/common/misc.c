@@ -181,8 +181,6 @@ Com_Error_f(void)
 void
 Qcommon_Init(int argc, char **argv)
 {
-	char *s;
-
 	if (setjmp(abortframe))
 	{
 		Sys_Error("Error during initialization");
@@ -241,7 +239,7 @@ Qcommon_Init(int argc, char **argv)
 	dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
 #endif
 
-	s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
+	char* s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
 	Cvar_Get("version", s, CVAR_SERVERINFO | CVAR_NOSET);
 
 	if (dedicated->value)
@@ -288,7 +286,6 @@ Qcommon_Init(int argc, char **argv)
 void
 Qcommon_Frame(int msec)
 {
-	char *s;
 
 #ifndef DEDICATED_ONLY
 	int time_before = 0;
@@ -357,6 +354,7 @@ Qcommon_Frame(int msec)
 	}
 #endif
 
+	char *s;
 	do
 	{
 		s = Sys_ConsoleInput();

@@ -29,7 +29,8 @@
 #include "../backends/generic/header/input.h"
 
 cvar_t *cl_nodelta;
-
+cvar_t* cl_showmouse = NULL;
+cvar_t* in_grab = NULL;
 extern unsigned sys_frame_time;
 unsigned frame_msec;
 unsigned old_sys_frame_time;
@@ -621,6 +622,22 @@ IN_ForceCenterView(void)
 	cl.viewangles[PITCH] = 0;
 }
 
+static void IN_ToggleMouse(void){
+    if(cl_showmouse == NULL){
+        cl_showmouse = Cvar_Get("cl_showmouse", "0", 0);
+    }
+    if(in_grab == NULL){
+        in_grab = Cvar_Get("in_grab", "2", CVAR_ARCHIVE);
+    }
+    if(cl_showmouse->value){
+        cl_showmouse->value = 0;
+        in_grab->value = 2;
+    }else{
+        cl_showmouse->value = 1;
+        in_grab->value = 0;
+    }
+}
+
 void
 CL_InitInput(void)
 {
@@ -658,6 +675,7 @@ CL_InitInput(void)
 	Cmd_AddCommand("impulse", IN_Impulse);
 	Cmd_AddCommand("+klook", IN_KLookDown);
 	Cmd_AddCommand("-klook", IN_KLookUp);
+	Cmd_AddCommand("togglemouse", IN_ToggleMouse);
 
 	cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
 }

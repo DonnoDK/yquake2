@@ -81,6 +81,7 @@ cvar_t *m_pitch;
 cvar_t *m_side;
 cvar_t *m_yaw;
 cvar_t *sensitivity;
+cvar_t* showmouse;
 static cvar_t *windowed_mouse;
 
 /* ------------------------------------------------------------------ */
@@ -299,19 +300,12 @@ IN_TranslateSDLtoQ2Key(unsigned int keysym)
  * frame by the client and does nearly all the
  * input magic.
  */
-void
-IN_Update(void)
-{
-	qboolean want_grab;
-	SDL_Event event;
+void IN_Update(void) {
  	unsigned int key;
-
+	SDL_Event event;
 	/* Get and process an event */
-	while (SDL_PollEvent(&event))
-	{
-
-		switch (event.type)
-		{
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 			case SDL_MOUSEWHEEL:
 				Key_Event((event.wheel.y > 0 ? K_MWHEELUP : K_MWHEELDOWN), true, true);
@@ -320,14 +314,11 @@ IN_Update(void)
 #endif
 			case SDL_MOUSEBUTTONDOWN:
 #if !SDL_VERSION_ATLEAST(2, 0, 0)
-				if (event.button.button == 4)
-				{
+				if (event.button.button == 4) {
 					Key_Event(K_MWHEELUP, true, true);
 					Key_Event(K_MWHEELUP, false, true);
 					break;
-				}
-				else if (event.button.button == 5)
-				{
+				} else if (event.button.button == 5) {
 					Key_Event(K_MWHEELDOWN, true, true);
 					Key_Event(K_MWHEELDOWN, false, true);
 					break;
@@ -360,7 +351,7 @@ IN_Update(void)
 				break;
 
 			case SDL_MOUSEMOTION:
-                if (cls.key_dest == key_game && (int)cl_paused->value == 0) {
+                if (cls.key_dest == key_game && (int)cl_paused->value == 0 && !showmouse->value) {
                     mouse_x += event.motion.xrel;
                     mouse_y += event.motion.yrel;
                 }
@@ -440,8 +431,11 @@ IN_Update(void)
 	}
 
 	/* Grab and ungrab the mouse if the* console or the menu is opened */
-	want_grab = (vid_fullscreen->value || in_grab->value == 1 ||
+	qboolean want_grab = (vid_fullscreen->value || in_grab->value == 1 ||
 			(in_grab->value == 2 && windowed_mouse->value));
+    if(showmouse->value){
+        want_grab = 0;
+    }
 	/* calling GLimp_GrabInput() each is a but ugly but simple and should work.
 	 * + the called SDL functions return after a cheap check, if there's
 	 * nothing to do, anyway
@@ -573,6 +567,7 @@ IN_Init(void)
 	m_side = Cvar_Get("m_side", "0.8", 0);
 	m_yaw = Cvar_Get("m_yaw", "0.022", 0);
 	sensitivity = Cvar_Get("sensitivity", "3", 0);
+    showmouse = Cvar_Get("cl_showmouse", "0", 0);
 	vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
 	windowed_mouse = Cvar_Get("windowed_mouse", "1", CVAR_USERINFO | CVAR_ARCHIVE);
 

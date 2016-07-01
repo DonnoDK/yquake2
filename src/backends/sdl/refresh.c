@@ -683,7 +683,7 @@ GLimp_InitGraphics(qboolean fullscreen)
 #endif
 
 	/* No cursor */
-	SDL_ShowCursor(0);
+	SDL_ShowCursor(1);
 
 	return true;
 }

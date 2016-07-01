@@ -63,6 +63,7 @@ cvar_t *cl_add_lights;
 cvar_t *cl_add_entities;
 cvar_t *cl_add_blend;
 
+cvar_t *cl_showmouse;
 cvar_t *cl_shownet;
 cvar_t *cl_showmiss;
 cvar_t *cl_showclamp;
@@ -522,6 +523,8 @@ CL_InitLocal(void)
 	m_forward = Cvar_Get("m_forward", "1", 0);
 	m_side = Cvar_Get("m_side", "1", 0);
 
+
+	cl_showmouse = Cvar_Get("cl_showmouse", "0", 0);
 	cl_shownet = Cvar_Get("cl_shownet", "0", 0);
 	cl_showmiss = Cvar_Get("cl_showmiss", "0", 0);
 	cl_showclamp = Cvar_Get("showclamp", "0", 0);
