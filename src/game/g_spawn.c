@@ -272,52 +272,36 @@ spawn_t spawns[] = {
  * Finds the spawn function for
  * the entity and calls it
  */
-void
-ED_CallSpawn(edict_t *ent)
-{
-	spawn_t *s;
-	gitem_t *item;
-	int i;
-
-	if (!ent)
-	{
+void ED_CallSpawn(edict_t *ent) {
+	if (!ent) {
 		return;
 	}
-
-	if (!ent->classname)
-	{
+	if (!ent->classname) {
 		gi.dprintf("ED_CallSpawn: NULL classname\n");
 		G_FreeEdict(ent);
 		return;
 	}
-
 	/* check item spawn functions */
-	for (i = 0, item = itemlist; i < game.num_items; i++, item++)
-	{
-		if (!item->classname)
-		{
+    int i;
+	gitem_t *item;
+	for (i = 0, item = itemlist; i < game.num_items; i++, item++) {
+		if (!item->classname) {
 			continue;
 		}
-
-		if (!strcmp(item->classname, ent->classname))
-		{
+		if (!strcmp(item->classname, ent->classname)) {
 			/* found it */
 			SpawnItem(ent, item);
 			return;
 		}
 	}
-
 	/* check normal spawn functions */
-	for (s = spawns; s->name; s++)
-	{
-		if (!strcmp(s->name, ent->classname))
-		{
+	for (spawn_t* s = spawns; s->name; s++) {
+		if (!strcmp(s->name, ent->classname)) {
 			/* found it */
 			s->spawn(ent);
 			return;
 		}
 	}
-
 	gi.dprintf("%s doesn't have a spawn function\n", ent->classname);
 }
 
@@ -564,61 +548,45 @@ G_FindTeams(void)
  * Creates a server's entity / program execution context by
  * parsing textual entity definitions out of an ent file.
  */
-void
-SpawnEntities(const char *mapname, char *entities, const char *spawnpoint)
-{
-	edict_t *ent;
-	int inhibit;
-	const char *com_token;
-	int i;
-	float skill_level;
-
-	if (!mapname || !entities || !spawnpoint)
-	{
+void SpawnEntities(const char *mapname, char *entities, const char *spawnpoint) {
+	if (!mapname || !entities || !spawnpoint) {
 		return;
 	}
 
-	skill_level = floor(skill->value);
+	float skill_level = floor(skill->value);
 
-	if (skill_level < 0)
-	{
+	if (skill_level < 0) {
 		skill_level = 0;
 	}
 
-	if (skill_level > 3)
-	{
+	if (skill_level > 3) {
 		skill_level = 3;
 	}
 
-	if (skill->value != skill_level)
-	{
+	if (skill->value != skill_level) {
 		gi.cvar_forceset("skill", va("%f", skill_level));
 	}
 
 	SaveClientData();
-
 	gi.FreeTags(TAG_LEVEL);
-
 	memset(&level, 0, sizeof(level));
 	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
-
 	Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
 	Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
 
 	/* set client fields on player ents */
-	for (i = 0; i < game.maxclients; i++)
-	{
+	for (int i = 0; i < game.maxclients; i++) {
 		g_edicts[i + 1].client = game.clients + i;
 	}
 
-	ent = NULL;
-	inhibit = 0;
+	edict_t* ent = NULL;
+	int inhibit = 0;
 
 	/* parse ents */
 	while (1)
 	{
 		/* parse the opening brace */
-		com_token = COM_Parse(&entities);
+		const char* com_token = COM_Parse(&entities);
 
 		if (!entities)
 		{
