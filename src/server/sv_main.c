@@ -303,16 +303,9 @@ SV_CheckTimeouts(void)
  * This has to be done before the world logic, because
  * player processing happens outside RunWorldFrame
  */
-void
-SV_PrepWorldFrame(void)
-{
-	edict_t *ent;
-	int i;
-
-	for (i = 0; i < ge->num_edicts; i++, ent++)
-	{
-		ent = EDICT_NUM(i);
-
+void SV_PrepWorldFrame(void) {
+	for (int i = 0; i < ge->num_edicts; i++) {
+		edict_t* ent = &ge->edicts[i];
 		/* events only last for a single message */
 		ent->s.event = 0;
 	}

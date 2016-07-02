@@ -507,19 +507,16 @@ SV_RateDrop(client_t *c)
 }
 
 void SV_SendClientMessages(void) {
-	int i;
-	client_t *c;
-	int msglen;
 	byte msgbuf[MAX_MSGLEN];
-	size_t r;
-	msglen = 0;
+	int msglen = 0;
+
 	/* read the next demo message if needed */
 	if (sv.demofile && (sv.state == ss_demo)) {
 		if (sv_paused->value) {
 			msglen = 0;
 		} else {
 			/* get the next message */
-			r = FS_FRead(&msglen, 4, 1, sv.demofile);
+			size_t r = FS_FRead(&msglen, 4, 1, sv.demofile);
 			if (r != 4) {
 				SV_DemoCompleted();
 				return;
@@ -541,13 +538,12 @@ void SV_SendClientMessages(void) {
 	}
 
 	/* send a message to each connected client */
-	for (i = 0, c = svs.clients; i < maxclients->value; i++, c++) {
+	for (int i = 0; i < maxclients->value; i++) {
+        client_t* c = &svs.clients[i];
 		if (!c->state) {
 			continue;
 		}
-		/* if the reliable message 
-		   overflowed, drop the 
-		   client */
+		/* if the reliable message overflowed, drop the client */
 		if (c->netchan.message.overflowed) {
 			SZ_Clear(&c->netchan.message);
 			SZ_Clear(&c->datagram);

@@ -283,67 +283,42 @@ Qcommon_Init(int argc, char **argv)
 	Com_Printf("*************************************\n\n");
 }
 
-void
-Qcommon_Frame(int msec)
-{
-
-#ifndef DEDICATED_ONLY
-	int time_before = 0;
-	int time_between = 0;
-	int time_after;
-#endif
-
-	if (setjmp(abortframe))
-	{
+void Qcommon_Frame(int msec) {
+	if (setjmp(abortframe)) {
 		return; /* an ERR_DROP was thrown */
 	}
 
-	if (log_stats->modified)
-	{
+    /* NOTE (brian): logging */
+	if (log_stats->modified) {
 		log_stats->modified = false;
-
-		if (log_stats->value)
-		{
-			if (log_stats_file)
-			{
+		if (log_stats->value) {
+			if (log_stats_file) {
 				fclose(log_stats_file);
 				log_stats_file = 0;
 			}
-
 			log_stats_file = fopen("stats.log", "w");
-
-			if (log_stats_file)
-			{
+			if (log_stats_file) {
 				fprintf(log_stats_file, "entities,dlights,parts,frame time\n");
 			}
-		}
-		else
-		{
-			if (log_stats_file)
-			{
+		} else {
+			if (log_stats_file) {
 				fclose(log_stats_file);
 				log_stats_file = 0;
 			}
 		}
 	}
 
-	if (fixedtime->value)
-	{
+	if (fixedtime->value) {
 		msec = fixedtime->value;
-	}
-	else if (timescale->value)
-	{
+	} else if (timescale->value) {
 		msec *= timescale->value;
-
-		if (msec < 1)
-		{
+		if (msec < 1) {
 			msec = 1;
 		}
 	}
 
 #ifndef DEDICATED_ONLY
-	if (showtrace->value)
-	{
+	if (showtrace->value) {
 		extern int c_traces, c_brush_traces;
 		extern int c_pointcontents;
 
@@ -365,32 +340,27 @@ Qcommon_Frame(int msec)
 	Cbuf_Execute();
 
 #ifndef DEDICATED_ONLY
-	if (host_speeds->value)
-	{
+	int time_before;
+	if (host_speeds->value) {
 		time_before = Sys_Milliseconds();
 	}
 #endif
-
 	SV_Frame(msec);
-
 #ifndef DEDICATED_ONLY
-	if (host_speeds->value)
-	{
+	int time_between;
+	if (host_speeds->value) {
 		time_between = Sys_Milliseconds();
 	}
 
 	CL_Frame(msec);
 
-	if (host_speeds->value)
-	{
-		int all, sv, gm, cl, rf;
-
-		time_after = Sys_Milliseconds();
-		all = time_after - time_before;
-		sv = time_between - time_before;
-		cl = time_after - time_between;
-		gm = time_after_game - time_before_game;
-		rf = time_after_ref - time_before_ref;
+	if (host_speeds->value) {
+		int time_after = Sys_Milliseconds();
+		int all = time_after - time_before;
+		int sv = time_between - time_before;
+		int cl = time_after - time_between;
+		int gm = time_after_game - time_before_game;
+		int rf = time_after_ref - time_before_ref;
 		sv -= gm;
 		cl -= rf;
 		Com_Printf("all:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",

@@ -662,19 +662,17 @@ SV_BuildClientFrame(client_t *client)
 /*
  * Save everything in the world out without deltas.
  * Used for recording footage for merged or assembled demos
+ * NOTE: used for recording demos on a server
+ * NOTE: consider removing
  */
-void
-SV_RecordDemoMessage(void)
-{
-	int e;
+void SV_RecordDemoMessage(void) {
 	edict_t *ent;
 	entity_state_t nostate;
 	sizebuf_t buf;
 	byte buf_data[32768];
 	int len;
 
-	if (!svs.demofile)
-	{
+	if (!svs.demofile) {
 		return;
 	}
 
@@ -685,14 +683,13 @@ SV_RecordDemoMessage(void)
 	   contain a player_state_t */
 	MSG_WriteByte(&buf, svc_frame);
 	MSG_WriteLong(&buf, sv.framenum);
-
 	MSG_WriteByte(&buf, svc_packetentities);
 
-	e = 1;
+	int e = 1;
 	ent = EDICT_NUM(e);
 
-	while (e < ge->num_edicts)
-	{
+    /* TODO: rewrite this ugly while-loop to use a for-loop, as seen other places */
+	while (e < ge->num_edicts) {
 		/* ignore ents without visible models unless they have an effect */
 		if (ent->inuse && ent->s.number &&
 			(ent->s.modelindex || ent->s.effects || ent->s.sound ||
@@ -700,7 +697,6 @@ SV_RecordDemoMessage(void)
 		{
 			MSG_WriteDeltaEntity(&nostate, &ent->s, &buf, false, true);
 		}
-
 		e++;
 		ent = EDICT_NUM(e);
 	}
