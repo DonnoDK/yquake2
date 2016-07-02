@@ -2213,7 +2213,6 @@ ClientThink(edict_t *ent, usercmd_t *ucmd)
 		return;
 	}
 
-	level.current_entity = ent;
 	client = ent->client;
 
 	if (level.intermissiontime)

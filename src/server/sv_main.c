@@ -170,27 +170,16 @@ SV_CalcPings(void)
  * Every few frames, gives all clients an allotment of milliseconds
  * for their command moves. If they exceed it, assume cheating.
  */
-void
-SV_GiveMsec(void)
-{
-	int i;
-	client_t *cl;
-
-	if (sv.framenum & 15)
-	{
+void SV_GiveMsec(client_t* clients, int maxclients, int msecs, int framenum){
+	if (framenum & 15){
 		return;
 	}
-
-	for (i = 0; i < maxclients->value; i++)
-	{
-		cl = &svs.clients[i];
-
-		if (cl->state == cs_free)
-		{
+	for (int i = 0; i < maxclients; i++){
+		client_t* cl = &clients[i];
+		if (cl->state == cs_free) {
 			continue;
 		}
-
-		cl->commandMsec = 1800; /* 1600 + some slop */
+		cl->commandMsec = msecs; 
 	}
 }
 
@@ -329,49 +318,33 @@ SV_PrepWorldFrame(void)
 	}
 }
 
-void
-SV_RunGameFrame(void)
-{
+void SV_RunGameFrame(void) {
 #ifndef DEDICATED_ONLY
-
-	if (host_speeds->value)
-	{
+	if (host_speeds->value) {
 		time_before_game = Sys_Milliseconds();
 	}
-
 #endif
-
 	/* we always need to bump framenum, even if we
 	   don't run the world, otherwise the delta
 	   compression can get confused when a client
 	   has the "current" frame */
 	sv.framenum++;
 	sv.time = sv.framenum * 100;
-
 	/* don't run if paused */
-	if (!sv_paused->value || (maxclients->value > 1))
-	{
+	if (!sv_paused->value || (maxclients->value > 1)) {
 		ge->RunFrame();
-
 		/* never get more than one tic behind */
-		if (sv.time < svs.realtime)
-		{
-			if (sv_showclamp->value)
-			{
+		if (sv.time < svs.realtime) {
+			if (sv_showclamp->value) {
 				Com_Printf("sv highclamp\n");
 			}
-
 			svs.realtime = sv.time;
 		}
 	}
-
 #ifndef DEDICATED_ONLY
-
-	if (host_speeds->value)
-	{
+	if (host_speeds->value) {
 		time_after_game = Sys_Milliseconds();
 	}
-
 #endif
 }
 
@@ -420,8 +393,8 @@ SV_Frame(int msec)
 	/* update ping based on the last known frame from all clients */
 	SV_CalcPings();
 
-	/* give the clients some timeslices */
-	SV_GiveMsec();
+    /* give the clients some timeslices, 1600 + some slop */
+    SV_GiveMsec(svs.clients, maxclients->value, 1800, sv.framenum);
 
 	/* let everything in the world think and move */
 	SV_RunGameFrame();

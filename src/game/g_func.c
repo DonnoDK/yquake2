@@ -156,13 +156,9 @@ Move_Calc(edict_t *ent, vec3_t dest, void (*func)(edict_t *))
 	if ((ent->moveinfo.speed == ent->moveinfo.accel) &&
 		(ent->moveinfo.speed == ent->moveinfo.decel))
 	{
-		if (level.current_entity ==
-			((ent->flags & FL_TEAMSLAVE) ? ent->teammaster : ent))
-		{
+		if (ent->flags & FL_TEAMSLAVE) {
 			Move_Begin(ent);
-		}
-		else
-		{
+		} else {
 			ent->nextthink = level.time + FRAMETIME;
 			ent->think = Move_Begin;
 		}
@@ -266,24 +262,15 @@ AngleMove_Begin(edict_t *ent)
 	ent->think = AngleMove_Final;
 }
 
-void
-AngleMove_Calc(edict_t *ent, void (*func)(edict_t *))
-{
- 	if (!ent || !func)
-	{
+void AngleMove_Calc(edict_t *ent, void (*func)(edict_t *)) {
+ 	if (!ent || !func) {
 		return;
 	}
-
 	VectorClear(ent->avelocity);
 	ent->moveinfo.endfunc = func;
-
-	if (level.current_entity ==
-		((ent->flags & FL_TEAMSLAVE) ? ent->teammaster : ent))
-	{
+	if (ent->flags & FL_TEAMSLAVE) {
 		AngleMove_Begin(ent);
-	}
-	else
-	{
+	} else {
 		ent->nextthink = level.time + FRAMETIME;
 		ent->think = AngleMove_Begin;
 	}

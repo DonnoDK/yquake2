@@ -322,7 +322,6 @@ typedef struct
 	int total_monsters;
 	int killed_monsters;
 
-	edict_t *current_entity; /* entity running from G_RunFrame */
 	int body_que; /* dead bodies */
 
 	int power_cubes; /* ugly necessity for coop */

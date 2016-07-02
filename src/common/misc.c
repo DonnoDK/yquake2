@@ -354,17 +354,13 @@ Qcommon_Frame(int msec)
 	}
 #endif
 
-	char *s;
-	do
-	{
+    const char* s;
+	do{
 		s = Sys_ConsoleInput();
-
-		if (s)
-		{
+		if (s){
 			Cbuf_AddText(va("%s\n", s));
 		}
-	}
-	while (s);
+	}while (s);
 
 	Cbuf_Execute();
 
