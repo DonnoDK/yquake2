@@ -1053,11 +1053,13 @@ Key_Event(int key, qboolean down, qboolean special)
 
     /* While in attract loop all keys besides F1 to F12 (to
 	   allow quick load and the like) are treated like escape. */
+    /*
 	if (cl.attractloop && (cls.key_dest != key_menu) &&
 		!((key >= K_F1) && (key <= K_F12)))
 	{
 		key = K_ESCAPE;
 	}
+    */
 
 	/* Escape has a special meaning. Depending on the situation it
 	   - pauses the game and breaks into the menu

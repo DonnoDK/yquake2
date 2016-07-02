@@ -29,17 +29,23 @@
 #include <locale.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "../../common/header/common.h"
 #include "header/unix.h"
 
-int
-main(int argc, char **argv)
-{
-	int time, oldtime, newtime;
-	int verLen, i;
-	const char* versionString;
+
+time_t modifiedTime(const char* filename){
+    struct stat st;
+    uint32_t res = stat(filename, &st);
+    if(res != 0){
+        fprintf(stderr, "could not open file: %s\n", filename);
+    }
+    return st.st_mtime;
+}
+
+int main(int argc, char **argv){
 
 	/* register signal handler */
 	registerHandler();
@@ -70,11 +76,10 @@ main(int argc, char **argv)
 	/* enforce C locale */
 	setenv("LC_ALL", "C", 1);
 
-	versionString = va("Yamagi Quake II v%s", YQ2VERSION);
-	verLen = strlen(versionString);
-
+	const char* versionString = va("Yamagi Quake II v%s", YQ2VERSION);
+	int verLen = strlen(versionString);
 	printf("\n%s\n", versionString);
-	for(i=0; i<verLen; ++i)
+	for(int i = 0; i < verLen; ++i)
 	{
 		putc('=', stdout);
 	}
@@ -122,23 +127,30 @@ main(int argc, char **argv)
 	/* Do not delay reads on stdin*/
 	fcntl(fileno(stdin), F_SETFL, fcntl(fileno(stdin), F_GETFL, NULL) | FNDELAY);
 
-	oldtime = Sys_Milliseconds();
+	int time, newtime;
+	int oldtime = Sys_Milliseconds();
+
+    time_t mtime = modifiedTime(argv[0]);
+    int checktime = 0;
 
 	/* The legendary Quake II mainloop */
-	while (1)
-	{
+	while (1){
 		/* find time spent rendering last frame */
-		do
-		{
+		do{
 			newtime = Sys_Milliseconds();
 			time = newtime - oldtime;
-		}
-		while (time < 1);
+		} while (time < 1);
 
+        checktime += time;
+        if(checktime >= 1000){
+            if(mtime != modifiedTime(argv[0])){
+                return 0;
+            }
+            checktime = 0;
+        }
 		Qcommon_Frame(time);
 		oldtime = newtime;
 	}
-
 	return 0;
 }
 
