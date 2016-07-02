@@ -219,40 +219,31 @@ AttackFinished(edict_t *self, float time)
 	self->monsterinfo.attack_finished = level.time + time;
 }
 
-void
-M_CheckGround(edict_t *ent)
-{
-	vec3_t point;
-	trace_t trace;
-
-	if (!ent)
-	{
+void M_CheckGround(edict_t *ent) {
+	if (!ent) {
 		return;
 	}
 
-	if (ent->flags & (FL_SWIM | FL_FLY))
-	{
+	if (ent->flags & (FL_SWIM | FL_FLY)) {
 		return;
 	}
 
-	if (ent->velocity[2] > 100)
-	{
+	if (ent->velocity[2] > 100) {
 		ent->groundentity = NULL;
 		return;
 	}
 
 	/* if the hull point one-quarter unit down
 	   is solid the entity is on ground */
+	vec3_t point;
 	point[0] = ent->s.origin[0];
 	point[1] = ent->s.origin[1];
 	point[2] = ent->s.origin[2] - 0.25;
 
-	trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, point,
-			ent, MASK_MONSTERSOLID);
+	trace_t trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_MONSTERSOLID);
 
 	/* check steepness */
-	if ((trace.plane.normal[2] < 0.7) && !trace.startsolid)
-	{
+	if ((trace.plane.normal[2] < 0.7) && !trace.startsolid) {
 		ent->groundentity = NULL;
 		return;
 	}
@@ -262,8 +253,7 @@ M_CheckGround(edict_t *ent)
     ent->groundentity = trace.ent;
 	ent->groundentity_linkcount = trace.ent->linkcount;
 
-	if (!trace.startsolid && !trace.allsolid)
-	{
+	if (!trace.startsolid && !trace.allsolid) {
 		VectorCopy(trace.endpos, ent->s.origin);
 		ent->groundentity = trace.ent;
 		ent->groundentity_linkcount = trace.ent->linkcount;

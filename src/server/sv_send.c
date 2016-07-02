@@ -506,53 +506,34 @@ SV_RateDrop(client_t *c)
 	return false;
 }
 
-void
-SV_SendClientMessages(void)
-{
+void SV_SendClientMessages(void) {
 	int i;
 	client_t *c;
 	int msglen;
 	byte msgbuf[MAX_MSGLEN];
 	size_t r;
-
 	msglen = 0;
-
 	/* read the next demo message if needed */
-	if (sv.demofile && (sv.state == ss_demo))
-	{
-		if (sv_paused->value)
-		{
+	if (sv.demofile && (sv.state == ss_demo)) {
+		if (sv_paused->value) {
 			msglen = 0;
-		}
-		else
-		{
+		} else {
 			/* get the next message */
 			r = FS_FRead(&msglen, 4, 1, sv.demofile);
-
-			if (r != 4)
-			{
+			if (r != 4) {
 				SV_DemoCompleted();
 				return;
 			}
-
 			msglen = LittleLong(msglen);
-
-			if (msglen == -1)
-			{
+			if (msglen == -1) {
 				SV_DemoCompleted();
 				return;
 			}
-
-			if (msglen > MAX_MSGLEN)
-			{
-				Com_Error(ERR_DROP,
-						"SV_SendClientMessages: msglen > MAX_MSGLEN");
+			if (msglen > MAX_MSGLEN) {
+				Com_Error(ERR_DROP, "SV_SendClientMessages: msglen > MAX_MSGLEN");
 			}
-
 			r = FS_FRead(msgbuf, msglen, 1, sv.demofile);
-
-			if (r != msglen)
-			{
+			if (r != msglen) {
 				SV_DemoCompleted();
 				return;
 			}
@@ -560,46 +541,30 @@ SV_SendClientMessages(void)
 	}
 
 	/* send a message to each connected client */
-	for (i = 0, c = svs.clients; i < maxclients->value; i++, c++)
-	{
-		if (!c->state)
-		{
+	for (i = 0, c = svs.clients; i < maxclients->value; i++, c++) {
+		if (!c->state) {
 			continue;
 		}
-
 		/* if the reliable message 
 		   overflowed, drop the 
 		   client */
-		if (c->netchan.message.overflowed)
-		{
+		if (c->netchan.message.overflowed) {
 			SZ_Clear(&c->netchan.message);
 			SZ_Clear(&c->datagram);
 			SV_BroadcastPrintf(PRINT_HIGH, "%s overflowed\n", c->name);
 			SV_DropClient(c);
 		}
-
-		if ((sv.state == ss_cinematic) ||
-			(sv.state == ss_demo) ||
-			(sv.state == ss_pic))
-		{
+		if ((sv.state == ss_cinematic) || (sv.state == ss_demo) || (sv.state == ss_pic)) {
 			Netchan_Transmit(&c->netchan, msglen, msgbuf);
-		}
-		else if (c->state == cs_spawned)
-		{
+		} else if (c->state == cs_spawned) {
 			/* don't overrun bandwidth */
-			if (SV_RateDrop(c))
-			{
+			if (SV_RateDrop(c)) {
 				continue;
 			}
-
 			SV_SendClientDatagram(c);
-		}
-		else
-		{
+		} else {
 			/* just update reliable	if needed */
-			if (c->netchan.message.cursize ||
-				(curtime - c->netchan.last_sent > 1000))
-			{
+			if (c->netchan.message.cursize || (curtime - c->netchan.last_sent > 1000)) {
 				Netchan_Transmit(&c->netchan, 0, NULL);
 			}
 		}

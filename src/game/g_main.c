@@ -177,23 +177,14 @@ Com_Printf(char *msg, ...)
 
 /* ====================================================================== */
 
-void
-ClientEndServerFrames(void)
-{
-	int i;
-	edict_t *ent;
-
+void ClientEndServerFrames(void) {
 	/* calc the player views now that all
 	   pushing  and damage has been added */
-	for (i = 0; i < maxclients->value; i++)
-	{
-		ent = g_edicts + 1 + i;
-
-		if (!ent->inuse || !ent->client)
-		{
+	for (int i = 0; i < maxclients->value; i++) {
+		edict_t* ent = &g_edicts[i];
+		if (!ent->inuse || !ent->client) {
 			continue;
 		}
-
 		ClientEndServerFrame(ent);
 	}
 }
@@ -299,79 +290,52 @@ EndDMLevel(void)
 	}
 }
 
-void
-CheckNeedPass(void)
-{
+void CheckNeedPass(void) {
 	int need;
-
 	/* if password or spectator_password has
 	   changed, update needpass as needed */
-	if (password->modified || spectator_password->modified)
-	{
+	if (password->modified || spectator_password->modified) {
 		password->modified = spectator_password->modified = false;
-
 		need = 0;
-
-		if (*password->string && Q_stricmp(password->string, "none"))
-		{
+		if (*password->string && Q_stricmp(password->string, "none")) {
 			need |= 1;
 		}
-
-		if (*spectator_password->string &&
-			Q_stricmp(spectator_password->string, "none"))
-		{
+		if (*spectator_password->string && Q_stricmp(spectator_password->string, "none")) {
 			need |= 2;
 		}
-
 		gi.cvar_set("needpass", va("%d", need));
 	}
 }
 
-void
-CheckDMRules(void)
-{
-	int i;
-	gclient_t *cl;
-
-	if (level.intermissiontime)
-	{
+void CheckDMRules(void) {
+	if (!deathmatch->value || level.intermissiontime) {
 		return;
 	}
 
-	if (!deathmatch->value)
-	{
-		return;
-	}
-
-	if (timelimit->value)
-	{
-		if (level.time >= timelimit->value * 60)
-		{
+	if (timelimit->value) {
+		if (level.time >= timelimit->value * 60) {
 			gi.bprintf(PRINT_HIGH, "Timelimit hit.\n");
 			EndDMLevel();
 			return;
 		}
 	}
 
-	if (fraglimit->value)
-	{
-		for (i = 0; i < maxclients->value; i++)
-		{
-			cl = game.clients + i;
+    if(!fraglimit->value){
+        return;
+    }
 
-			if (!g_edicts[i + 1].inuse)
-			{
-				continue;
-			}
-
-			if (cl->resp.score >= fraglimit->value)
-			{
-				gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
-				EndDMLevel();
-				return;
-			}
-		}
-	}
+    for (int i = 0; i < maxclients->value; i++) {
+        gclient_t* cl = &game.clients[i];
+        edict_t* ed = &g_edicts[i];
+        if (!ed->inuse) {
+            continue;
+        }
+        if (cl->resp.score >= fraglimit->value) {
+            gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
+            EndDMLevel();
+            return;
+        }
+    }
 }
 
 void
