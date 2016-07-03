@@ -124,43 +124,27 @@ SV_StatusString(void)
 /*
  * Updates the cl->ping variables
  */
-void
-SV_CalcPings(void)
-{
-	int i, j;
-	client_t *cl;
-	int total, count;
-
-	for (i = 0; i < maxclients->value; i++)
-	{
-		cl = &svs.clients[i];
-
-		if (cl->state != cs_spawned)
-		{
+void SV_CalcPings(client_t* const clients, int count) {
+	for (int i = 0; i < count; i++) {
+		client_t* cl = &clients[i];
+		if (cl->state != cs_spawned) {
 			continue;
 		}
 
-		total = 0;
-		count = 0;
-
-		for (j = 0; j < LATENCY_COUNTS; j++)
-		{
-			if (cl->frame_latency[j] > 0)
-			{
+		int total = 0;
+		int count = 0;
+		for (int j = 0; j < LATENCY_COUNTS; j++) {
+			if (cl->frame_latency[j] > 0) {
 				count++;
 				total += cl->frame_latency[j];
 			}
 		}
 
-		if (!count)
-		{
+		if (!count) {
 			cl->ping = 0;
-		}
-		else
-		{
+		} else {
 			cl->ping = total / count;
 		}
-
 		/* let the game dll know about the ping */
 		cl->edict->client->ping = cl->ping;
 	}
@@ -341,66 +325,49 @@ void SV_RunGameFrame(void) {
 #endif
 }
 
-void
-SV_Frame(int msec)
-{
+void SV_Frame(int msec) {
 #ifndef DEDICATED_ONLY
 	time_before_game = time_after_game = 0;
 #endif
-
 	/* if server is not active, do nothing */
-	if (!svs.initialized)
-	{
+	if (!svs.initialized) {
 		return;
 	}
 
 	svs.realtime += msec;
-
 	/* keep the random time dependent */
 	randk();
 
 	/* check timeouts */
 	SV_CheckTimeouts();
-
 	/* get packets from clients */
 	SV_ReadPackets();
 
 	/* move autonomous things around if enough time has passed */
-	if (!sv_timedemo->value && (svs.realtime < sv.time))
-	{
+	if (!sv_timedemo->value && (svs.realtime < sv.time)) {
 		/* never let the time get too far off */
-		if (sv.time - svs.realtime > 100)
-		{
-			if (sv_showclamp->value)
-			{
+		if (sv.time - svs.realtime > 100) {
+			if (sv_showclamp->value) {
 				Com_Printf("sv lowclamp\n");
 			}
-
 			svs.realtime = sv.time - 100;
 		}
-
 		NET_Sleep(sv.time - svs.realtime);
 		return;
 	}
 
 	/* update ping based on the last known frame from all clients */
-	SV_CalcPings();
-
+	SV_CalcPings(svs.clients, maxclients->value);
     /* give the clients some timeslices, 1600 + some slop */
     SV_GiveMsec(svs.clients, maxclients->value, 1800, sv.framenum);
-
 	/* let everything in the world think and move */
 	SV_RunGameFrame();
-
 	/* send messages back to the clients that had packets read this frame */
 	SV_SendClientMessages();
-
 	/* save the entire world state if recording a serverdemo */
 	SV_RecordDemoMessage();
-
 	/* send a heartbeat to the master if needed */
 	Master_Heartbeat();
-
 	/* clear teleport flags, etc for next frame */
 	SV_PrepWorldFrame();
 }

@@ -167,31 +167,20 @@ CL_NewDlight(int key, float x, float y, float z, float radius, float time)
 	dl->die = cl.time + time;
 }
 
-void
-CL_RunDLights(void)
-{
-	int i;
-	cdlight_t *dl;
-
-	dl = cl_dlights;
-
-	for (i = 0; i < MAX_DLIGHTS; i++, dl++)
-	{
-		if (!dl->radius)
-		{
+void CL_RunDLights(void) {
+	cdlight_t* dl = cl_dlights;
+	for (int i = 0; i < MAX_DLIGHTS; i++, dl++) {
+		if (!dl->radius) {
 			continue;
 		}
 
-		if (dl->die < cl.time)
-		{
+		if (dl->die < cl.time) {
 			dl->radius = 0;
 			return;
 		}
 
 		dl->radius -= cls.frametime * dl->decay;
-
-		if (dl->radius < 0)
-		{
+		if (dl->radius < 0) {
 			dl->radius = 0;
 		}
 	}

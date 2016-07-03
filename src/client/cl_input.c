@@ -685,16 +685,15 @@ CL_SendCmd(void)
 {
 	sizebuf_t buf;
 	byte data[128];
-	int i;
-	usercmd_t *cmd, *oldcmd;
+	usercmd_t *oldcmd;
 	usercmd_t nullcmd;
 	int checksumIndex;
 
 	/* build a command even if not connected */
 
 	/* save this command off for prediction */
-	i = cls.netchan.outgoing_sequence & (CMD_BACKUP - 1);
-	cmd = &cl.cmds[i];
+	int i = cls.netchan.outgoing_sequence & (CMD_BACKUP - 1);
+	usercmd_t* cmd = &cl.cmds[i];
 	cl.cmd_time[i] = cls.realtime; /* for netgraph ping calculation */
 
 	*cmd = CL_CreateCmd();

@@ -141,14 +141,9 @@ CL_SendConnectPacket(void)
 /*
  * Resend a connect message if the last one has timed out
  */
-void
-CL_CheckForResend(void)
-{
-	netadr_t adr;
-
+void CL_CheckForResend(void) {
 	/* if the local server is running and we aren't just connect */
-	if ((cls.state == ca_disconnected) && Com_ServerState())
-	{
+	if ((cls.state == ca_disconnected) && Com_ServerState()) {
 		cls.state = ca_connecting;
 		Q_strlcpy(cls.servername, "localhost", sizeof(cls.servername));
 		/* we don't need a challenge on the localhost */
@@ -157,32 +152,27 @@ CL_CheckForResend(void)
 	}
 
 	/* resend if we haven't gotten a reply yet */
-	if (cls.state != ca_connecting)
-	{
+	if (cls.state != ca_connecting) {
 		return;
 	}
 
-	if (cls.realtime - cls.connect_time < 3000)
-	{
+	if (cls.realtime - cls.connect_time < 3000) {
 		return;
 	}
 
-	if (!NET_StringToAdr(cls.servername, &adr))
-	{
+	netadr_t adr;
+	if (!NET_StringToAdr(cls.servername, &adr)) {
 		Com_Printf("Bad server address\n");
 		cls.state = ca_disconnected;
 		return;
 	}
 
-	if (adr.port == 0)
-	{
+	if (adr.port == 0) {
 		adr.port = BigShort(PORT_SERVER);
 	}
 
 	cls.connect_time = cls.realtime;
-
 	Com_Printf("Connecting to %s...\n", cls.servername);
-
 	Netchan_OutOfBandPrint(NS_CLIENT, adr, "getchallenge\n");
 }
 
@@ -646,59 +636,44 @@ CL_ConnectionlessPacket(void)
 	Com_Printf("Unknown command.\n");
 }
 
-void
-CL_ReadPackets(void)
-{
-	while (NET_GetPacket(NS_CLIENT, &net_from, &net_message))
-	{
+void CL_ReadPackets(void) {
+	while (NET_GetPacket(NS_CLIENT, &net_from, &net_message)) {
 		/* remote command packet */
-		if (*(int *)net_message.data == -1)
-		{
+		if (*(int *)net_message.data == -1) {
 			CL_ConnectionlessPacket();
 			continue;
 		}
 
-		if ((cls.state == ca_disconnected) || (cls.state == ca_connecting))
-		{
+		if ((cls.state == ca_disconnected) || (cls.state == ca_connecting)) {
 			continue; /* dump it if not connected */
 		}
 
-		if (net_message.cursize < 8)
-		{
+		if (net_message.cursize < 8) {
 			Com_Printf("%s: Runt packet\n", NET_AdrToString(net_from));
 			continue;
 		}
 
 		/* packet from server */
-		if (!NET_CompareAdr(net_from, cls.netchan.remote_address))
-		{
-			Com_DPrintf("%s:sequenced packet without connection\n",
-					NET_AdrToString(net_from));
+		if (!NET_CompareAdr(net_from, cls.netchan.remote_address)) {
+			Com_DPrintf("%s:sequenced packet without connection\n", NET_AdrToString(net_from));
 			continue;
 		}
 
-		if (!Netchan_Process(&cls.netchan, &net_message))
-		{
+		if (!Netchan_Process(&cls.netchan, &net_message)) {
 			continue; /* wasn't accepted for some reason */
 		}
 
-		CL_ParseServerMessage();
+		CL_ParseServerMessage(&net_message);
 	}
 
 	/* check timeout */
-	if ((cls.state >= ca_connected) &&
-		(cls.realtime - cls.netchan.last_received > cl_timeout->value * 1000))
-	{
-		if (++cl.timeoutcount > 5)
-		{
+	if ((cls.state >= ca_connected) && (cls.realtime - cls.netchan.last_received > cl_timeout->value * 1000)) {
+		if (++cl.timeoutcount > 5) {
 			Com_Printf("\nServer connection timed out.\n");
 			CL_Disconnect();
 			return;
 		}
-	}
-
-	else
-	{
+	} else {
 		cl.timeoutcount = 0;
 	}
 }
