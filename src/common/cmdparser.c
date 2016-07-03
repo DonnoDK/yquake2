@@ -295,22 +295,40 @@ static void Cmd_Exec_f(void) {
 	FS_FreeFile(f);
 }
 
+/*
+ * Just prints the rest of the line to the console
+ */
+static void Cmd_Echo_f(int argc, const char** argv) {
+	for (int i = 1; i < argc; i++) {
+		Com_Printf("%s ", argv[i]);
+	}
+	Com_Printf("\n");
+}
+
 static void Cmd_PrintAliases(cmdalias_t* aliases){
     Com_Printf("Current alias commands:\n");
     for(cmdalias_t* alias = aliases; alias; alias = alias->next){
         Com_Printf("%s : %s\n", alias->name, alias->value);
     } 
 }
-/*
- * Just prints the rest of the line to the console
- */
-static void Cmd_Echo_f(void) {
-	for (int i = 1; i < Cmd_Argc(); i++) {
-		Com_Printf("%s ", Cmd_Argv(i));
-	}
-	Com_Printf("\n");
+
+static cmdalias_t* Cmd_GetAlias(const char* named, cmdalias_t* const aliases){
+    for(cmdalias_t* alias = aliases; alias; alias = alias->next){
+		if (!strcmp(named, alias->name)) {
+            return alias;
+        }
+    }
+    return NULL;
 }
 
+static cmd_function_t* Cmd_GetFunction(const char* named, cmd_function_t* const functions){
+    for(cmd_function_t* cmd = functions; cmd; cmd = cmd->next){
+		if (!strcmp(named, cmd->name)) {
+            return cmd;
+        }
+    }
+    return NULL;
+}
 /*
  * Creates a new command that executes
  * a command string (possibly ; seperated)
@@ -331,19 +349,14 @@ static void Cmd_Alias_f(void) {
 	}
 
 	/* if the alias already exists, reuse it */
-	cmdalias_t *a;
-	for (a = cmd_alias; a; a = a->next) {
-		if (!strcmp(s, a->name)) {
-			Z_Free(a->value);
-			break;
-		}
-	}
-
-	if (!a) {
+	cmdalias_t *a = Cmd_GetAlias(s, cmd_alias);
+    if(!a){
 		a = Z_Malloc(sizeof(cmdalias_t));
 		a->next = cmd_alias;
 		cmd_alias = a;
-	}
+    }else{
+        Z_Free(a->value);
+    }
 
 	strcpy(a->name, s);
 
@@ -518,6 +531,33 @@ void Cmd_TokenizeString(char *text, qboolean macroExpand) {
 	}
 }
 
+void Cmd_AddDelegate(char *cmd_name, delegate_t delegate) {
+	/* fail if the command is a variable name */
+	if (Cvar_VariableString(cmd_name)[0]) {
+		Cmd_RemoveCommand(cmd_name);
+	}
+
+	/* fail if the command already exists */
+    cmd_function_t* cmd = Cmd_GetFunction(cmd_name, cmd_functions);
+    if(cmd){
+        Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
+        return;
+    }
+
+	cmd = Z_Malloc(sizeof(cmd_function_t));
+	cmd->name = cmd_name;
+	cmd->delegate = delegate;
+
+	/* link the command in */
+	cmd_function_t** pos = &cmd_functions;
+	while (*pos && strcmp((*pos)->name, cmd->name) < 0) {
+		pos = &(*pos)->next;
+	}
+	cmd->next = *pos;
+	*pos = cmd;
+}
+
+/* TODO: remove this function once all xcommand_ts have been refactored into delegate_ts */
 void Cmd_AddCommand(char *cmd_name, xcommand_t function) {
 	/* fail if the command is a variable name */
 	if (Cvar_VariableString(cmd_name)[0]) {
@@ -525,14 +565,13 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function) {
 	}
 
 	/* fail if the command already exists */
-	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
-		if (!strcmp(cmd_name, cmd->name)) {
-			Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
-			return;
-		}
-	}
+    cmd_function_t* cmd = Cmd_GetFunction(cmd_name, cmd_functions);
+    if(cmd){
+        Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
+        return;
+    }
 
-	cmd_function_t* cmd = Z_Malloc(sizeof(cmd_function_t));
+	cmd = Z_Malloc(sizeof(cmd_function_t));
 	cmd->name = cmd_name;
 	cmd->function = function;
 
@@ -575,17 +614,15 @@ char* Cmd_CompleteCommand(char *partial) {
 	}
 
 	/* check for exact match */
-	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
-		if (!strcmp(partial, cmd->name)) {
-			return cmd->name;
-		}
-	}
+    cmd_function_t* cmd = Cmd_GetFunction(partial, cmd_functions);
+    if(cmd){
+        return cmd->name;
+    }
 
-	for (cmdalias_t* a = cmd_alias; a; a = a->next) {
-		if (!strcmp(partial, a->name)) {
-			return a->name;
-		}
-	}
+    cmdalias_t* alias = Cmd_GetAlias(partial, cmd_alias);
+    if(alias){
+        return alias->name;
+    }
 
 	for (cvar_t* cvar = cvar_vars; cvar; cvar = cvar->next) {
 		if (!strcmp(partial, cvar->name)) {
@@ -655,17 +692,13 @@ char* Cmd_CompleteCommand(char *partial) {
 
 qboolean Cmd_IsComplete(char *command) {
 	/* check for exact match */
-	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
-		if (!strcmp(command, cmd->name)) {
-			return true;
-		}
-	}
+    if(Cmd_GetFunction(command, cmd_functions)){
+        return true;
+    }
 
-	for (cmdalias_t* a = cmd_alias; a; a = a->next) {
-		if (!strcmp(command, a->name)) {
-			return true;
-		}
-	}
+    if(Cmd_GetAlias(command, cmd_alias)){
+        return true;
+    }
 
 	for (cvar_t* cvar = cvar_vars; cvar; cvar = cvar->next) {
 		if (!strcmp(command, cvar->name)) {
@@ -700,13 +733,15 @@ void Cmd_ExecuteString(char *text) {
 	/* check functions */
 	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
 		if (!Q_strcasecmp(cmd_argv[0], cmd->name)) {
-			if (!cmd->function) {
+            if(cmd->function){
+				cmd->function();
+            }else if(cmd->delegate){
+                cmd->delegate(Cmd_Argc(), (const char**)cmd_argv);
+            }else{
 				/* forward to server command */
 				Cmd_ExecuteString(va("cmd %s", text));
-			} else {
-				cmd->function();
-			}
-			return;
+            }
+            return;
 		}
 	}
 
@@ -733,7 +768,7 @@ void Cmd_ExecuteString(char *text) {
 #endif
 }
 
-static void Cmd_List_f(void) {
+static void Cmd_List_f(int argc, const char** argv) {
 	int i = 0;
 	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next, i++) {
 		Com_Printf("%s\n", cmd->name);
@@ -743,9 +778,11 @@ static void Cmd_List_f(void) {
 
 void Cmd_Init(void) {
 	/* register our commands */
-	Cmd_AddCommand("cmdlist", Cmd_List_f);
+    Cmd_AddDelegate("cmdlist", Cmd_List_f);
+    Cmd_AddDelegate("echo", Cmd_Echo_f);
+
+    /* TODO: refactor all similar calls to AddDelegate instead */
 	Cmd_AddCommand("exec", Cmd_Exec_f);
-	Cmd_AddCommand("echo", Cmd_Echo_f);
 	Cmd_AddCommand("alias", Cmd_Alias_f);
 	Cmd_AddCommand("wait", Cmd_Wait_f);
 }

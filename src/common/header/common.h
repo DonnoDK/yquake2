@@ -376,7 +376,7 @@ void Cbuf_InsertFromDefer(void);
  */
 
 typedef void (*xcommand_t)(void);
-typedef void (*delegate_t)(int argc, const char* argv);
+typedef void (*delegate_t)(int argc, const char** argv);
 
 void Cmd_Init(void);
 
