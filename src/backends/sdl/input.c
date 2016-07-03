@@ -528,18 +528,14 @@ IN_Move(usercmd_t *cmd)
 /*
  * Look down
  */
-static void
-IN_MLookDown(void)
-{
+static void IN_MLookDown(int argc, const char** argv) {
 	mlooking = true;
 }
 
 /*
  * Look up
  */
-static void
-IN_MLookUp(void)
-{
+static void IN_MLookUp(int argc, const char** argv) {
 	mlooking = false;
 	IN_CenterView();
 }
@@ -571,8 +567,8 @@ IN_Init(void)
 	vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
 	windowed_mouse = Cvar_Get("windowed_mouse", "1", CVAR_USERINFO | CVAR_ARCHIVE);
 
-	Cmd_AddCommand("+mlook", IN_MLookDown);
-	Cmd_AddCommand("-mlook", IN_MLookUp);
+	Cmd_AddDelegate("+mlook", IN_MLookDown);
+	Cmd_AddDelegate("-mlook", IN_MLookUp);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_StartTextInput();

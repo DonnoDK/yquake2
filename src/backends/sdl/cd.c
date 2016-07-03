@@ -387,7 +387,7 @@ CDAudio_Init()
 		cdValid = false;
 	}
 
-	Cmd_AddCommand("cd", CD_f);
+	Cmd_AddDelegate("cd", CD_f);
 	Com_Printf("CD Audio Initialized.\n");
 	return 0;
 }
@@ -416,32 +416,22 @@ CDAudio_Shutdown()
 	initialized = false;
 }
 
-static void
-CD_f()
-{
-	char *command;
-	int cdstate;
-
-	if (Cmd_Argc() < 2)
-	{
+static void CD_f(int argc, const char** argv) {
+	if (argc < 2) {
 		return;
 	}
+	char* command = Cmd_Argv(1);
 
-	command = Cmd_Argv(1);
-
-	if (!Q_strcasecmp(command, "on"))
-	{
+	if (!Q_strcasecmp(command, "on")) {
 		enabled = true;
 	}
 
-	if (!Q_strcasecmp(command, "off"))
-	{
-		if (!cd_id)
-		{
+	if (!Q_strcasecmp(command, "off")) {
+		if (!cd_id) {
 			return;
 		}
 
-		cdstate = SDL_CDStatus(cd_id);
+		int cdstate = SDL_CDStatus(cd_id);
 
 		if ((cdstate == CD_PLAYING) || (cdstate == CD_PAUSED))
 		{
@@ -495,7 +485,7 @@ CD_f()
 			return;
 		}
 
-		cdstate = SDL_CDStatus(cd_id);
+		int cdstate = SDL_CDStatus(cd_id);
 		Com_Printf("%d tracks\n", cd_id->numtracks);
 
 		if (cdstate == CD_PLAYING)

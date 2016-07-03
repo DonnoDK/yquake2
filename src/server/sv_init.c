@@ -412,9 +412,7 @@ SV_InitGame(void)
  *
  *  map tram.cin+jail_e3
  */
-void
-SV_Map(qboolean attractloop, char *levelstring, qboolean loadgame)
-{
+void SV_Map(qboolean attractloop, const char *levelstring, qboolean loadgame) {
 	char level[MAX_QPATH];
 	char *ch;
 	int l;

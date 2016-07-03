@@ -147,16 +147,12 @@ SV_SetPlayer(void)
 /*
  * Puts the server in demo mode on a specific map/cinematic
  */
-void
-SV_DemoMap_f(void)
-{
-	if (Cmd_Argc() != 2)
-	{
+static void SV_DemoMap_f(int argc, const char** argv) {
+	if (argc != 2) {
 		Com_Printf("USAGE: demomap <demoname.dm2>\n");
 		return;
 	}
-
-	SV_Map(true, Cmd_Argv(1), false);
+	SV_Map(true, argv[1], false);
 }
 
 /*
@@ -620,7 +616,7 @@ SV_InitOperatorCommands(void)
 	Cmd_AddCommand("dumpuser", SV_DumpUser_f);
 
 	Cmd_AddCommand("map", SV_Map_f);
-	Cmd_AddCommand("demomap", SV_DemoMap_f);
+	Cmd_AddDelegate("demomap", SV_DemoMap_f);
 	Cmd_AddCommand("gamemap", SV_GameMap_f);
 	Cmd_AddCommand("setmaster", SV_SetMaster_f);
 
