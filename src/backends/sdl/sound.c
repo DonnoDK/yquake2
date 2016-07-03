@@ -1474,6 +1474,7 @@ SDL_BackendShutdown(void)
     SDL_PauseAudio(1);
     Com_Printf("Paused SDL audio device...\n");
     SDL_CloseAudio();
+    /* TODO: closing audio seems to make q2 freeze on OSX, occasionally */
     Com_Printf("Closed SDL audio device...\n");
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
     Com_Printf("Quit SDL audio subsystem...\n");
