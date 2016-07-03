@@ -345,10 +345,6 @@ void Cbuf_InsertText(char *text);
 /* inserted at the beginning of the buffer, before any remaining unexecuted */
 /* commands. */
 
-void Cbuf_ExecuteText(int exec_when, char *text);
-
-/* this can be used in place of either Cbuf_AddText or Cbuf_InsertText */
-
 void Cbuf_AddEarlyCommands(qboolean clear);
 
 /* adds all the +set commands from the command line */
@@ -380,6 +376,7 @@ void Cbuf_InsertFromDefer(void);
  */
 
 typedef void (*xcommand_t)(void);
+typedef void (*delegate_t)(int argc, const char* argv);
 
 void Cmd_Init(void);
 
@@ -390,11 +387,7 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function);
 /* The cmd_name is referenced later, so it should not be in temp memory */
 /* if function is NULL, the command will be forwarded to the server */
 /* as a clc_stringcmd instead of executed locally */
-void Cmd_RemoveCommand(char *cmd_name);
-
-qboolean Cmd_Exists(char *cmd_name);
-
-/* used by the cvar code to check for cvar / command name overlap */
+void Cmd_RemoveCommand(const char *cmd_name);
 
 char *Cmd_CompleteCommand(char *partial);
 
@@ -413,7 +406,6 @@ void Cmd_TokenizeString(char *text, qboolean macroExpand);
 
 /* Takes a null terminated string.  Does not need to be /n terminated. */
 /* breaks the string up into arg tokens. */
-
 void Cmd_ExecuteString(char *text);
 
 /* Parses a single line of text into arguments and tries to execute it */

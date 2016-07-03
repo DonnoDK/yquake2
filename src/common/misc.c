@@ -178,11 +178,8 @@ Com_Error_f(void)
 	Com_Error(ERR_FATAL, "%s", Cmd_Argv(1));
 }
 
-void
-Qcommon_Init(int argc, char **argv)
-{
-	if (setjmp(abortframe))
-	{
+void Qcommon_Init(int argc, char **argv) {
+	if (setjmp(abortframe)) {
 		Sys_Error("Error during initialization");
 	}
 
