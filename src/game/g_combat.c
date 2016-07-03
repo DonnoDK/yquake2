@@ -118,17 +118,12 @@ CanDamage(edict_t *targ, edict_t *inflictor)
 	return false;
 }
 
-void
-Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker,
-		int damage, vec3_t point)
-{
-	if (!targ || !inflictor || !attacker)
-	{
+void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point) {
+	if (!targ || !inflictor || !attacker) {
 		return;
 	}
 
-	if (targ->health < -999)
-	{
+	if (targ->health < -999) {
 		targ->health = -999;
 	}
 
@@ -139,6 +134,8 @@ Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker,
 		if (!(targ->monsterinfo.aiflags & AI_GOOD_GUY))
 		{
 			level.killed_monsters++;
+            game.teamgold += 100;
+            Com_Printf("gold: %i\n", game.teamgold);
 
 			if (coop->value && attacker->client)
 			{

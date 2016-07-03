@@ -280,6 +280,7 @@ typedef struct
 
 	/* items */
 	int num_items;
+    int teamgold;
 
 	qboolean autosaved;
 } game_locals_t;

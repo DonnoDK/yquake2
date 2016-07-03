@@ -388,7 +388,6 @@ void G_RunFrame(void){
 	/* treat each object in turn
 	   even the world gets a chance
 	   to think */
-	//ent = &g_edicts[0];
 	for (int i = 0; i < globals.num_edicts; i++) {
         edict_t *ent = &g_edicts[i];
 		if (!ent->inuse) {
@@ -402,11 +401,12 @@ void G_RunFrame(void){
 				M_CheckGround(ent);
 			}
 		}
+        /* NOTE (brian): is this a human player? */
 		if ((i > 0) && (i <= maxclients->value)) {
 			ClientBeginServerFrame(ent);
-			continue;
-		}
-		G_RunEntity(ent);
+		}else{
+            G_RunEntity(ent);
+        }
 	}
 	/* see if it is time to end a deathmatch */
 	CheckDMRules();
