@@ -75,37 +75,15 @@ Boss2Rocket(edict_t *self)
 
 	AngleVectors(self->s.angles, forward, right, NULL);
 
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_1],
-			forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
-	vec[2] += self->enemy->viewheight;
-	VectorSubtract(vec, start, dir);
-	VectorNormalize(dir);
-	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_1);
-
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_2],
-			forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
-	vec[2] += self->enemy->viewheight;
-	VectorSubtract(vec, start, dir);
-	VectorNormalize(dir);
-	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_2);
-
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_3],
-			forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
-	vec[2] += self->enemy->viewheight;
-	VectorSubtract(vec, start, dir);
-	VectorNormalize(dir);
-	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_3);
-
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_4],
-			forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
-	vec[2] += self->enemy->viewheight;
-	VectorSubtract(vec, start, dir);
-	VectorNormalize(dir);
-	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_4);
+    for (int i = MZ2_BOSS2_ROCKET_1; i <= MZ2_BOSS2_ROCKET_4; i++){
+        G_ProjectSource(self->s.origin, monster_flash_offset[i],
+                forward, right, start);
+        VectorCopy(self->enemy->s.origin, vec);
+        vec[2] += self->enemy->viewheight;
+        VectorSubtract(vec, start, dir);
+        VectorNormalize(dir);
+        monster_fire_rocket(self, start, dir, 50, 500, i);
+    }
 }
 
 void

@@ -3,3 +3,8 @@
 *.mk
 *.user
 *.d
+Quake_2.config
+Quake_2.creator
+Quake_2.files
+Quake_2.includes
+runner.sh
