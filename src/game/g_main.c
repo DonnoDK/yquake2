@@ -175,6 +175,16 @@ Com_Printf(char *msg, ...)
 	gi.dprintf("%s", text);
 }
 
+void
+Com_Printfln(char *msg, ...){
+    char *newline = "\n";
+    char *newmsg;
+    newmsg = malloc(strlen(msg)+1+2);
+    strcpy(newmsg, msg);
+    strcat(newmsg, newline);
+    Com_Printf(newmsg);
+}
+
 /* ====================================================================== */
 
 void ClientEndServerFrames(void) {
