@@ -454,7 +454,7 @@ char *Key_KeynumToString (int keynum);
 
 void CL_WriteDemoMessage (void);
 void CL_Stop_f (void);
-void CL_Record_f (void);
+void CL_Record_f(int argc, const char** argv);
 
 extern	char *svc_strings[256];
 
