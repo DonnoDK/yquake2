@@ -181,7 +181,7 @@ void ClientEndServerFrames(void) {
 	/* calc the player views now that all
 	   pushing  and damage has been added */
 	for (int i = 0; i < maxclients->value; i++) {
-		edict_t* ent = &g_edicts[i];
+		edict_t* ent = &g_edicts[i + 1];
 		if (!ent->inuse || !ent->client) {
 			continue;
 		}
@@ -326,7 +326,7 @@ void CheckDMRules(void) {
 
     for (int i = 0; i < maxclients->value; i++) {
         gclient_t* cl = &game.clients[i];
-        edict_t* ed = &g_edicts[i];
+        edict_t* ed = &g_edicts[i + 1];
         if (!ed->inuse) {
             continue;
         }
