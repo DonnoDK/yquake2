@@ -308,6 +308,7 @@ void Sys_FindClose(void);
 /* this is only here so the functions in shared source files can link */
 void Sys_Error(char *error, ...);
 void Com_Printf(char *msg, ...);
+void Com_Printfln(char *msg, ...);
 
 /*
  * ==========================================================
