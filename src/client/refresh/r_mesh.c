@@ -130,7 +130,7 @@ static void R_DrawAliasFrameLerp(entity_t* ent) {
 	R_LerpVerts(ent->flags, paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv);
 
 	if (gl_vertex_arrays->value) {
-		float colorArray[MAX_VERTS * 4];
+        float colorArray[MAX_VERTS * 4];
 
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(3, GL_FLOAT, 16, s_lerped);
@@ -194,11 +194,12 @@ static void R_DrawAliasFrameLerp(entity_t* ent) {
 			glEnd();
 		}
 
-		if (qglUnlockArraysEXT != 0) {
-			qglUnlockArraysEXT();
-		}
-	} else {
-		while (1) {
+
+        if (qglUnlockArraysEXT != 0) {
+            qglUnlockArraysEXT();
+        }
+    } else {
+        while (1) {
 			/* get the vertex count and primitive type */
 			int count = *order++;
 
@@ -549,7 +550,7 @@ R_DrawAliasModel(entity_t *e)
 			}
 		}
 	}
-
+    
 	if (e->flags & RF_MINLIGHT)
 	{
 		for (i = 0; i < 3; i++)

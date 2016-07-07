@@ -458,59 +458,45 @@ entitycmpfnc(const entity_t *a, const entity_t *b)
 	}
 }
 
-void
-V_RenderView(float stereo_separation)
-{
-	if (cls.state != ca_active)
-	{
+void V_RenderView(float stereo_separation) {
+	if (cls.state != ca_active) {
 		return;
 	}
 
-	if (!cl.refresh_prepped)
-	{
+	if (!cl.refresh_prepped) {
 		return;
 	}
 
-	if (cl_timedemo->value)
-	{
-		if (!cl.timedemo_start)
-		{
+	if (cl_timedemo->value) {
+		if (!cl.timedemo_start) {
 			cl.timedemo_start = Sys_Milliseconds();
 		}
-
 		cl.timedemo_frames++;
 	}
 
 	/* an invalid frame will just use the exact previous refdef
 	   we can't use the old frame if the video mode has changed, though... */
-	if (cl.frame.valid && (cl.force_refdef || !cl_paused->value))
-	{
+	if (cl.frame.valid && (cl.force_refdef || !cl_paused->value)) {
 		cl.force_refdef = false;
-
 		V_ClearScene();
 
 		/* build a refresh entity list and calc cl.sim*
 		   this also calls CL_CalcViewValues which loads
 		   v_forward, etc. */
 		CL_AddEntities();
-
-		if (cl_testparticles->value)
-		{
+		if (cl_testparticles->value) {
 			V_TestParticles();
 		}
 
-		if (cl_testentities->value)
-		{
+		if (cl_testentities->value) {
 			V_TestEntities();
 		}
 
-		if (cl_testlights->value)
-		{
+		if (cl_testlights->value) {
 			V_TestLights();
 		}
 
-		if (cl_testblend->value)
-		{
+		if (cl_testblend->value) {
 			cl.refdef.blend[0] = 1;
 			cl.refdef.blend[1] = 0.5;
 			cl.refdef.blend[2] = 0.25;
@@ -519,10 +505,8 @@ V_RenderView(float stereo_separation)
 
 		/* offset vieworg appropriately if
 		   we're doing stereo separation */
-		if (stereo_separation != 0)
-		{
+		if (stereo_separation != 0){
 			vec3_t tmp;
-
 			VectorScale(cl.v_right, stereo_separation, tmp);
 			VectorAdd(cl.refdef.vieworg, tmp, cl.refdef.vieworg);
 		}
@@ -535,26 +519,21 @@ V_RenderView(float stereo_separation)
 		cl.refdef.vieworg[2] += 1.0 / 16;
 
 		cl.refdef.time = cl.time * 0.001f;
-
 		cl.refdef.areabits = cl.frame.areabits;
 
-		if (!cl_add_entities->value)
-		{
+		if (!cl_add_entities->value) {
 			r_numentities = 0;
 		}
 
-		if (!cl_add_particles->value)
-		{
+		if (!cl_add_particles->value) {
 			r_numparticles = 0;
 		}
 
-		if (!cl_add_lights->value)
-		{
+		if (!cl_add_lights->value) {
 			r_numdlights = 0;
 		}
 
-		if (!cl_add_blend->value)
-		{
+		if (!cl_add_blend->value) {
 			VectorClear(cl.refdef.blend);
 		}
 
@@ -565,7 +544,6 @@ V_RenderView(float stereo_separation)
 		cl.refdef.num_dlights = r_numdlights;
 		cl.refdef.dlights = r_dlights;
 		cl.refdef.lightstyles = r_lightstyles;
-
 		cl.refdef.rdflags = cl.frame.playerstate.rdflags;
 
 		/* sort entities for better cache locality */
@@ -583,21 +561,16 @@ V_RenderView(float stereo_separation)
 
 	R_RenderFrame(&cl.refdef);
 
-	if (cl_stats->value)
-	{
-		Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities,
-				r_numdlights, r_numparticles);
+	if (cl_stats->value) {
+		Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
 	}
 
-	if (log_stats->value && (log_stats_file != 0))
-	{
-		fprintf(log_stats_file, "%i,%i,%i,", r_numentities,
-				r_numdlights, r_numparticles);
+	if (log_stats->value && (log_stats_file != 0)) {
+		fprintf(log_stats_file, "%i,%i,%i,", r_numentities, r_numdlights, r_numparticles);
 	}
 
 	SCR_AddDirtyPoint(scr_vrect.x, scr_vrect.y);
-	SCR_AddDirtyPoint(scr_vrect.x + scr_vrect.width - 1,
-			scr_vrect.y + scr_vrect.height - 1);
+	SCR_AddDirtyPoint(scr_vrect.x + scr_vrect.width - 1, scr_vrect.y + scr_vrect.height - 1);
 
 	SCR_DrawCrosshair();
 }

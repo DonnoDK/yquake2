@@ -265,6 +265,7 @@ static void R_DrawEntity(entity_t* ent){
             R_DrawNullModel(ent);
             return;
         }
+
         switch (ent->model->type) {
         case mod_alias:
             R_DrawAliasModel(ent);
@@ -656,8 +657,67 @@ static void R_RenderView(refdef_t *fd) {
 
 	R_PolyBlend();
 
-	if (gl_speeds->value) {
-		VID_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
+    {
+        glDisable(GL_ALPHA_TEST);
+        glEnable(GL_BLEND);
+        //glDisable(GL_DEPTH_TEST);
+        glDisable(GL_TEXTURE_2D);
+        //glDisable(GL_CULL_FACE);
+
+        //glLoadIdentity();
+
+        //glTranslatef(0, -4, -10);
+        //glTranslatef(0, 10, 1);
+
+        glTranslatef(fd->vieworg[0], fd->vieworg[1], fd->vieworg[2] - 46);
+        glRotatef(fd->viewangles[1], 0, 0, 1);
+
+        float angle = 90 - fd->viewangles[0];
+        Com_Printf("angle: %f\n", angle);
+        //float length = 46 / atan(angle);
+        float radians = (angle * M_PI) / 180.0f;
+        Com_Printf("radians: %f\n", radians);
+        float length = tan(radians);
+        Com_Printf("length: %f\n", length);
+
+        glTranslatef(46 * length, 0, 0);
+        glRotatef(-fd->viewangles[1], 0, 0, 1);
+
+        //glRotatef(fd->viewangles[0], 1, 0, 0);
+
+        glScalef(20,20,20);
+
+        glBegin(GL_QUADS);
+
+            glColor4f(1,0,0,0.5f);
+            glVertex3f(-1, 1, 0);
+            glVertex3f(1,  1, 0);
+            glVertex3f(1,  -1, 0);
+            glVertex3f(-1, -1, 0);
+
+            glColor4f(1,0,0,0.5f);
+            glVertex3f(-1, -1, 2);
+            glVertex3f(1,  -1, 2);
+            glVertex3f(1,  -1, 0);
+            glVertex3f(-1, -1, 0);
+
+            glColor4f(1,0,0,0.5f);
+            glVertex3f(-1, 1, 0);
+            glVertex3f(1,  1, 0);
+            glVertex3f(1,  1, 2);
+            glVertex3f(-1, 1, 2);
+
+        glEnd();
+
+        glDisable(GL_BLEND);
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_ALPHA_TEST);
+
+        glColor4f(1, 1, 1, 1);
+    }
+
+    if (gl_speeds->value) {
+        VID_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
 				c_brush_polys, c_alias_polys, c_visible_textures,
 				c_visible_lightmaps);
 	}
