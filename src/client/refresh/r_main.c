@@ -39,8 +39,6 @@ glstate_t gl_state;
 image_t *r_notexture; /* use for bad textures */
 image_t *r_particletexture; /* little dot for particles */
 
-model_t *currentmodel;
-
 cplane_t frustum[4];
 
 int r_visframecount; /* bumped when going to a new PVS */
@@ -256,77 +254,53 @@ static void R_DrawNullModel(entity_t* ent) {
 	glEnable(GL_TEXTURE_2D);
 }
 
-void R_DrawEntitiesOnList(void) {
+static void R_DrawEntity(entity_t* ent){
+    if (ent->flags & RF_BEAM) {
+        R_DrawBeam(ent);
+    } else {
+        if (!ent->model) {
+            R_DrawNullModel(ent);
+            return;
+        }
+        switch (ent->model->type) {
+        case mod_alias:
+            R_DrawAliasModel(ent);
+            break;
+        case mod_brush:
+            R_DrawBrushModel(ent);
+            break;
+        case mod_sprite:
+            R_DrawSpriteModel(ent);
+            break;
+        default:
+            VID_Error(ERR_DROP, "Bad modeltype");
+            break;
+        }
+    }
+}
+
+static void R_DrawEntitiesOnList(entity_t* entities, int num_entities) {
 	if (!gl_drawentities->value) {
 		return;
 	}
-
 	/* draw non-transparent first */
-	for (int i = 0; i < r_newrefdef.num_entities; i++) {
-		entity_t* ent = &r_newrefdef.entities[i];
+	for (int i = 0; i < num_entities; i++) {
+		entity_t* ent = &entities[i];
 		if (ent->flags & RF_TRANSLUCENT) {
 			continue; /* solid */
 		}
-		if (ent->flags & RF_BEAM) {
-			R_DrawBeam(ent);
-		} else {
-			currentmodel = ent->model;
-			if (!currentmodel) {
-				R_DrawNullModel(ent);
-				continue;
-			}
-			switch (currentmodel->type) {
-				case mod_alias:
-					R_DrawAliasModel(ent);
-					break;
-				case mod_brush:
-					R_DrawBrushModel(ent);
-					break;
-				case mod_sprite:
-					R_DrawSpriteModel(ent);
-					break;
-				default:
-					VID_Error(ERR_DROP, "Bad modeltype");
-					break;
-			}
-		}
+        R_DrawEntity(ent);
 	}
 
-	/* draw transparent entities
-	   we could sort these if it ever
-	   becomes a problem... */
+	/* draw transparent entities we could sort these if it ever becomes a problem... */
 	glDepthMask(0);
-
-	for (int i = 0; i < r_newrefdef.num_entities; i++) {
-		entity_t* ent = &r_newrefdef.entities[i];
+	for (int i = 0; i < num_entities; i++) {
+		entity_t* ent = &entities[i];
 		if (!(ent->flags & RF_TRANSLUCENT)) {
 			continue; /* solid */
 		}
-		if (ent->flags & RF_BEAM) {
-			R_DrawBeam(ent);
-		} else {
-			currentmodel = ent->model;
-			if (!currentmodel) {
-				R_DrawNullModel(ent);
-				continue;
-			}
-			switch (currentmodel->type) {
-				case mod_alias:
-					R_DrawAliasModel(ent);
-					break;
-				case mod_brush:
-					R_DrawBrushModel(ent);
-					break;
-				case mod_sprite:
-					R_DrawSpriteModel(ent);
-					break;
-				default:
-					VID_Error(ERR_DROP, "Bad modeltype");
-					break;
-			}
-		}
+        R_DrawEntity(ent);
 	}
-
 	glDepthMask(1); /* back to writing */
 }
 
@@ -778,7 +752,7 @@ R_RenderView(refdef_t *fd)
 
 	R_DrawWorld();
 
-	R_DrawEntitiesOnList();
+	R_DrawEntitiesOnList(r_newrefdef.entities, r_newrefdef.num_entities);
 
 	R_RenderDlights();
 

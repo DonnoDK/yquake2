@@ -202,20 +202,13 @@ R_DrawGLPolyChain(glpoly_t *p, float soffset, float toffset)
  * This routine takes all the given light mapped surfaces
  * in the world and blends them into the framebuffer.
  */
-void
-R_BlendLightmaps(void)
-{
-	int i;
-	msurface_t *surf, *newdrawsurf = 0;
-
+static void R_BlendLightmaps(model_t* model) {
 	/* don't bother if we're set to fullbright */
-	if (gl_fullbright->value)
-	{
+	if (gl_fullbright->value) {
 		return;
 	}
 
-	if (!r_worldmodel->lightdata)
-	{
+	if (!r_worldmodel->lightdata) {
 		return;
 	}
 
@@ -224,43 +217,29 @@ R_BlendLightmaps(void)
 
 	/* set the appropriate blending mode unless
 	   we're only looking at the lightmaps. */
-	if (!gl_lightmap->value)
-	{
+	if (!gl_lightmap->value) {
 		glEnable(GL_BLEND);
-
-		if (gl_saturatelighting->value)
-		{
+		if (gl_saturatelighting->value) {
 			glBlendFunc(GL_ONE, GL_ONE);
-		}
-		else
-		{
+		} else {
 			glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 		}
 	}
 
-	if (currentmodel == r_worldmodel)
-	{
+	if (model == r_worldmodel) {
 		c_visible_lightmaps = 0;
 	}
 
 	/* render static lightmaps first */
-	for (i = 1; i < MAX_LIGHTMAPS; i++)
-	{
-		if (gl_lms.lightmap_surfaces[i])
-		{
-			if (currentmodel == r_worldmodel)
-			{
+	for (int i = 1; i < MAX_LIGHTMAPS; i++) {
+		if (gl_lms.lightmap_surfaces[i]) {
+			if (model == r_worldmodel) {
 				c_visible_lightmaps++;
 			}
 
 			R_Bind(gl_state.lightmap_textures + i);
-
-			for (surf = gl_lms.lightmap_surfaces[i];
-				 surf != 0;
-				 surf = surf->lightmapchain)
-			{
-				if (surf->polys)
-				{
+			for(msurface_t* surf = gl_lms.lightmap_surfaces[i]; surf != 0; surf = surf->lightmapchain) {
+				if (surf->polys) {
 					R_DrawGLPolyChain(surf->polys, 0, 0);
 				}
 			}
@@ -268,51 +247,29 @@ R_BlendLightmaps(void)
 	}
 
 	/* render dynamic lightmaps */
-	if (gl_dynamic->value)
-	{
+	if (gl_dynamic->value) {
 		LM_InitBlock();
-
 		R_Bind(gl_state.lightmap_textures + 0);
-
-		if (currentmodel == r_worldmodel)
-		{
+		if (model == r_worldmodel) {
 			c_visible_lightmaps++;
 		}
-
-		newdrawsurf = gl_lms.lightmap_surfaces[0];
-
-		for (surf = gl_lms.lightmap_surfaces[0];
-			 surf != 0;
-			 surf = surf->lightmapchain)
-		{
-			int smax, tmax;
+		msurface_t* newdrawsurf = gl_lms.lightmap_surfaces[0];
+        for (msurface_t* surf = gl_lms.lightmap_surfaces[0]; surf != 0; surf = surf->lightmapchain) {
 			byte *base;
+			int smax = (surf->extents[0] >> 4) + 1;
+			int tmax = (surf->extents[1] >> 4) + 1;
 
-			smax = (surf->extents[0] >> 4) + 1;
-			tmax = (surf->extents[1] >> 4) + 1;
-
-			if (LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t))
-			{
+			if (LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t)) {
 				base = gl_lms.lightmap_buffer;
-				base += (surf->dlight_t * BLOCK_WIDTH +
-						surf->dlight_s) * LIGHTMAP_BYTES;
-
+				base += (surf->dlight_t * BLOCK_WIDTH + surf->dlight_s) * LIGHTMAP_BYTES;
 				R_BuildLightMap(surf, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
-			}
-			else
-			{
-				msurface_t *drawsurf;
-
+			} else {
 				/* upload what we have so far */
 				LM_UploadBlock(true);
-
 				/* draw all surfaces that use this lightmap */
-				for (drawsurf = newdrawsurf;
-					 drawsurf != surf;
-					 drawsurf = drawsurf->lightmapchain)
-				{
-					if (drawsurf->polys)
-					{
+				msurface_t *drawsurf;
+				for (drawsurf = newdrawsurf; drawsurf != surf; drawsurf = drawsurf->lightmapchain) {
+					if (drawsurf->polys) {
 						R_DrawGLPolyChain(drawsurf->polys,
 								(drawsurf->light_s - drawsurf->dlight_s) * (1.0 / 128.0),
 								(drawsurf->light_t - drawsurf->dlight_t) * (1.0 / 128.0));
@@ -320,36 +277,27 @@ R_BlendLightmaps(void)
 				}
 
 				newdrawsurf = drawsurf;
-
 				/* clear the block */
 				LM_InitBlock();
-
 				/* try uploading the block now */
-				if (!LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t))
-				{
-					VID_Error(ERR_FATAL,
-							"Consecutive calls to LM_AllocBlock(%d,%d) failed (dynamic)\n",
+				if (!LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t)) {
+					VID_Error(ERR_FATAL, "Consecutive calls to LM_AllocBlock(%d,%d) failed (dynamic)\n",
 							smax, tmax);
 				}
 
 				base = gl_lms.lightmap_buffer;
-				base += (surf->dlight_t * BLOCK_WIDTH +
-						surf->dlight_s) * LIGHTMAP_BYTES;
-
+				base += (surf->dlight_t * BLOCK_WIDTH + surf->dlight_s) * LIGHTMAP_BYTES;
 				R_BuildLightMap(surf, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
 			}
 		}
 
 		/* draw remainder of dynamic lightmaps that haven't been uploaded yet */
-		if (newdrawsurf)
-		{
+		if (newdrawsurf) {
 			LM_UploadBlock(true);
 		}
 
-		for (surf = newdrawsurf; surf != 0; surf = surf->lightmapchain)
-		{
-			if (surf->polys)
-			{
+        for (msurface_t* surf = newdrawsurf; surf != 0; surf = surf->lightmapchain) {
+			if (surf->polys) {
 				R_DrawGLPolyChain(surf->polys,
 						(surf->light_s - surf->dlight_s) * (1.0 / 128.0),
 						(surf->light_t - surf->dlight_t) * (1.0 / 128.0));
@@ -725,7 +673,7 @@ static void R_DrawInlineBModel(model_t* model, int frame, int flags) {
 
 	if (!(flags & RF_TRANSLUCENT)) {
 		if (!qglMultiTexCoord2fARB) {
-			R_BlendLightmaps();
+			R_BlendLightmaps(model);
 		}
 	} else {
 		glDisable(GL_BLEND);
@@ -945,7 +893,6 @@ void R_DrawWorld(void) {
 		return;
 	}
 
-	currentmodel = r_worldmodel;
 	VectorCopy(r_newrefdef.vieworg, modelorg);
 
 	/* auto cycle the world frame for texture animation */
@@ -1004,7 +951,7 @@ void R_DrawWorld(void) {
 	}
 
 	R_DrawTextureChains(gltextures, numgltextures, ent.frame);
-	R_BlendLightmaps();
+	R_BlendLightmaps(ent.model);
 	R_DrawSkyBox();
 	R_DrawTriangleOutlines();
 }
