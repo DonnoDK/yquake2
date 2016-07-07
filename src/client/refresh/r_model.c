@@ -43,7 +43,7 @@ model_t *Mod_LoadModel(model_t *mod, qboolean crash);
 void LM_BuildPolygonFromSurface(msurface_t *fa, model_t* model);
 void LM_CreateSurfaceLightmap(msurface_t *surf);
 void LM_EndBuildingLightmaps(void);
-void LM_BeginBuildingLightmaps(model_t *m);
+lightstyle_t* LM_BeginBuildingLightmaps(model_t *m);
 
 /* the inline * models from the current map are kept seperate */
 model_t mod_inline[MAX_MOD_KNOWN];
@@ -578,7 +578,7 @@ Mod_LoadFaces(lump_t *l)
 	loadmodel->surfaces = out;
 	loadmodel->numsurfaces = count;
 
-	LM_BeginBuildingLightmaps(loadmodel);
+	r_newrefdef.lightstyles = LM_BeginBuildingLightmaps(loadmodel);
 
 	for (surfnum = 0; surfnum < count; surfnum++, in++, out++)
 	{

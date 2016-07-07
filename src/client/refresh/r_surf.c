@@ -38,7 +38,7 @@ void LM_InitBlock(void);
 void LM_UploadBlock(qboolean dynamic);
 qboolean LM_AllocBlock(int w, int h, int *x, int *y);
 
-void R_SetCacheState(msurface_t *surf);
+void R_SetCacheState(msurface_t *surf, lightstyle_t* lightstyles);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
 /*
@@ -75,28 +75,17 @@ R_DrawGLPoly(glpoly_t *p)
 	glEnd();
 }
 
-void
-R_DrawGLFlowingPoly(msurface_t *fa)
-{
-	int i;
-	float *v;
-	glpoly_t *p;
-	float scroll;
-
-	p = fa->polys;
-
-	scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
-
-	if (scroll == 0.0)
-	{
+static void R_DrawGLFlowingPoly(msurface_t *fa, float time) {
+	glpoly_t* p = fa->polys;
+	float scroll = -64 * ((time / 40.0) - (int)(time / 40.0));
+	if (scroll == 0.0) {
 		scroll = -64.0;
 	}
 
 	glBegin(GL_POLYGON);
-	v = p->verts[0];
+	float * v = p->verts[0];
 
-	for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
-	{
+	for (int i = 0; i < p->numverts; i++, v += VERTEXSIZE) {
 		glTexCoord2f((v[3] + scroll), v[4]);
 		glVertex3fv(v);
 	}
@@ -335,7 +324,7 @@ static void R_RenderBrushPoly(msurface_t *fa, int frame){
 	}
 
 	if (fa->texinfo->flags & SURF_FLOWING) {
-		R_DrawGLFlowingPoly(fa);
+		R_DrawGLFlowingPoly(fa, r_newrefdef.time);
 	} else {
 		R_DrawGLPoly(fa->polys);
 	}
@@ -365,7 +354,7 @@ static void R_RenderBrushPoly(msurface_t *fa, int frame){
 			int tmax = (fa->extents[1] >> 4) + 1;
 
 			R_BuildLightMap(fa, (void *)temp, smax * 4);
-			R_SetCacheState(fa);
+			R_SetCacheState(fa, r_newrefdef.lightstyles);
 
 			R_Bind(gl_state.lightmap_textures + fa->lightmaptexturenum);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, fa->light_s, fa->light_t, smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
@@ -427,7 +416,7 @@ R_DrawAlphaSurfaces(void)
 		}
 		else if (s->texinfo->flags & SURF_FLOWING)
 		{
-			R_DrawGLFlowingPoly(s);
+			R_DrawGLFlowingPoly(s, r_newrefdef.time);
 		}
 		else
 		{
@@ -511,8 +500,11 @@ static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
 	unsigned lmtex = surf->lightmaptexturenum;
 	glpoly_t *p;
 
+    lightstyle_t* lightstyles = r_newrefdef.lightstyles;
+    float time = r_newrefdef.time;
+
 	for (map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++) {
-		if (r_newrefdef.lightstyles[surf->styles[map]].white != surf->cached_light[map]) {
+		if (lightstyles[surf->styles[map]].white != surf->cached_light[map]) {
 			goto dynamic;
 		}
 	}
@@ -528,108 +520,45 @@ static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
 
 	if (is_dynamic) {
 		unsigned temp[128 * 128];
+        int smax = (surf->extents[0] >> 4) + 1;
+        int tmax = (surf->extents[1] >> 4) + 1;
+        R_BuildLightMap(surf, (void *)temp, smax * 4);
 
 		if (((surf->styles[map] >= 32) || (surf->styles[map] == 0)) && (surf->dlightframe != r_framecount)) {
-			int smax = (surf->extents[0] >> 4) + 1;
-			int tmax = (surf->extents[1] >> 4) + 1;
-
-			R_BuildLightMap(surf, (void *)temp, smax * 4);
-			R_SetCacheState(surf);
-
+			R_SetCacheState(surf, lightstyles);
 			R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + surf->lightmaptexturenum);
-
 			lmtex = surf->lightmaptexturenum;
-
-			glTexSubImage2D(GL_TEXTURE_2D, 0, surf->light_s, surf->light_t,
-					smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
 		} else {
-			int smax = (surf->extents[0] >> 4) + 1;
-			int tmax = (surf->extents[1] >> 4) + 1;
-
-			R_BuildLightMap(surf, (void *)temp, smax * 4);
-
 			R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + 0);
-
 			lmtex = 0;
-
-			glTexSubImage2D(GL_TEXTURE_2D, 0, surf->light_s, surf->light_t,
-					smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
 		}
+        glTexSubImage2D(GL_TEXTURE_2D, 0, surf->light_s, surf->light_t, smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
+    }
 
-		c_brush_polys++;
+    c_brush_polys++;
 
-		R_MBind(GL_TEXTURE0_ARB, image->texnum);
-		R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + lmtex);
+    R_MBind(GL_TEXTURE0_ARB, image->texnum);
+    R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + lmtex);
 
-		if (surf->texinfo->flags & SURF_FLOWING) {
-			float scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
+    float scroll = 0;
+    if (surf->texinfo->flags & SURF_FLOWING) {
+        float scroll = -64 * ((time / 40.0) - (int)(time / 40.0));
+        if (scroll == 0.0) {
+            scroll = -64.0;
+        }
+    }
 
-			if (scroll == 0.0) {
-				scroll = -64.0;
-			}
+    for (p = surf->polys; p; p = p->chain) {
+        v = p->verts[0];
+        glBegin(GL_POLYGON);
 
-			for (p = surf->polys; p; p = p->chain) {
-				v = p->verts[0];
-				glBegin(GL_POLYGON);
-
-				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
-					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, (v[3] + scroll), v[4]);
-					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
-					glVertex3fv(v);
-				}
-				glEnd();
-			}
-		} else {
-			for (p = surf->polys; p; p = p->chain) {
-				v = p->verts[0];
-				glBegin(GL_POLYGON);
-
-				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
-					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, v[3], v[4]);
-					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
-					glVertex3fv(v);
-				}
-				glEnd();
-			}
-		}
-	} else {
-		c_brush_polys++;
-
-		R_MBind(GL_TEXTURE0_ARB, image->texnum);
-		R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + lmtex);
-
-		if (surf->texinfo->flags & SURF_FLOWING) {
-			float scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
-
-			if (scroll == 0.0) {
-				scroll = -64.0;
-			}
-
-			for (p = surf->polys; p; p = p->chain) {
-				v = p->verts[0];
-				glBegin(GL_POLYGON);
-
-				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
-					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, (v[3] + scroll), v[4]);
-					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
-					glVertex3fv(v);
-				}
-				glEnd();
-			}
-		} else {
-			for (p = surf->polys; p; p = p->chain) {
-				v = p->verts[0];
-				glBegin(GL_POLYGON);
-
-				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
-					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, v[3], v[4]);
-					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
-					glVertex3fv(v);
-				}
-				glEnd();
-			}
-		}
-	}
+        for (i = 0; i < nv; i++, v += VERTEXSIZE) {
+            qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, (v[3] + scroll), v[4]);
+            qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
+            glVertex3fv(v);
+        }
+        glEnd();
+    }
 }
 
 static void R_DrawInlineBModel(model_t* model, int frame, int flags) {
@@ -783,7 +712,7 @@ void R_DrawBrushModel(entity_t *e) {
 	}
 }
 
-static void R_RecursiveWorldNode(mnode_t *node, int frame) {
+static void R_RecursiveWorldNode(mnode_t *node, int frame, const byte areabits[]) {
 	if (node->contents == CONTENTS_SOLID) {
 		return; /* solid */
 	}
@@ -800,8 +729,8 @@ static void R_RecursiveWorldNode(mnode_t *node, int frame) {
 	if (node->contents != -1) {
 		mleaf_t* pleaf = (mleaf_t *)node;
 		/* check for door connected areas */
-		if (r_newrefdef.areabits) {
-			if (!(r_newrefdef.areabits[pleaf->area >> 3] & (1 << (pleaf->area & 7)))) {
+		if (areabits) {
+			if (!(areabits[pleaf->area >> 3] & (1 << (pleaf->area & 7)))) {
 				return; /* not visible */
 			}
 		}
@@ -847,7 +776,7 @@ static void R_RecursiveWorldNode(mnode_t *node, int frame) {
 	}
 
 	/* recurse down the children, front side first */
-	R_RecursiveWorldNode(node->children[side], frame);
+	R_RecursiveWorldNode(node->children[side], frame, areabits);
 
 	/* draw stuff */
 	for (int i = 0; i < node->numsurfaces; i++) {
@@ -880,25 +809,25 @@ static void R_RecursiveWorldNode(mnode_t *node, int frame) {
 		}
 	}
 	/* recurse down the back side */
-	R_RecursiveWorldNode(node->children[!side], frame);
+	R_RecursiveWorldNode(node->children[!side], frame, areabits);
 }
 
-void R_DrawWorld(void) {
+void R_DrawWorld(refdef_t* refdef) {
 	if (!gl_drawworld->value) {
 		return;
 	}
 
-	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL)
+	if (refdef->rdflags & RDF_NOWORLDMODEL)
 	{
 		return;
 	}
 
-	VectorCopy(r_newrefdef.vieworg, modelorg);
+	VectorCopy(refdef->vieworg, modelorg);
 
 	/* auto cycle the world frame for texture animation */
 	entity_t ent;
 	memset(&ent, 0, sizeof(ent));
-	ent.frame = (int)(r_newrefdef.time * 2);
+	ent.frame = (int)(refdef->time * 2);
 
 	gl_state.currenttextures[0] = gl_state.currenttextures[1] = -1;
 
@@ -944,10 +873,10 @@ void R_DrawWorld(void) {
 				glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, gl_overbrightbits->value);
 			}
 		}
-		R_RecursiveWorldNode(r_worldmodel->nodes, ent.frame);
+		R_RecursiveWorldNode(r_worldmodel->nodes, ent.frame, refdef->areabits);
 		R_EnableMultitexture(false);
 	} else {
-		R_RecursiveWorldNode(r_worldmodel->nodes, ent.frame);
+		R_RecursiveWorldNode(r_worldmodel->nodes, ent.frame, refdef->areabits);
 	}
 
 	R_DrawTextureChains(gltextures, numgltextures, ent.frame);

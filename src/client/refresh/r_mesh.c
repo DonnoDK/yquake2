@@ -518,7 +518,7 @@ R_DrawAliasModel(entity_t *e)
 	}
 	else
 	{
-		R_LightPoint(e->origin, e->origin, shadelight);
+		R_LightPoint(e->origin, e->origin, shadelight, r_newrefdef.dlights, r_newrefdef.num_dlights, r_newrefdef.lightstyles);
 
 		/* player lighting hack for communication back to server */
 		if (e->flags & RF_WEAPONMODEL)

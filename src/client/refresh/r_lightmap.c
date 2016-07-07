@@ -28,7 +28,7 @@
 
 extern gllightmapstate_t gl_lms;
 
-void R_SetCacheState(msurface_t *surf);
+void R_SetCacheState(msurface_t *surf, lightstyle_t* lightstyles);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
 void
@@ -223,15 +223,12 @@ LM_CreateSurfaceLightmap(msurface_t *surf)
 	base = gl_lms.lightmap_buffer;
 	base += (surf->light_t * BLOCK_WIDTH + surf->light_s) * LIGHTMAP_BYTES;
 
-	R_SetCacheState(surf);
+	R_SetCacheState(surf, r_newrefdef.lightstyles);
 	R_BuildLightMap(surf, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
 }
 
-void
-LM_BeginBuildingLightmaps(model_t *m)
-{
+lightstyle_t* LM_BeginBuildingLightmaps(model_t *m) {
 	static lightstyle_t lightstyles[MAX_LIGHTSTYLES];
-	int i;
 	unsigned dummy[128 * 128];
 
 	memset(gl_lms.allocated, 0, sizeof(gl_lms.allocated));
@@ -244,18 +241,14 @@ LM_BeginBuildingLightmaps(model_t *m)
 	/* setup the base lightstyles so the lightmaps
 	   won't have to be regenerated the first time
 	   they're seen */
-	for (i = 0; i < MAX_LIGHTSTYLES; i++)
-	{
+	for (int i = 0; i < MAX_LIGHTSTYLES; i++){
 		lightstyles[i].rgb[0] = 1;
 		lightstyles[i].rgb[1] = 1;
 		lightstyles[i].rgb[2] = 1;
 		lightstyles[i].white = 3;
 	}
 
-	r_newrefdef.lightstyles = lightstyles;
-
-	if (!gl_state.lightmap_textures)
-	{
+	if (!gl_state.lightmap_textures) {
 		gl_state.lightmap_textures = TEXNUM_LIGHTMAPS;
 	}
 
@@ -266,9 +259,9 @@ LM_BeginBuildingLightmaps(model_t *m)
 	R_Bind(gl_state.lightmap_textures + 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
-			BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_LIGHTMAP_FORMAT,
+	glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_LIGHTMAP_FORMAT,
 			GL_UNSIGNED_BYTE, dummy);
+    return lightstyles;
 }
 
 void

@@ -275,8 +275,8 @@ void R_TexEnv(GLenum value);
 void R_EnableMultitexture(qboolean enable);
 void R_SelectTexture(GLenum);
 
-void R_LightPoint(vec3_t ent_origin, vec3_t p, vec3_t color);
-void R_PushDlights(void);
+void R_LightPoint(vec3_t ent_origin, vec3_t p, vec3_t color, dlight_t* dlights, int num_dlights, lightstyle_t* lightstyles);
+void R_PushDlights(dlight_t* dlights, int num_dlights);
 
 extern model_t *r_worldmodel;
 extern unsigned d_8to24table[256];
@@ -284,13 +284,12 @@ extern int registration_sequence;
 
 void V_AddBlend(float r, float g, float b, float a, float *v_blend);
 
-void R_RenderView(refdef_t *fd);
 void R_ScreenShot(void);
 void R_DrawAliasModel(entity_t *e);
 void R_DrawBrushModel(entity_t *e);
 void R_DrawBeam(entity_t *e);
-void R_DrawWorld(void);
-void R_RenderDlights(void);
+void R_DrawWorld(refdef_t* refdef);
+void R_RenderDlights(dlight_t* dlights, int num_dlights);
 void R_DrawAlphaSurfaces(void);
 void R_InitParticleTexture(void);
 void Draw_InitLocal(void);
@@ -338,10 +337,6 @@ void R_TextureAlphaMode(char *string);
 void R_TextureSolidMode(char *string);
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
-/* GL extension emulation functions */
-void R_DrawParticles2(int n,
-		const particle_t particles[],
-		const unsigned colortable[768]);
 
 /*
  * GL config stuff
