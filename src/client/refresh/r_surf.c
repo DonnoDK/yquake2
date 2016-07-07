@@ -44,24 +44,16 @@ void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 /*
  * Returns the proper texture for a given time and base texture
  */
-image_t *
-R_TextureAnimation(mtexinfo_t *tex)
-{
-	int c;
-
-	if (!tex->next)
-	{
+static image_t* R_TextureAnimation(mtexinfo_t *tex, int frame){
+	if (!tex->next){
 		return tex->image;
 	}
 
-	c = currententity->frame % tex->numframes;
-
-	while (c)
-	{
+	int c = frame % tex->numframes;
+	while (c) {
 		tex = tex->next;
 		c--;
 	}
-
 	return tex->image;
 }
 
@@ -371,103 +363,72 @@ R_BlendLightmaps(void)
 	glDepthMask(1);
 }
 
-void
-R_RenderBrushPoly(msurface_t *fa)
-{
+static void R_RenderBrushPoly(msurface_t *fa, int frame){
 	int maps;
-	image_t *image;
 	qboolean is_dynamic = false;
 
 	c_brush_polys++;
 
-	image = R_TextureAnimation(fa->texinfo);
-
-	if (fa->flags & SURF_DRAWTURB)
-	{
+	image_t* image = R_TextureAnimation(fa->texinfo, frame);
+	if (fa->flags & SURF_DRAWTURB) {
 		R_Bind(image->texnum);
 
 		/* warp texture, no lightmaps */
 		R_TexEnv(GL_MODULATE);
-		glColor4f(gl_state.inverse_intensity, gl_state.inverse_intensity,
-				gl_state.inverse_intensity, 1.0F);
+        float r,g,b;
+        r = g = b = gl_state.inverse_intensity;
+		glColor4f(r, g, b, 1.0f);
 		R_EmitWaterPolys(fa);
 		R_TexEnv(GL_REPLACE);
-
 		return;
-	}
-	else
-	{
+	} else {
 		R_Bind(image->texnum);
-
 		R_TexEnv(GL_REPLACE);
 	}
 
-	if (fa->texinfo->flags & SURF_FLOWING)
-	{
+	if (fa->texinfo->flags & SURF_FLOWING) {
 		R_DrawGLFlowingPoly(fa);
-	}
-	else
-	{
+	} else {
 		R_DrawGLPoly(fa->polys);
 	}
 
 	/* check for lightmap modification */
-	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
-	{
-		if (r_newrefdef.lightstyles[fa->styles[maps]].white !=
-			fa->cached_light[maps])
-		{
+	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++) {
+		if (r_newrefdef.lightstyles[fa->styles[maps]].white != fa->cached_light[maps]) {
 			goto dynamic;
 		}
 	}
 
 	/* dynamic this frame or dynamic previously */
-	if (fa->dlightframe == r_framecount)
-	{
+	if (fa->dlightframe == r_framecount) {
 	dynamic:
-
-		if (gl_dynamic->value)
-		{
-			if (!(fa->texinfo->flags &
-				  (SURF_SKY | SURF_TRANS33 |
-				   SURF_TRANS66 | SURF_WARP)))
-			{
+		if (gl_dynamic->value) {
+			if (!(fa->texinfo->flags & (SURF_SKY | SURF_TRANS33 | SURF_TRANS66 | SURF_WARP))) {
 				is_dynamic = true;
 			}
 		}
 	}
 
-	if (is_dynamic)
-	{
-		if (((fa->styles[maps] >= 32) ||
-			 (fa->styles[maps] == 0)) &&
-			  (fa->dlightframe != r_framecount))
-		{
+	if (is_dynamic) {
+		if (((fa->styles[maps] >= 32) || (fa->styles[maps] == 0)) && (fa->dlightframe != r_framecount)) {
 			unsigned temp[34 * 34];
-			int smax, tmax;
 
-			smax = (fa->extents[0] >> 4) + 1;
-			tmax = (fa->extents[1] >> 4) + 1;
+			int smax = (fa->extents[0] >> 4) + 1;
+			int tmax = (fa->extents[1] >> 4) + 1;
 
 			R_BuildLightMap(fa, (void *)temp, smax * 4);
 			R_SetCacheState(fa);
 
 			R_Bind(gl_state.lightmap_textures + fa->lightmaptexturenum);
-
-			glTexSubImage2D(GL_TEXTURE_2D, 0, fa->light_s, fa->light_t,
-					smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, fa->light_s, fa->light_t, smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
 
 			fa->lightmapchain = gl_lms.lightmap_surfaces[fa->lightmaptexturenum];
 			gl_lms.lightmap_surfaces[fa->lightmaptexturenum] = fa;
-		}
-		else
-		{
+		} else {
 			fa->lightmapchain = gl_lms.lightmap_surfaces[0];
 			gl_lms.lightmap_surfaces[0] = fa;
 		}
-	}
-	else
-	{
+	} else {
 		fa->lightmapchain = gl_lms.lightmap_surfaces[fa->lightmaptexturenum];
 		gl_lms.lightmap_surfaces[fa->lightmaptexturenum] = fa;
 	}
@@ -533,142 +494,96 @@ R_DrawAlphaSurfaces(void)
 	r_alpha_surfaces = NULL;
 }
 
-void
-R_DrawTextureChains(void)
-{
-	int i;
-	msurface_t *s;
-	image_t *image;
-
-	c_visible_textures = 0;
-
-	if (!qglActiveTextureARB)
-	{
-		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
-		{
-			if (!image->registration_sequence)
-			{
+/* TODO: refactor this even further. It contains a lot of code-duplication */
+static void R_DrawTextureChains(image_t* textures, int texturecount, int frame) {
+	if (!qglActiveTextureARB) {
+		for(int i = 0; i < texturecount; i++) {
+            image_t* img = &textures[i];
+			if (!img->registration_sequence) {
 				continue;
 			}
 
-			s = image->texturechain;
-
-			if (!s)
-			{
+			if (!img->texturechain) {
 				continue;
 			}
 
-			c_visible_textures++;
-
-			for ( ; s; s = s->texturechain)
-			{
-				R_RenderBrushPoly(s);
+			for (msurface_t* s = img->texturechain; s; s = s->texturechain) {
+				R_RenderBrushPoly(s, frame);
 			}
 
-			image->texturechain = NULL;
+			img->texturechain = NULL;
 		}
-	}
-	else
-	{
-		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
-		{
-			if (!image->registration_sequence)
-			{
+	} else {
+		for(int i = 0; i < texturecount; i++) {
+            image_t* img = &textures[i];
+			if (!img->registration_sequence) {
 				continue;
 			}
 
-			if (!image->texturechain)
-			{
+			if (!img->texturechain) {
 				continue;
 			}
 
-			c_visible_textures++;
-
-			for (s = image->texturechain; s; s = s->texturechain)
-			{
-				if (!(s->flags & SURF_DRAWTURB))
-				{
-					R_RenderBrushPoly(s);
+			for (msurface_t* s = img->texturechain; s; s = s->texturechain) {
+				if (!(s->flags & SURF_DRAWTURB)) {
+					R_RenderBrushPoly(s, frame);
 				}
 			}
 		}
 
 		R_EnableMultitexture(false);
 
-		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
-		{
-			if (!image->registration_sequence)
-			{
+		for (int i = 0; i < texturecount; i++) {
+            image_t* img = &textures[i];
+			if (!img->registration_sequence) {
 				continue;
 			}
 
-			s = image->texturechain;
-
-			if (!s)
-			{
+			if (!img->texturechain) {
 				continue;
 			}
 
-			for ( ; s; s = s->texturechain)
-			{
-				if (s->flags & SURF_DRAWTURB)
-				{
-					R_RenderBrushPoly(s);
+			for (msurface_t* s = img->texturechain; s; s = s->texturechain) {
+				if (s->flags & SURF_DRAWTURB) {
+					R_RenderBrushPoly(s, frame);
 				}
 			}
-
-			image->texturechain = NULL;
+			img->texturechain = NULL;
 		}
 	}
-
 	R_TexEnv(GL_REPLACE);
 }
 
-static void
-R_RenderLightmappedPoly(msurface_t *surf)
-{
+static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
 	int i, nv = surf->polys->numverts;
 	int map;
 	float *v;
-	image_t *image = R_TextureAnimation(surf->texinfo);
+	image_t *image = R_TextureAnimation(surf->texinfo, frame);
 	qboolean is_dynamic = false;
 	unsigned lmtex = surf->lightmaptexturenum;
 	glpoly_t *p;
 
-	for (map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++)
-	{
-		if (r_newrefdef.lightstyles[surf->styles[map]].white !=
-			surf->cached_light[map])
-		{
+	for (map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++) {
+		if (r_newrefdef.lightstyles[surf->styles[map]].white != surf->cached_light[map]) {
 			goto dynamic;
 		}
 	}
 
-	if (surf->dlightframe == r_framecount)
-	{
+	if (surf->dlightframe == r_framecount) {
 	dynamic:
-
-		if (gl_dynamic->value)
-		{
-			if (!(surf->texinfo->flags &
-				  (SURF_SKY | SURF_TRANS33 | SURF_TRANS66 | SURF_WARP)))
-			{
+		if (gl_dynamic->value) {
+			if (!(surf->texinfo->flags & (SURF_SKY | SURF_TRANS33 | SURF_TRANS66 | SURF_WARP))) {
 				is_dynamic = true;
 			}
 		}
 	}
 
-	if (is_dynamic)
-	{
+	if (is_dynamic) {
 		unsigned temp[128 * 128];
-		int smax, tmax;
 
-		if (((surf->styles[map] >= 32) ||
-			 (surf->styles[map] == 0)) &&
-				(surf->dlightframe != r_framecount))
-		{
-			smax = (surf->extents[0] >> 4) + 1;
-			tmax = (surf->extents[1] >> 4) + 1;
+		if (((surf->styles[map] >= 32) || (surf->styles[map] == 0)) && (surf->dlightframe != r_framecount)) {
+			int smax = (surf->extents[0] >> 4) + 1;
+			int tmax = (surf->extents[1] >> 4) + 1;
 
 			R_BuildLightMap(surf, (void *)temp, smax * 4);
 			R_SetCacheState(surf);
@@ -679,11 +594,9 @@ R_RenderLightmappedPoly(msurface_t *surf)
 
 			glTexSubImage2D(GL_TEXTURE_2D, 0, surf->light_s, surf->light_t,
 					smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
-		}
-		else
-		{
-			smax = (surf->extents[0] >> 4) + 1;
-			tmax = (surf->extents[1] >> 4) + 1;
+		} else {
+			int smax = (surf->extents[0] >> 4) + 1;
+			int tmax = (surf->extents[1] >> 4) + 1;
 
 			R_BuildLightMap(surf, (void *)temp, smax * 4);
 
@@ -700,229 +613,161 @@ R_RenderLightmappedPoly(msurface_t *surf)
 		R_MBind(GL_TEXTURE0_ARB, image->texnum);
 		R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + lmtex);
 
-		if (surf->texinfo->flags & SURF_FLOWING)
-		{
-			float scroll;
+		if (surf->texinfo->flags & SURF_FLOWING) {
+			float scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
 
-			scroll = -64 *
-					 ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
-
-			if (scroll == 0.0)
-			{
+			if (scroll == 0.0) {
 				scroll = -64.0;
 			}
 
-			for (p = surf->polys; p; p = p->chain)
-			{
+			for (p = surf->polys; p; p = p->chain) {
 				v = p->verts[0];
 				glBegin(GL_POLYGON);
 
-				for (i = 0; i < nv; i++, v += VERTEXSIZE)
-				{
+				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
 					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, (v[3] + scroll), v[4]);
 					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
 					glVertex3fv(v);
 				}
-
 				glEnd();
 			}
-		}
-		else
-		{
-			for (p = surf->polys; p; p = p->chain)
-			{
+		} else {
+			for (p = surf->polys; p; p = p->chain) {
 				v = p->verts[0];
 				glBegin(GL_POLYGON);
 
-				for (i = 0; i < nv; i++, v += VERTEXSIZE)
-				{
+				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
 					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, v[3], v[4]);
 					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
 					glVertex3fv(v);
 				}
-
 				glEnd();
 			}
 		}
-	}
-	else
-	{
+	} else {
 		c_brush_polys++;
 
 		R_MBind(GL_TEXTURE0_ARB, image->texnum);
 		R_MBind(GL_TEXTURE1_ARB, gl_state.lightmap_textures + lmtex);
 
-		if (surf->texinfo->flags & SURF_FLOWING)
-		{
-			float scroll;
+		if (surf->texinfo->flags & SURF_FLOWING) {
+			float scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
 
-			scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
-
-			if (scroll == 0.0)
-			{
+			if (scroll == 0.0) {
 				scroll = -64.0;
 			}
 
-			for (p = surf->polys; p; p = p->chain)
-			{
+			for (p = surf->polys; p; p = p->chain) {
 				v = p->verts[0];
 				glBegin(GL_POLYGON);
 
-				for (i = 0; i < nv; i++, v += VERTEXSIZE)
-				{
+				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
 					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, (v[3] + scroll), v[4]);
 					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
 					glVertex3fv(v);
 				}
-
 				glEnd();
 			}
-		}
-		else
-		{
-			for (p = surf->polys; p; p = p->chain)
-			{
+		} else {
+			for (p = surf->polys; p; p = p->chain) {
 				v = p->verts[0];
 				glBegin(GL_POLYGON);
 
-				for (i = 0; i < nv; i++, v += VERTEXSIZE)
-				{
+				for (i = 0; i < nv; i++, v += VERTEXSIZE) {
 					qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, v[3], v[4]);
 					qglMultiTexCoord2fARB(GL_TEXTURE1_ARB, v[5], v[6]);
 					glVertex3fv(v);
 				}
-
 				glEnd();
 			}
 		}
 	}
 }
 
-void
-R_DrawInlineBModel(void)
-{
-	int i, k;
-	cplane_t *pplane;
-	float dot;
-	msurface_t *psurf;
-	dlight_t *lt;
-
+static void R_DrawInlineBModel(model_t* model, int frame, int flags) {
 	/* calculate dynamic lighting for bmodel */
-	if (!gl_flashblend->value)
-	{
-		lt = r_newrefdef.dlights;
-
-		for (k = 0; k < r_newrefdef.num_dlights; k++, lt++)
-		{
-			R_MarkLights(lt, 1 << k,
-					currentmodel->nodes + currentmodel->firstnode);
+	if (!gl_flashblend->value) {
+		for (int k = 0; k < r_newrefdef.num_dlights; k++) {
+            dlight_t* lt = &r_newrefdef.dlights[k];
+			R_MarkLights(lt, 1 << k, model->nodes + model->firstnode);
 		}
 	}
 
-	psurf = &currentmodel->surfaces[currentmodel->firstmodelsurface];
-
-	if (currententity->flags & RF_TRANSLUCENT)
-	{
+	if (flags & RF_TRANSLUCENT) {
 		glEnable(GL_BLEND);
 		glColor4f(1, 1, 1, 0.25);
 		R_TexEnv(GL_MODULATE);
 	}
 
 	/* draw texture */
-	for (i = 0; i < currentmodel->nummodelsurfaces; i++, psurf++)
-	{
+	for (int i = 0; i < model->nummodelsurfaces; i++) {
 		/* find which side of the node we are on */
-		pplane = psurf->plane;
-
-		dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
-
+        msurface_t* psurf = &model->surfaces[model->firstmodelsurface + i];
+		cplane_t* pplane = psurf->plane;
+		float dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
 		/* draw the polygon */
 		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) ||
 			(!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 		{
-			if (psurf->texinfo->flags & (SURF_TRANS33 | SURF_TRANS66))
-			{
+			if (psurf->texinfo->flags & (SURF_TRANS33 | SURF_TRANS66)) {
 				/* add to the translucent chain */
 				psurf->texturechain = r_alpha_surfaces;
 				r_alpha_surfaces = psurf;
-			}
-			else if (qglMultiTexCoord2fARB && !(psurf->flags & SURF_DRAWTURB))
-			{
-				R_RenderLightmappedPoly(psurf);
-			}
-			else
-			{
+			} else if (qglMultiTexCoord2fARB && !(psurf->flags & SURF_DRAWTURB)) {
+				R_RenderLightmappedPoly(psurf, frame);
+			} else {
 				R_EnableMultitexture(false);
-				R_RenderBrushPoly(psurf);
+				R_RenderBrushPoly(psurf, frame);
 				R_EnableMultitexture(true);
 			}
 		}
 	}
 
-	if (!(currententity->flags & RF_TRANSLUCENT))
-	{
-		if (!qglMultiTexCoord2fARB)
-		{
+	if (!(flags & RF_TRANSLUCENT)) {
+		if (!qglMultiTexCoord2fARB) {
 			R_BlendLightmaps();
 		}
-	}
-	else
-	{
+	} else {
 		glDisable(GL_BLEND);
 		glColor4f(1, 1, 1, 1);
 		R_TexEnv(GL_REPLACE);
 	}
 }
 
-void
-R_DrawBrushModel(entity_t *e)
-{
-	vec3_t mins, maxs;
-	int i;
-	qboolean rotated;
-
-	if (currentmodel->nummodelsurfaces == 0)
-	{
+void R_DrawBrushModel(entity_t *e) {
+	if (e->model->nummodelsurfaces == 0) {
 		return;
 	}
 
-	currententity = e;
 	gl_state.currenttextures[0] = gl_state.currenttextures[1] = -1;
 
-	if (e->angles[0] || e->angles[1] || e->angles[2])
-	{
+	qboolean rotated;
+	vec3_t mins, maxs;
+	if (e->angles[0] || e->angles[1] || e->angles[2]) {
 		rotated = true;
-
-		for (i = 0; i < 3; i++)
-		{
-			mins[i] = e->origin[i] - currentmodel->radius;
-			maxs[i] = e->origin[i] + currentmodel->radius;
+		for (int i = 0; i < 3; i++) {
+			mins[i] = e->origin[i] - e->model->radius;
+			maxs[i] = e->origin[i] + e->model->radius;
 		}
-	}
-	else
-	{
+	} else {
 		rotated = false;
-		VectorAdd(e->origin, currentmodel->mins, mins);
-		VectorAdd(e->origin, currentmodel->maxs, maxs);
+		VectorAdd(e->origin, e->model->mins, mins);
+		VectorAdd(e->origin, e->model->maxs, maxs);
 	}
 
-	if (R_CullBox(mins, maxs))
-	{
+	if (R_CullBox(mins, maxs)) {
 		return;
 	}
 
-	if (gl_zfix->value)
-	{
+	if (gl_zfix->value) {
 		glEnable(GL_POLYGON_OFFSET_FILL);
 	}
 
 	glColor3f(1, 1, 1);
 	memset(gl_lms.lightmap_surfaces, 0, sizeof(gl_lms.lightmap_surfaces));
-
 	VectorSubtract(r_newrefdef.vieworg, e->origin, modelorg);
 
-	if (rotated)
-	{
+	if (rotated) {
 		vec3_t temp;
 		vec3_t forward, right, up;
 
@@ -941,25 +786,18 @@ R_DrawBrushModel(entity_t *e)
 	e->angles[2] = -e->angles[2];
 
 	R_EnableMultitexture(true);
-
 	R_SelectTexture(GL_TEXTURE0_ARB);
 
-	if (!gl_config.mtexcombine)
-	{
+	if (!gl_config.mtexcombine) {
 		R_TexEnv(GL_REPLACE);
 		R_SelectTexture(GL_TEXTURE1);
 
-		if (gl_lightmap->value)
-		{
+		if (gl_lightmap->value) {
 			R_TexEnv(GL_REPLACE);
-		}
-		else
-		{
+		} else {
 			R_TexEnv(GL_MODULATE);
 		}
-	}
-	else
-	{
+	} else {
 		R_TexEnv(GL_COMBINE_EXT);
 		glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_REPLACE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
@@ -968,15 +806,12 @@ R_DrawBrushModel(entity_t *e)
 		R_SelectTexture(GL_TEXTURE1);
 		R_TexEnv(GL_COMBINE_EXT);
 
-		if (gl_lightmap->value)
-		{
+		if (gl_lightmap->value) {
 			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_REPLACE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_EXT, GL_REPLACE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_EXT, GL_TEXTURE);
-		}
-		else
-		{
+		} else {
 			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB_EXT, GL_PREVIOUS_EXT);
@@ -985,85 +820,60 @@ R_DrawBrushModel(entity_t *e)
 			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_EXT, GL_PREVIOUS_EXT);
 		}
 
-		if (gl_overbrightbits->value)
-		{
+		if (gl_overbrightbits->value) {
 			glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT,
 					gl_overbrightbits->value);
 		}
 	}
 
-	R_DrawInlineBModel();
+	R_DrawInlineBModel(e->model, e->frame, e->flags);
 	R_EnableMultitexture(false);
-
 	glPopMatrix();
 
-	if (gl_zfix->value)
-	{
+	if (gl_zfix->value) {
 		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
 }
 
-void
-R_RecursiveWorldNode(mnode_t *node)
-{
-	int c, side, sidebit;
-	cplane_t *plane;
-	msurface_t *surf, **mark;
-	mleaf_t *pleaf;
-	float dot;
-	image_t *image;
-
-	if (node->contents == CONTENTS_SOLID)
-	{
+static void R_RecursiveWorldNode(mnode_t *node, int frame) {
+	if (node->contents == CONTENTS_SOLID) {
 		return; /* solid */
 	}
 
-	if (node->visframe != r_visframecount)
-	{
+	if (node->visframe != r_visframecount) {
 		return;
 	}
 
-	if (R_CullBox(node->minmaxs, node->minmaxs + 3))
-	{
+	if (R_CullBox(node->minmaxs, node->minmaxs + 3)) {
 		return;
 	}
 
 	/* if a leaf node, draw stuff */
-	if (node->contents != -1)
-	{
-		pleaf = (mleaf_t *)node;
-
+	if (node->contents != -1) {
+		mleaf_t* pleaf = (mleaf_t *)node;
 		/* check for door connected areas */
-		if (r_newrefdef.areabits)
-		{
-			if (!(r_newrefdef.areabits[pleaf->area >> 3] & (1 << (pleaf->area & 7))))
-			{
+		if (r_newrefdef.areabits) {
+			if (!(r_newrefdef.areabits[pleaf->area >> 3] & (1 << (pleaf->area & 7)))) {
 				return; /* not visible */
 			}
 		}
 
-		mark = pleaf->firstmarksurface;
-		c = pleaf->nummarksurfaces;
-
-		if (c)
-		{
-			do
-			{
+        msurface_t **mark = pleaf->firstmarksurface;
+		int c = pleaf->nummarksurfaces;
+		if (c) {
+			do {
 				(*mark)->visframe = r_framecount;
 				mark++;
-			}
-			while (--c);
+			} while (--c);
 		}
-
 		return;
 	}
 
 	/* node is just a decision point, so go down the apropriate
 	   sides find which side of the node we are on */
-	plane = node->plane;
-
-	switch (plane->type)
-	{
+	cplane_t* plane = node->plane;
+	float dot;
+	switch (plane->type) {
 		case PLANE_X:
 			dot = modelorg[0] - plane->dist;
 			break;
@@ -1078,74 +888,55 @@ R_RecursiveWorldNode(mnode_t *node)
 			break;
 	}
 
-	if (dot >= 0)
-	{
+    int side;
+    int sidebit;
+	if (dot >= 0) {
 		side = 0;
 		sidebit = 0;
-	}
-	else
-	{
+	} else {
 		side = 1;
 		sidebit = SURF_PLANEBACK;
 	}
 
 	/* recurse down the children, front side first */
-	R_RecursiveWorldNode(node->children[side]);
+	R_RecursiveWorldNode(node->children[side], frame);
 
 	/* draw stuff */
-	for (c = node->numsurfaces,
-		 surf = r_worldmodel->surfaces + node->firstsurface;
-		 c; c--, surf++)
-	{
-		if (surf->visframe != r_framecount)
-		{
+	for (int i = 0; i < node->numsurfaces; i++) {
+        msurface_t* surf = &r_worldmodel->surfaces[node->firstsurface + i];
+		if (surf->visframe != r_framecount) {
 			continue;
 		}
 
-		if ((surf->flags & SURF_PLANEBACK) != sidebit)
-		{
+		if ((surf->flags & SURF_PLANEBACK) != sidebit) {
 			continue; /* wrong side */
 		}
 
-		if (surf->texinfo->flags & SURF_SKY)
-		{
+		if (surf->texinfo->flags & SURF_SKY) {
 			/* just adds to visible sky bounds */
 			R_AddSkySurface(surf);
-		}
-		else if (surf->texinfo->flags & (SURF_TRANS33 | SURF_TRANS66))
-		{
+		} else if (surf->texinfo->flags & (SURF_TRANS33 | SURF_TRANS66)) {
 			/* add to the translucent chain */
 			surf->texturechain = r_alpha_surfaces;
 			r_alpha_surfaces = surf;
-			r_alpha_surfaces->texinfo->image = R_TextureAnimation(surf->texinfo);
-		}
-		else
-		{
-			if (qglMultiTexCoord2fARB && !(surf->flags & SURF_DRAWTURB))
-			{
-				R_RenderLightmappedPoly(surf);
-			}
-			else
-			{
+			r_alpha_surfaces->texinfo->image = R_TextureAnimation(surf->texinfo, frame);
+		} else {
+			if (qglMultiTexCoord2fARB && !(surf->flags & SURF_DRAWTURB)) {
+				R_RenderLightmappedPoly(surf, frame);
+			} else {
 				/* the polygon is visible, so add it to the texture sorted chain */
-				image = R_TextureAnimation(surf->texinfo);
+				image_t* image = R_TextureAnimation(surf->texinfo, frame);
 				surf->texturechain = image->texturechain;
 				image->texturechain = surf;
 			}
 		}
 	}
-
 	/* recurse down the back side */
-	R_RecursiveWorldNode(node->children[!side]);
+	R_RecursiveWorldNode(node->children[!side], frame);
 }
 
-void
-R_DrawWorld(void)
-{
-	entity_t ent;
-
-	if (!gl_drawworld->value)
-	{
+void R_DrawWorld(void) {
+	if (!gl_drawworld->value) {
 		return;
 	}
 
@@ -1155,13 +946,12 @@ R_DrawWorld(void)
 	}
 
 	currentmodel = r_worldmodel;
-
 	VectorCopy(r_newrefdef.vieworg, modelorg);
 
 	/* auto cycle the world frame for texture animation */
+	entity_t ent;
 	memset(&ent, 0, sizeof(ent));
 	ent.frame = (int)(r_newrefdef.time * 2);
-	currententity = &ent;
 
 	gl_state.currenttextures[0] = gl_state.currenttextures[1] = -1;
 
@@ -1169,28 +959,18 @@ R_DrawWorld(void)
 	memset(gl_lms.lightmap_surfaces, 0, sizeof(gl_lms.lightmap_surfaces));
 	R_ClearSkyBox();
 
-	if (qglMultiTexCoord2fARB)
-	{
+	if (qglMultiTexCoord2fARB) {
 		R_EnableMultitexture(true);
-
 		R_SelectTexture(GL_TEXTURE0_ARB);
-
-		if (!gl_config.mtexcombine)
-		{
+		if (!gl_config.mtexcombine) {
 			R_TexEnv(GL_REPLACE);
 			R_SelectTexture(GL_TEXTURE1);
-
-			if (gl_lightmap->value)
-			{
+			if (gl_lightmap->value) {
 				R_TexEnv(GL_REPLACE);
-			}
-			else
-			{
+			} else {
 				R_TexEnv(GL_MODULATE);
 			}
-		}
-		else
-		{
+		} else {
 			R_TexEnv(GL_COMBINE_EXT);
 			glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_REPLACE);
 			glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
@@ -1199,15 +979,12 @@ R_DrawWorld(void)
 			R_SelectTexture(GL_TEXTURE1);
 			R_TexEnv(GL_COMBINE_EXT);
 
-			if (gl_lightmap->value)
-			{
+			if (gl_lightmap->value) {
 				glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_REPLACE);
 				glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
 				glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_ALPHA_EXT, GL_REPLACE);
 				glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_EXT, GL_TEXTURE);
-			}
-			else
-			{
+			} else {
 				glTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_EXT, GL_MODULATE);
 			    glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE);
 				glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB_EXT, GL_PREVIOUS_EXT);
@@ -1216,26 +993,20 @@ R_DrawWorld(void)
 				glTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_EXT, GL_PREVIOUS_EXT);
 			}
 
-			if (gl_overbrightbits->value)
-			{
+			if (gl_overbrightbits->value) {
 				glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE_EXT, gl_overbrightbits->value);
 			}
 		}
-
-		R_RecursiveWorldNode(r_worldmodel->nodes);
+		R_RecursiveWorldNode(r_worldmodel->nodes, ent.frame);
 		R_EnableMultitexture(false);
-	}
-	else
-	{
-		R_RecursiveWorldNode(r_worldmodel->nodes);
+	} else {
+		R_RecursiveWorldNode(r_worldmodel->nodes, ent.frame);
 	}
 
-	R_DrawTextureChains();
+	R_DrawTextureChains(gltextures, numgltextures, ent.frame);
 	R_BlendLightmaps();
 	R_DrawSkyBox();
 	R_DrawTriangleOutlines();
-
-	currententity = NULL;
 }
 
 /*

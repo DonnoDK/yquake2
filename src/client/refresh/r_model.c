@@ -40,7 +40,7 @@ void LoadSP2(model_t *mod, void *buffer);
 void Mod_LoadBrushModel(model_t *mod, void *buffer);
 void LoadMD2(model_t *mod, void *buffer);
 model_t *Mod_LoadModel(model_t *mod, qboolean crash);
-void LM_BuildPolygonFromSurface(msurface_t *fa);
+void LM_BuildPolygonFromSurface(msurface_t *fa, model_t* model);
 void LM_CreateSurfaceLightmap(msurface_t *surf);
 void LM_EndBuildingLightmaps(void);
 void LM_BeginBuildingLightmaps(model_t *m);
@@ -650,7 +650,7 @@ Mod_LoadFaces(lump_t *l)
 
 		if (!(out->texinfo->flags & SURF_WARP))
 		{
-			LM_BuildPolygonFromSurface(out);
+			LM_BuildPolygonFromSurface(out, loadmodel);
 		}
 	}
 

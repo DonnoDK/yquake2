@@ -39,7 +39,6 @@ glstate_t gl_state;
 image_t *r_notexture; /* use for bad textures */
 image_t *r_particletexture; /* little dot for particles */
 
-entity_t *currententity;
 model_t *currentmodel;
 
 cplane_t frustum[4];
@@ -145,81 +144,52 @@ cvar_t *vid_gamma;
 /*
  * Returns true if the box is completely outside the frustom
  */
-qboolean
-R_CullBox(vec3_t mins, vec3_t maxs)
-{
-	int i;
-
-	if (gl_nocull->value)
-	{
+qboolean R_CullBox(vec3_t mins, vec3_t maxs) {
+	if (gl_nocull->value) {
 		return false;
 	}
 
-	for (i = 0; i < 4; i++)
-	{
-		if (BOX_ON_PLANE_SIDE(mins, maxs, &frustum[i]) == 2)
-		{
+	for (int i = 0; i < 4; i++) {
+		if (BOX_ON_PLANE_SIDE(mins, maxs, &frustum[i]) == 2) {
 			return true;
 		}
 	}
-
 	return false;
 }
 
-void
-R_RotateForEntity(entity_t *e)
-{
+void R_RotateForEntity(entity_t *e) {
 	glTranslatef(e->origin[0], e->origin[1], e->origin[2]);
-
 	glRotatef(e->angles[1], 0, 0, 1);
 	glRotatef(-e->angles[0], 0, 1, 0);
 	glRotatef(-e->angles[2], 1, 0, 0);
 }
 
-void
-R_DrawSpriteModel(entity_t *e)
-{
-	float alpha = 1.0F;
-	vec3_t point;
-	dsprframe_t *frame;
-	float *up, *right;
-	dsprite_t *psprite;
-
-	/* don't even bother culling, because it's just
-	   a single polygon without a surface cache */
-	psprite = (dsprite_t *)currentmodel->extradata;
+static void R_DrawSpriteModel(entity_t *e) {
+	dsprite_t *psprite = (dsprite_t *)e->model->extradata;
 
 	e->frame %= psprite->numframes;
-	frame = &psprite->frames[e->frame];
 
-	/* normal sprite */
-	up = vup;
-	right = vright;
+	dsprframe_t* frame = &psprite->frames[e->frame];
 
-	if (e->flags & RF_TRANSLUCENT)
-	{
-		alpha = e->alpha;
-	}
+    float alpha = e->flags & RF_TRANSLUCENT ? e->alpha : 1.0f;
 
-	if (alpha != 1.0F)
-	{
+	if (alpha != 1.0F) {
 		glEnable(GL_BLEND);
 	}
 
 	glColor4f(1, 1, 1, alpha);
-
-	R_Bind(currentmodel->skins[e->frame]->texnum);
-
+	R_Bind(e->model->skins[e->frame]->texnum);
 	R_TexEnv(GL_MODULATE);
 
-	if (alpha == 1.0)
-	{
+	if (alpha == 1.0) {
 		glEnable(GL_ALPHA_TEST);
-	}
-	else
-	{
+	} else {
 		glDisable(GL_ALPHA_TEST);
 	}
+
+	vec3_t point;
+	float* up = vup;
+	float* right = vright;
 
 	glBegin(GL_QUADS);
 
@@ -247,54 +217,38 @@ R_DrawSpriteModel(entity_t *e)
 
 	glDisable(GL_ALPHA_TEST);
 	R_TexEnv(GL_REPLACE);
-
-	if (alpha != 1.0F)
-	{
+	if (alpha != 1.0F) {
 		glDisable(GL_BLEND);
 	}
-
 	glColor4f(1, 1, 1, 1);
 }
 
-void
-R_DrawNullModel(void)
-{
+static void R_DrawNullModel(entity_t* ent) {
 	vec3_t shadelight;
-	int i;
-
-	if (currententity->flags & RF_FULLBRIGHT)
-	{
+	if (ent->flags & RF_FULLBRIGHT) {
 		shadelight[0] = shadelight[1] = shadelight[2] = 1.0F;
-	}
-	else
-	{
-		R_LightPoint(currententity->origin, shadelight);
+	} else {
+		R_LightPoint(ent->origin, ent->origin, shadelight);
 	}
 
 	glPushMatrix();
-	R_RotateForEntity(currententity);
+	R_RotateForEntity(ent);
 
 	glDisable(GL_TEXTURE_2D);
 	glColor3fv(shadelight);
 
 	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(0, 0, -16);
-
-	for (i = 0; i <= 4; i++)
-	{
-		glVertex3f(16 * cos(i * M_PI / 2), 16 * sin(i * M_PI / 2), 0);
-	}
-
+        glVertex3f(0, 0, -16);
+        for (int i = 0; i <= 4; i++) {
+            glVertex3f(16 * cos(i * M_PI / 2), 16 * sin(i * M_PI / 2), 0);
+        }
 	glEnd();
 
 	glBegin(GL_TRIANGLE_FAN);
-	glVertex3f(0, 0, 16);
-
-	for (i = 4; i >= 0; i--)
-	{
-		glVertex3f(16 * cos(i * M_PI / 2), 16 * sin(i * M_PI / 2), 0);
-	}
-
+        glVertex3f(0, 0, 16);
+        for (int i = 4; i >= 0; i--) {
+            glVertex3f(16 * cos(i * M_PI / 2), 16 * sin(i * M_PI / 2), 0);
+        }
 	glEnd();
 
 	glColor3f(1, 1, 1);
@@ -302,50 +256,34 @@ R_DrawNullModel(void)
 	glEnable(GL_TEXTURE_2D);
 }
 
-void
-R_DrawEntitiesOnList(void)
-{
-	int i;
-
-	if (!gl_drawentities->value)
-	{
+void R_DrawEntitiesOnList(void) {
+	if (!gl_drawentities->value) {
 		return;
 	}
 
 	/* draw non-transparent first */
-	for (i = 0; i < r_newrefdef.num_entities; i++)
-	{
-		currententity = &r_newrefdef.entities[i];
-
-		if (currententity->flags & RF_TRANSLUCENT)
-		{
+	for (int i = 0; i < r_newrefdef.num_entities; i++) {
+		entity_t* ent = &r_newrefdef.entities[i];
+		if (ent->flags & RF_TRANSLUCENT) {
 			continue; /* solid */
 		}
-
-		if (currententity->flags & RF_BEAM)
-		{
-			R_DrawBeam(currententity);
-		}
-		else
-		{
-			currentmodel = currententity->model;
-
-			if (!currentmodel)
-			{
-				R_DrawNullModel();
+		if (ent->flags & RF_BEAM) {
+			R_DrawBeam(ent);
+		} else {
+			currentmodel = ent->model;
+			if (!currentmodel) {
+				R_DrawNullModel(ent);
 				continue;
 			}
-
-			switch (currentmodel->type)
-			{
+			switch (currentmodel->type) {
 				case mod_alias:
-					R_DrawAliasModel(currententity);
+					R_DrawAliasModel(ent);
 					break;
 				case mod_brush:
-					R_DrawBrushModel(currententity);
+					R_DrawBrushModel(ent);
 					break;
 				case mod_sprite:
-					R_DrawSpriteModel(currententity);
+					R_DrawSpriteModel(ent);
 					break;
 				default:
 					VID_Error(ERR_DROP, "Bad modeltype");
@@ -359,39 +297,28 @@ R_DrawEntitiesOnList(void)
 	   becomes a problem... */
 	glDepthMask(0);
 
-	for (i = 0; i < r_newrefdef.num_entities; i++)
-	{
-		currententity = &r_newrefdef.entities[i];
-
-		if (!(currententity->flags & RF_TRANSLUCENT))
-		{
+	for (int i = 0; i < r_newrefdef.num_entities; i++) {
+		entity_t* ent = &r_newrefdef.entities[i];
+		if (!(ent->flags & RF_TRANSLUCENT)) {
 			continue; /* solid */
 		}
-
-		if (currententity->flags & RF_BEAM)
-		{
-			R_DrawBeam(currententity);
-		}
-		else
-		{
-			currentmodel = currententity->model;
-
-			if (!currentmodel)
-			{
-				R_DrawNullModel();
+		if (ent->flags & RF_BEAM) {
+			R_DrawBeam(ent);
+		} else {
+			currentmodel = ent->model;
+			if (!currentmodel) {
+				R_DrawNullModel(ent);
 				continue;
 			}
-
-			switch (currentmodel->type)
-			{
+			switch (currentmodel->type) {
 				case mod_alias:
-					R_DrawAliasModel(currententity);
+					R_DrawAliasModel(ent);
 					break;
 				case mod_brush:
-					R_DrawBrushModel(currententity);
+					R_DrawBrushModel(ent);
 					break;
 				case mod_sprite:
-					R_DrawSpriteModel(currententity);
+					R_DrawSpriteModel(ent);
 					break;
 				default:
 					VID_Error(ERR_DROP, "Bad modeltype");
@@ -464,11 +391,8 @@ R_DrawParticles2(int num_particles, const particle_t particles[],
 	R_TexEnv(GL_REPLACE);
 }
 
-void
-R_DrawParticles(void)
-{
-	if (gl_ext_pointparameters->value && qglPointParameterfEXT)
-	{
+void R_DrawParticles(void) {
+	if (gl_ext_pointparameters->value && qglPointParameterfEXT) {
 		int i;
 		unsigned char color[4];
 		const particle_t *p;
@@ -505,16 +429,12 @@ R_DrawParticles(void)
 	}
 }
 
-void
-R_PolyBlend(void)
-{
-	if (!gl_polyblend->value)
-	{
+static void R_PolyBlend(void) {
+	if (!gl_polyblend->value) {
 		return;
 	}
 
-	if (!v_blend[3])
-	{
+	if (!v_blend[3]) {
 		return;
 	}
 
@@ -876,14 +796,12 @@ R_RenderView(refdef_t *fd)
 	}
 }
 
-void
-R_SetGL2D(void)
-{
+void R_SetGL2D(int width, int height) {
 	/* set 2D virtual screen size */
-	glViewport(0, 0, vid.width, vid.height);
+	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, vid.width, vid.height, 0, -99999, 99999);
+	glOrtho(0, width, height, 0, -99999, 99999);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
@@ -893,51 +811,34 @@ R_SetGL2D(void)
 	glColor4f(1, 1, 1, 1);
 }
 
-void
-R_SetLightLevel(void)
-{
-	vec3_t shadelight;
-
-	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL)
-	{
+static void R_SetLightLevel(void) {
+	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL) {
 		return;
 	}
-
 	/* save off light value for server to look at */
-	R_LightPoint(r_newrefdef.vieworg, shadelight);
-
+	vec3_t shadelight;
+	R_LightPoint(r_newrefdef.vieworg, r_newrefdef.vieworg, shadelight);
 	/* pick the greatest component, which should be the
 	 * same as the mono value returned by software */
-	if (shadelight[0] > shadelight[1])
-	{
-		if (shadelight[0] > shadelight[2])
-		{
+	if (shadelight[0] > shadelight[1]) {
+		if (shadelight[0] > shadelight[2]) {
 			gl_lightlevel->value = 150 * shadelight[0];
-		}
-		else
-		{
+		} else {
 			gl_lightlevel->value = 150 * shadelight[2];
 		}
-	}
-	else
-	{
-		if (shadelight[1] > shadelight[2])
-		{
+	} else {
+		if (shadelight[1] > shadelight[2]) {
 			gl_lightlevel->value = 150 * shadelight[1];
-		}
-		else
-		{
+		} else {
 			gl_lightlevel->value = 150 * shadelight[2];
 		}
 	}
 }
 
-void
-R_RenderFrame(refdef_t *fd)
-{
+void R_RenderFrame(refdef_t *fd) {
 	R_RenderView(fd);
 	R_SetLightLevel();
-	R_SetGL2D();
+	R_SetGL2D(vid.width, vid.height);
 }
 
 void
@@ -1024,13 +925,10 @@ R_Register(void)
 	Cmd_AddCommand("gl_strings", R_Strings);
 }
 
-qboolean
-R_SetMode(void)
-{
+qboolean R_SetMode(void) {
 	rserr_t err;
-	qboolean fullscreen;
 
-	fullscreen = vid_fullscreen->value;
+	qboolean fullscreen = vid_fullscreen->value;
 
 	vid_fullscreen->modified = false;
 	gl_mode->modified = false;
@@ -1040,46 +938,31 @@ R_SetMode(void)
 	vid.width = gl_customwidth->value;
 	vid.height = gl_customheight->value;
 
-	if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value,
-					 fullscreen)) == rserr_ok)
-	{
-		if (gl_mode->value == -1)
-		{
+	if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, fullscreen)) == rserr_ok) {
+		if (gl_mode->value == -1) {
 			gl_state.prev_mode = 4; /* safe default for custom mode */
-		}
-		else
-		{
+		} else {
 			gl_state.prev_mode = gl_mode->value;
 		}
-	}
-	else
-	{
-		if (err == rserr_invalid_fullscreen)
-		{
+	} else {
+		if (err == rserr_invalid_fullscreen) {
 			Cvar_SetValue("vid_fullscreen", 0);
 			vid_fullscreen->modified = false;
 			VID_Printf(PRINT_ALL, "ref_gl::R_SetMode() - fullscreen unavailable in this mode\n");
-
-			if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, false)) == rserr_ok)
-			{
+			if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_mode->value, false)) == rserr_ok) {
 				return true;
 			}
-		}
-		else if (err == rserr_invalid_mode)
-		{
+		} else if (err == rserr_invalid_mode) {
 			Cvar_SetValue("gl_mode", gl_state.prev_mode);
 			gl_mode->modified = false;
 			VID_Printf(PRINT_ALL, "ref_gl::R_SetMode() - invalid mode\n");
 		}
-
 		/* try setting it back to something safe */
-		if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_state.prev_mode, false)) != rserr_ok)
-		{
+		if ((err = GLimp_SetMode(&vid.width, &vid.height, gl_state.prev_mode, false)) != rserr_ok) {
 			VID_Printf(PRINT_ALL, "ref_gl::R_SetMode() - could not revert to safe mode\n");
 			return false;
 		}
 	}
-
 	return true;
 }
 
@@ -1312,124 +1195,81 @@ R_Init(void *hinstance, void *hWnd)
 	return true;
 }
 
-void
-R_Shutdown(void)
-{
+void R_Shutdown(void) {
 	Cmd_RemoveCommand("modellist");
 	Cmd_RemoveCommand("screenshot");
 	Cmd_RemoveCommand("imagelist");
 	Cmd_RemoveCommand("gl_strings");
-
 	Mod_FreeAll();
-
 	R_ShutdownImages();
-
 	/* shutdown OS specific OpenGL stuff like contexts, etc.  */
 	GLimp_Shutdown();
-
 	/* shutdown our QGL subsystem */
 	QGL_Shutdown();
 }
 
 extern void UpdateHardwareGamma();
 
-void
-R_BeginFrame(float camera_separation)
-{
+void R_BeginFrame(float camera_separation) {
 	gl_state.camera_separation = camera_separation;
 
 	/* change modes if necessary */
-	if (gl_mode->modified)
-	{
+	if (gl_mode->modified) {
 		vid_fullscreen->modified = true;
 	}
 
-	if (vid_gamma->modified)
-	{
+	if (vid_gamma->modified) {
 		vid_gamma->modified = false;
-
-		if (gl_state.hwgamma)
-		{
+		if (gl_state.hwgamma) {
 			UpdateHardwareGamma();
 		}
 	}
 
-	/* go into 2D mode */
-	glViewport(0, 0, vid.width, vid.height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, vid.width, vid.height, 0, -99999, 99999);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_BLEND);
-	glEnable(GL_ALPHA_TEST);
-	glColor4f(1, 1, 1, 1);
+    R_SetGL2D(vid.width, vid.height);
 
 	/* draw buffer stuff */
-	if (gl_drawbuffer->modified)
-	{
+	if (gl_drawbuffer->modified) {
 		gl_drawbuffer->modified = false;
-
-		if ((gl_state.camera_separation == 0) || !gl_state.stereo_enabled)
-		{
-			if (Q_stricmp(gl_drawbuffer->string, "GL_FRONT") == 0)
-			{
+		if ((gl_state.camera_separation == 0) || !gl_state.stereo_enabled) {
+			if (Q_stricmp(gl_drawbuffer->string, "GL_FRONT") == 0) {
 				glDrawBuffer(GL_FRONT);
-			}
-			else
-			{
+			} else {
 				glDrawBuffer(GL_BACK);
 			}
 		}
 	}
 
 	/* texturemode stuff */
-	if (gl_texturemode->modified || (gl_config.anisotropic && gl_anisotropic->modified))
-	{
+	if (gl_texturemode->modified || (gl_config.anisotropic && gl_anisotropic->modified)) {
 		R_TextureMode(gl_texturemode->string);
 		gl_texturemode->modified = false;
 		gl_anisotropic->modified = false;
 	}
 
-	if (gl_texturealphamode->modified)
-	{
+	if (gl_texturealphamode->modified) {
 		R_TextureAlphaMode(gl_texturealphamode->string);
 		gl_texturealphamode->modified = false;
 	}
 
-	if (gl_texturesolidmode->modified)
-	{
+	if (gl_texturesolidmode->modified) {
 		R_TextureSolidMode(gl_texturesolidmode->string);
 		gl_texturesolidmode->modified = false;
 	}
-
 	/* clear screen if desired */
 	R_Clear();
 }
 
-void
-R_SetPalette(const unsigned char *palette)
-{
-	int i;
-
+void R_SetPalette(const unsigned char *palette) {
 	byte *rp = (byte *)r_rawpalette;
-
-	if (palette)
-	{
-		for (i = 0; i < 256; i++)
-		{
+	if (palette) {
+		for (int i = 0; i < 256; i++) {
 			rp[i * 4 + 0] = palette[i * 3 + 0];
 			rp[i * 4 + 1] = palette[i * 3 + 1];
 			rp[i * 4 + 2] = palette[i * 3 + 2];
 			rp[i * 4 + 3] = 0xff;
 		}
-	}
-	else
-	{
-		for (i = 0; i < 256; i++)
-		{
+	} else {
+		for (int i = 0; i < 256; i++) {
 			rp[i * 4 + 0] = LittleLong(d_8to24table[i]) & 0xff;
 			rp[i * 4 + 1] = (LittleLong(d_8to24table[i]) >> 8) & 0xff;
 			rp[i * 4 + 2] = (LittleLong(d_8to24table[i]) >> 16) & 0xff;
@@ -1438,48 +1278,45 @@ R_SetPalette(const unsigned char *palette)
 	}
 
 	R_SetTexturePalette(r_rawpalette);
-
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(1, 0, 0.5, 0.5);
 }
 
-/* R_DrawBeam */
-void
-R_DrawBeam(entity_t *e)
-{
-	int i;
-	float r, g, b;
-
-	vec3_t perpvec;
-	vec3_t direction, normalized_direction;
-	vec3_t start_points[NUM_BEAM_SEGS], end_points[NUM_BEAM_SEGS];
-	vec3_t oldorigin, origin;
-
+void R_DrawBeam(entity_t *e) {
+    vec3_t oldorigin;
+    VectorCopy(e->oldorigin, oldorigin);
+    /*
 	oldorigin[0] = e->oldorigin[0];
 	oldorigin[1] = e->oldorigin[1];
 	oldorigin[2] = e->oldorigin[2];
+    */
 
+	vec3_t origin;
+    VectorCopy(e->origin, origin);
+    /*
 	origin[0] = e->origin[0];
 	origin[1] = e->origin[1];
 	origin[2] = e->origin[2];
+    */
 
+	vec3_t direction, normalized_direction;
 	normalized_direction[0] = direction[0] = oldorigin[0] - origin[0];
 	normalized_direction[1] = direction[1] = oldorigin[1] - origin[1];
 	normalized_direction[2] = direction[2] = oldorigin[2] - origin[2];
 
-	if (VectorNormalize(normalized_direction) == 0)
-	{
+	if (VectorNormalize(normalized_direction) == 0){
 		return;
 	}
 
+	vec3_t perpvec;
 	PerpendicularVector(perpvec, normalized_direction);
 	VectorScale(perpvec, e->frame / 2, perpvec);
 
-	for (i = 0; i < 6; i++)
-	{
-		RotatePointAroundVector(start_points[i], normalized_direction, perpvec,
-				(360.0 / NUM_BEAM_SEGS) * i);
+	vec3_t start_points[NUM_BEAM_SEGS];
+    vec3_t end_points[NUM_BEAM_SEGS];
+    for(int i = 0; i < NUM_BEAM_SEGS; i++) {
+		RotatePointAroundVector(start_points[i], normalized_direction, perpvec, (360.0 / NUM_BEAM_SEGS) * i);
 		VectorAdd(start_points[i], origin, start_points[i]);
 		VectorAdd(start_points[i], direction, end_points[i]);
 	}
@@ -1488,9 +1325,9 @@ R_DrawBeam(entity_t *e)
 	glEnable(GL_BLEND);
 	glDepthMask(GL_FALSE);
 
-	r = (LittleLong(d_8to24table[e->skinnum & 0xFF])) & 0xFF;
-	g = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 8) & 0xFF;
-	b = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 16) & 0xFF;
+	float r = (LittleLong(d_8to24table[e->skinnum & 0xFF])) & 0xFF;
+	float g = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 8) & 0xFF;
+	float b = (LittleLong(d_8to24table[e->skinnum & 0xFF]) >> 16) & 0xFF;
 
 	r *= 1 / 255.0F;
 	g *= 1 / 255.0F;
@@ -1500,8 +1337,7 @@ R_DrawBeam(entity_t *e)
 
 	glBegin(GL_TRIANGLE_STRIP);
 
-	for (i = 0; i < NUM_BEAM_SEGS; i++)
-	{
+	for(int i = 0; i < NUM_BEAM_SEGS; i++) {
 		glVertex3fv(start_points[i]);
 		glVertex3fv(end_points[i]);
 		glVertex3fv(start_points[(i + 1) % NUM_BEAM_SEGS]);
@@ -1514,11 +1350,3 @@ R_DrawBeam(entity_t *e)
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 }
-
-/*void
-R_GetRefAPI(void)
-{
-	Swap_Init();
-}*/
-
-

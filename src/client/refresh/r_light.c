@@ -315,49 +315,32 @@ R_RecursiveLightPoint(mnode_t *node, vec3_t start, vec3_t end)
 	return R_RecursiveLightPoint(node->children[!side], mid, end);
 }
 
-void
-R_LightPoint(vec3_t p, vec3_t color)
-{
-	vec3_t end;
-	float r;
-	int lnum;
-	dlight_t *dl;
-	vec3_t dist;
-	float add;
-
-	if (!r_worldmodel->lightdata)
-	{
+void R_LightPoint(vec3_t ent_origin, vec3_t p, vec3_t color) {
+	if (!r_worldmodel->lightdata) {
 		color[0] = color[1] = color[2] = 1.0;
 		return;
 	}
 
+	vec3_t end;
 	end[0] = p[0];
 	end[1] = p[1];
 	end[2] = p[2] - 2048;
 
-	r = R_RecursiveLightPoint(r_worldmodel->nodes, p, end);
-
-	if (r == -1)
-	{
+	float r = R_RecursiveLightPoint(r_worldmodel->nodes, p, end);
+	if (r == -1) {
 		VectorCopy(vec3_origin, color);
-	}
-	else
-	{
+	} else {
 		VectorCopy(pointcolor, color);
 	}
 
 	/* add dynamic lights */
-	dl = r_newrefdef.dlights;
-
-	for (lnum = 0; lnum < r_newrefdef.num_dlights; lnum++, dl++)
-	{
-		VectorSubtract(currententity->origin,
-				dl->origin, dist);
-		add = dl->intensity - VectorLength(dist);
+	dlight_t* dl = r_newrefdef.dlights;
+	for (int lnum = 0; lnum < r_newrefdef.num_dlights; lnum++, dl++) {
+        vec3_t dist;
+		VectorSubtract(ent_origin, dl->origin, dist);
+		float add = dl->intensity - VectorLength(dist);
 		add *= (1.0 / 256);
-
-		if (add > 0)
-		{
+		if (add > 0) {
 			VectorMA(color, add, dl->color, color);
 		}
 	}

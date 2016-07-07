@@ -135,49 +135,36 @@ LM_AllocBlock(int w, int h, int *x, int *y)
 	return true;
 }
 
-void
-LM_BuildPolygonFromSurface(msurface_t *fa)
-{
-	int i, lindex, lnumverts;
-	medge_t *pedges, *r_pedge;
-	float *vec;
-	float s, t;
-	glpoly_t *poly;
-	vec3_t total;
-
+void LM_BuildPolygonFromSurface(msurface_t *fa, model_t* model) {
 	/* reconstruct the polygon */
-	pedges = currentmodel->edges;
-	lnumverts = fa->numedges;
+	medge_t* pedges = model->edges;
+	int lnumverts = fa->numedges;
 
+	vec3_t total;
 	VectorClear(total);
 
 	/* draw texture */
-	poly = Hunk_Alloc(sizeof(glpoly_t) +
-		   (lnumverts - 4) * VERTEXSIZE * sizeof(float));
+	glpoly_t* poly = Hunk_Alloc(sizeof(glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof(float));
 	poly->next = fa->polys;
 	poly->flags = fa->flags;
 	fa->polys = poly;
 	poly->numverts = lnumverts;
 
-	for (i = 0; i < lnumverts; i++)
-	{
-		lindex = currentmodel->surfedges[fa->firstedge + i];
-
-		if (lindex > 0)
-		{
-			r_pedge = &pedges[lindex];
-			vec = currentmodel->vertexes[r_pedge->v[0]].position;
-		}
-		else
-		{
-			r_pedge = &pedges[-lindex];
-			vec = currentmodel->vertexes[r_pedge->v[1]].position;
+	for (int i = 0; i < lnumverts; i++) {
+		int lindex = model->surfedges[fa->firstedge + i];
+        float* vec;
+		if (lindex > 0) {
+			medge_t* r_pedge = &pedges[lindex];
+			vec = model->vertexes[r_pedge->v[0]].position;
+		} else {
+			medge_t* r_pedge = &pedges[-lindex];
+			vec = model->vertexes[r_pedge->v[1]].position;
 		}
 
-		s = DotProduct(vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		float s = DotProduct(vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
 		s /= fa->texinfo->image->width;
 
-		t = DotProduct(vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		float t = DotProduct(vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
 		t /= fa->texinfo->image->height;
 
 		VectorAdd(total, vec, total);
