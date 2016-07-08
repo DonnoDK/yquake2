@@ -657,7 +657,8 @@ static void R_RenderView(refdef_t *fd) {
 
 	R_PolyBlend();
 
-    {
+    qboolean render_towerbuildingtarget = true;
+    if(render_towerbuildingtarget){
         float angle = 90 - fd->viewangles[0];
         float radians = (angle * M_PI) / 180.0f;
         float length = tan(radians);
