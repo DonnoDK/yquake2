@@ -77,6 +77,7 @@ CL_AddMuzzleFlash(void)
 
 	pl = &cl_entities[i];
 
+    /* TODO: consider color flash */
 	dl = CL_AllocDlight(i);
 	VectorCopy(pl->current.origin, dl->origin);
 	AngleVectors(pl->current.angles, fv, rv, NULL);
@@ -371,6 +372,7 @@ CL_AddMuzzleFlash2(void)
 				monster_flash_offset[flash_number][1] +
 				monster_flash_offset[flash_number][2];
 
+    /* TODO: consider color flash */
 	dl = CL_AllocDlight(ent);
 	VectorCopy(origin, dl->origin);
 	dl->radius = 200.0f + (randk() & 31);
@@ -952,58 +954,6 @@ void CL_BlasterTrail(vec3_t start, vec3_t end) {
 	}
 }
 
-/*
-void CL_QuadTrail(vec3_t start, vec3_t end) {
-	vec3_t move;
-	vec3_t vec;
-	int len;
-	int j;
-	cparticle_t *p;
-	int dec;
-	float time;
-
-	time = (float)cl.time;
-
-	VectorCopy(start, move);
-	VectorSubtract(end, start, vec);
-	len = (int)VectorNormalize(vec);
-
-	dec = 5;
-	VectorScale(vec, 5, vec);
-
-	while (len > 0)
-	{
-		len -= dec;
-
-		if (!free_particles)
-		{
-			return;
-		}
-
-		p = free_particles;
-		free_particles = p->next;
-		p->next = active_particles;
-		active_particles = p;
-		VectorClear(p->accel);
-
-		p->time = time;
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0f / (0.8f + frandk() * 0.2f);
-		p->color = 115;
-
-		for (j = 0; j < 3; j++)
-		{
-			p->org[j] = move[j] + crandk() * 16;
-			p->vel[j] = crandk() * 5;
-			p->accel[j] = 0;
-		}
-
-		VectorAdd(move, vec, move);
-	}
-}
-*/
-
 void CL_FlagTrail(vec3_t start, vec3_t end, int color) {
 	vec3_t move;
 	vec3_t vec;
@@ -1041,9 +991,6 @@ void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags) {
 	float dec;
 	float orgscale;
 	float velscale;
-	float time;
-
-	time = (float)cl.time;
 
 	VectorCopy(start, move);
 	VectorSubtract(end, start, vec);
@@ -1614,23 +1561,8 @@ void CL_ClearEffects(void) {
 	CL_ClearLightStyles();
 }
 
-void CL_Flashlight(int ent, vec3_t pos) {
-	cdlight_t *dl;
-
-	dl = CL_AllocDlight(ent);
-	VectorCopy(pos, dl->origin);
-	dl->radius = 400;
-	dl->minlight = 250;
-	dl->die = cl.time + 100;
-	dl->color[0] = 1;
-	dl->color[1] = 1;
-	dl->color[2] = 1;
-}
-
 void CL_ColorFlash(vec3_t pos, int ent, float intensity, float r, float g, float b) {
-	cdlight_t *dl;
-
-	dl = CL_AllocDlight(ent);
+	cdlight_t* dl = CL_AllocDlight(ent);
 	VectorCopy(pos, dl->origin);
 	dl->radius = intensity;
 	dl->minlight = 250;
@@ -1638,6 +1570,10 @@ void CL_ColorFlash(vec3_t pos, int ent, float intensity, float r, float g, float
 	dl->color[0] = r;
 	dl->color[1] = g;
 	dl->color[2] = b;
+}
+
+void CL_Flashlight(int ent, vec3_t pos) {
+    CL_ColorFlash(pos, ent, 400, 1, 1, 1);
 }
 
 void CL_DebugTrail(vec3_t start, vec3_t end) {
@@ -1874,11 +1810,12 @@ void CL_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int ma
 void CL_ParticleSteamEffect2(cl_sustain_t *self) {
 	vec3_t dir;
 	VectorCopy(self->dir, dir);
+
 	vec3_t r, u;
 	MakeNormalVectors(dir, r, u);
 
 	for (int i = 0; i < self->count; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0 / (0.5 + frandk() * 0.3));
+		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -1936,82 +1873,52 @@ void CL_TrackerTrail(vec3_t start, vec3_t end, int particleColor) {
 	}
 }
 
-void CL_Tracker_Shell(vec3_t origin) {
-	vec3_t dir;
-	for (int i = 0; i < 300; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
-		if (!p) {
-			return;
-		}
-		VectorClear(p->accel);
-		p->color = 0;
-		dir[0] = crandk();
-		dir[1] = crandk();
-		dir[2] = crandk();
-		VectorNormalize(dir);
+static int ActivateInstantParticle(vec3_t origin, float scale, float color){
+    cparticle_t* p = GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
+    if (!p) {
+        return 0;
+    }
+    VectorClear(p->accel);
+    p->color = color;
+    vec3_t dir = {crandk(), crandk(), crandk()};
+    VectorNormalize(dir);
+    VectorMA(origin, scale, dir, p->org);
+    return 1;
+}
 
-		VectorMA(origin, 40, dir, p->org);
+void CL_Tracker_Shell(vec3_t origin) {
+	for (int i = 0; i < 300; i++) {
+        if(!ActivateInstantParticle(origin, 40, 0)){
+            return;
+        }
 	}
 }
 
 void CL_MonsterPlasma_Shell(vec3_t origin) {
-	vec3_t dir;
 	for (int i = 0; i < 40; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
-		if (!p) {
-			return;
-		}
-		VectorClear(p->accel);
-		p->color = 0xe0;
-		dir[0] = crandk();
-		dir[1] = crandk();
-		dir[2] = crandk();
-		VectorNormalize(dir);
-
-		VectorMA(origin, 10, dir, p->org);
+        if(!ActivateInstantParticle(origin, 10, 0xe0)){
+            return;
+        }
 	}
 }
 
 void CL_Widowbeamout(cl_sustain_t *self) {
 	static int colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
 	float ratio = 1.0f - (((float)self->endtime - (float)cl.time) / 2100.0f);
-
-	vec3_t dir;
 	for (int i = 0; i < 300; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
-		if (!p) {
-			return;
-		}
-		VectorClear(p->accel);
-		p->color = colortable[randk() & 3];
-		dir[0] = crandk();
-		dir[1] = crandk();
-		dir[2] = crandk();
-		VectorNormalize(dir);
-
-		VectorMA(self->org, (45.0 * ratio), dir, p->org);
+        if(!ActivateInstantParticle(self->org, (45 * ratio), colortable[randk() & 3])){
+            return;
+        }
 	}
 }
 
 void CL_Nukeblast(cl_sustain_t *self) {
 	static int colortable[4] = {110, 112, 114, 116};
 	float ratio = 1.0f - (((float)self->endtime - (float)cl.time) / 1000.0f);
-
-	vec3_t dir;
 	for (int i = 0; i < 700; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
-		if (!p) {
-			return;
-		}
-
-		VectorClear(p->accel);
-		p->color = colortable[randk() & 3];
-		dir[0] = crandk();
-		dir[1] = crandk();
-		dir[2] = crandk();
-		VectorNormalize(dir);
-
-		VectorMA(self->org, (200.0 * ratio), dir, p->org);
+        if(!ActivateInstantParticle(self->org, (200.0f * ratio), colortable[randk() & 3])){
+            return;
+        }
 	}
 }
 
@@ -2035,47 +1942,6 @@ void CL_WidowSplash(vec3_t org) {
 		p->accel[0] = p->accel[1] = 0;
 	}
 }
-
-/*
-void
-CL_Tracker_Explode(vec3_t origin)
-{
-	vec3_t dir, backdir;
-	int i;
-	cparticle_t *p;
-	float time;
-
-	time = (float)cl.time;
-
-	for (i = 0; i < 300; i++)
-	{
-		if (!free_particles)
-		{
-			return;
-		}
-
-		p = free_particles;
-		free_particles = p->next;
-		p->next = active_particles;
-		active_particles = p;
-		VectorClear(p->accel);
-
-		p->time = time;
-
-		p->alpha = 1.0;
-		p->alphavel = -1.0;
-		p->color = 0;
-		dir[0] = crandk();
-		dir[1] = crandk();
-		dir[2] = crandk();
-		VectorNormalize(dir);
-		VectorScale(dir, -1, backdir);
-
-		VectorMA(origin, 64, dir, p->org);
-		VectorScale(backdir, 64, p->vel);
-	}
-}
-*/
 
 void CL_TagTrail(vec3_t start, vec3_t end, int color) {
 	vec3_t move;
