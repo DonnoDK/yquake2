@@ -84,7 +84,7 @@ void R_RenderDlights(dlight_t* dlights, int num_dlights) {
 }
 
 void
-R_MarkLights(dlight_t *light, int bit, mnode_t *node)
+R_MarkLights(const dlight_t *light, int bit, mnode_t *node)
 {
 	cplane_t *splitplane;
 	float dist;

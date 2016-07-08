@@ -561,12 +561,15 @@ static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
     }
 }
 
+
 static void R_DrawInlineBModel(model_t* model, int frame, int flags) {
+    const dlight_t* const dlights = r_newrefdef.dlights;
+    const int num_dlights = r_newrefdef.num_dlights;
 	/* calculate dynamic lighting for bmodel */
 	if (!gl_flashblend->value) {
-		for (int k = 0; k < r_newrefdef.num_dlights; k++) {
-            dlight_t* lt = &r_newrefdef.dlights[k];
-			R_MarkLights(lt, 1 << k, model->nodes + model->firstnode);
+		for (int i = 0; i < num_dlights; i++) {
+            const dlight_t* l = &dlights[i];
+			R_MarkLights(l, 1 << i, model->nodes + model->firstnode);
 		}
 	}
 
