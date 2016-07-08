@@ -34,6 +34,21 @@ vec3_t vec3_origin = {0, 0, 0};
 
 /* ============================================================================ */
 
+vector3_t Vec3ToStruct(vec3_t v){
+    vector3_t vs = {v[0], v[1], v[2]};
+    return vs;
+}
+
+vector3_t Vector3Add(vector3_t v1, vector3_t v2){
+    vector3_t res = {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
+    return res;
+}
+/*
+#define VectorAdd(a, b, c) \
+	(c[0] = a[0] + b[0], c[1] = a[1] + b[1], c[2] =	\
+	 a[2] + b[2])
+*/
+
 void
 RotatePointAroundVector(vec3_t dst, const vec3_t dir,
 		const vec3_t point, float degrees)

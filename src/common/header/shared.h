@@ -126,9 +126,16 @@ typedef enum
  *
  * ==============================================================
  */
+typedef struct vector3_s{
+    float x, y, z;
+}vector3_t;
 
 typedef float vec_t;
 typedef vec_t vec3_t[3];
+
+vector3_t Vec3ToStruct(vec3_t v);
+vector3_t Vector3Add(vector3_t v1, vector3_t v2);
+
 
 #ifndef M_PI
  #define M_PI 3.14159265358979323846 /* matches value in gcc v2 math.h */
