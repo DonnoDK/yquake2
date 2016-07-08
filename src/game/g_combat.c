@@ -31,87 +31,71 @@
  * directly damage the target.  Used for
  * explosions and melee attacks.
  */
-qboolean
-CanDamage(edict_t *targ, edict_t *inflictor)
-{
+qboolean CanDamage(edict_t *targ, edict_t *inflictor) {
+	if (!targ || !inflictor) {
+		return false;
+	}
+
 	vec3_t dest;
 	trace_t trace;
 
-	if (!targ || !inflictor)
-	{
-		return false;
-	}
 
 	/* bmodels need special checking because their origin is 0,0,0 */
-	if (targ->movetype == MOVETYPE_PUSH)
-	{
+	if (targ->movetype == MOVETYPE_PUSH) {
 		VectorAdd(targ->absmin, targ->absmax, dest);
 		VectorScale(dest, 0.5, dest);
-		trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin,
-				dest, inflictor, MASK_SOLID);
+		trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
-		if (trace.fraction == 1.0)
-		{
+		if (trace.fraction == 1.0) {
 			return true;
 		}
 
-		if (trace.ent == targ)
-		{
+		if (trace.ent == targ) {
 			return true;
 		}
-
 		return false;
 	}
 
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin,
-			targ->s.origin, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, MASK_SOLID);
 
-	if (trace.fraction == 1.0)
-	{
+	if (trace.fraction == 1.0) {
 		return true;
 	}
 
+    /* TODO: refactor this! */
 	VectorCopy(targ->s.origin, dest);
 	dest[0] += 15.0;
 	dest[1] += 15.0;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin,
-			dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
-	if (trace.fraction == 1.0)
-	{
+	if (trace.fraction == 1.0) {
 		return true;
 	}
 
 	VectorCopy(targ->s.origin, dest);
 	dest[0] += 15.0;
 	dest[1] -= 15.0;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin,
-			dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
-	if (trace.fraction == 1.0)
-	{
+	if (trace.fraction == 1.0) {
 		return true;
 	}
 
 	VectorCopy(targ->s.origin, dest);
 	dest[0] -= 15.0;
 	dest[1] += 15.0;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin,
-			dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
-	if (trace.fraction == 1.0)
-	{
+	if (trace.fraction == 1.0) {
 		return true;
 	}
 
 	VectorCopy(targ->s.origin, dest);
 	dest[0] -= 15.0;
 	dest[1] -= 15.0;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin,
-			dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
-	if (trace.fraction == 1.0)
-	{
+	if (trace.fraction == 1.0) {
 		return true;
 	}
 
