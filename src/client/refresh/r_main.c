@@ -658,55 +658,53 @@ static void R_RenderView(refdef_t *fd) {
 	R_PolyBlend();
 
     {
+        float angle = 90 - fd->viewangles[0];
+        float radians = (angle * M_PI) / 180.0f;
+        float length = tan(radians);
+        if(length >= 7) return;
+        
         glDisable(GL_ALPHA_TEST);
         glEnable(GL_BLEND);
-        //glDisable(GL_DEPTH_TEST);
         glDisable(GL_TEXTURE_2D);
-        //glDisable(GL_CULL_FACE);
-
-        //glLoadIdentity();
-
-        //glTranslatef(0, -4, -10);
-        //glTranslatef(0, 10, 1);
 
         glTranslatef(fd->vieworg[0], fd->vieworg[1], fd->vieworg[2] - 46);
         glRotatef(fd->viewangles[1], 0, 0, 1);
 
-        float angle = 90 - fd->viewangles[0];
-        Com_Printf("angle: %f\n", angle);
-        //float length = 46 / atan(angle);
-        float radians = (angle * M_PI) / 180.0f;
-        Com_Printf("radians: %f\n", radians);
-        float length = tan(radians);
-        Com_Printf("length: %f\n", length);
-
-        glTranslatef(46 * length, 0, 0);
+        glTranslatef(30 * length, 0, 0);
         glRotatef(-fd->viewangles[1], 0, 0, 1);
 
-        //glRotatef(fd->viewangles[0], 1, 0, 0);
+        if(length >= 5.0f){
+            glColor4f(1,0,0,0.4f);
+        }else{
+            glColor4f(0,1,0,0.4f);
+        }
 
         glScalef(20,20,20);
 
+        vec3_t verts[] = {
+            {-1, -1, 0}, // 0
+            {-1, 1, 0}, // 1
+            {1, 1, 0},  // 2
+            {1, -1, 0}, // 3
+            {-1, -1, 2},// 4
+            {-1, 1, 2}, // 5
+            {1, 1, 2},  // 6
+            {1, -1, 2}  // 7
+        };
+
+        int indicies[] = {
+            1, 2, 3, 0,
+            0, 4, 7, 3,
+            6, 5, 1, 2,
+            7, 6, 2, 3,
+            5, 4, 0, 1,
+            5, 6, 7, 4
+        };
+
         glBegin(GL_QUADS);
-
-            glColor4f(1,0,0,0.5f);
-            glVertex3f(-1, 1, 0);
-            glVertex3f(1,  1, 0);
-            glVertex3f(1,  -1, 0);
-            glVertex3f(-1, -1, 0);
-
-            glColor4f(1,0,0,0.5f);
-            glVertex3f(-1, -1, 2);
-            glVertex3f(1,  -1, 2);
-            glVertex3f(1,  -1, 0);
-            glVertex3f(-1, -1, 0);
-
-            glColor4f(1,0,0,0.5f);
-            glVertex3f(-1, 1, 0);
-            glVertex3f(1,  1, 0);
-            glVertex3f(1,  1, 2);
-            glVertex3f(-1, 1, 2);
-
+        for(int i = 0; i < 24; i++){
+            glVertex3fv(verts[indicies[i]]);
+        }
         glEnd();
 
         glDisable(GL_BLEND);
