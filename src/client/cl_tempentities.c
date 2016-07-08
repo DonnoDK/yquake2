@@ -80,6 +80,7 @@ void CL_ExplosionParticles(vec3_t org);
 void CL_Explosion_Particle(vec3_t org, float size,
 		qboolean large, qboolean rocket);
 
+/* TODO: refactor and remove the macro */
 #define EXPLOSION_PARTICLES(x) CL_ExplosionParticles((x));
 
 struct sfx_s *cl_sfx_ric1;
