@@ -289,7 +289,9 @@ SV_CheckTimeouts(void)
  */
 void SV_PrepWorldFrame(void) {
 	for (int i = 0; i < ge->num_edicts; i++) {
-		edict_t* ent = &ge->edicts[i];
+        /* TODO: refactor and dont depend on macro */
+        /* NOTE: use the macro for now, as simply referring to index introduces bugs */
+		edict_t* ent = EDICT_NUM(i);
 		/* events only last for a single message */
 		ent->s.event = 0;
 	}
