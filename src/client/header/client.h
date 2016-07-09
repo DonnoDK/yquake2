@@ -326,7 +326,6 @@ typedef struct cl_sustain
 } cl_sustain_t;
 
 void CL_ParticleSteamEffect2(cl_sustain_t *self);
-
 void CL_TeleporterParticles (entity_state_t *ent);
 void CL_ParticleEffect (vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect2 (vec3_t org, vec3_t dir, int color, int count);
@@ -350,6 +349,8 @@ typedef struct particle_s
 	float		alphavel;
 } cparticle_t;
 
+
+cparticle_t* CL_GetParticle(float time, float alpha, float alphavel);
 void CL_ClearEffects (void);
 void CL_ClearTEnts (void);
 void CL_BlasterTrail (vec3_t start, vec3_t end);
@@ -367,7 +368,6 @@ void CL_SmokeTrail (vec3_t start, vec3_t end, int colorStart, int colorRun, int 
 void CL_Flashlight (int ent, vec3_t pos);
 void CL_ForceWall (vec3_t start, vec3_t end, int color);
 void CL_FlameEffects (centity_t *ent, vec3_t origin);
-void CL_GenericParticleEffect (vec3_t org, vec3_t dir, int color, int count, int numcolors, int dirspread, float alphavel);
 void CL_BubbleTrail2 (vec3_t start, vec3_t end, int dist);
 void CL_Heatbeam (vec3_t start, vec3_t end);
 void CL_ParticleSteamEffect (vec3_t org, vec3_t dir, int color, int count, int magnitude);

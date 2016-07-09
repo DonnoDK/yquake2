@@ -36,22 +36,7 @@ static vec3_t avelocities[NUMVERTEXNORMALS];
 extern struct model_s *cl_mod_smoke;
 extern struct model_s *cl_mod_flash;
 
-extern cparticle_t *active_particles, *free_particles;
-
-
-cparticle_t* GetParticle(float time, float alpha, float alphavel){
-    if(!free_particles){
-        return NULL;
-    }
-    cparticle_t* p = free_particles;
-    free_particles = p->next;
-    p->next = active_particles;
-    active_particles = p;
-    p->time = time;
-    p->alpha = alpha;
-    p->alphavel = alphavel;
-    return p;
-}
+extern cparticle_t *free_particles;
 
 void
 CL_AddMuzzleFlash(void)
@@ -792,7 +777,7 @@ CL_AddMuzzleFlash2(void)
 
 void CL_TeleporterParticles(entity_state_t *ent) {
 	for (int i = 0; i < 8; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -0.5f);
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.5f);
         if (!p) {
             return;
         }
@@ -813,7 +798,7 @@ void CL_TeleporterParticles(entity_state_t *ent) {
 
 static void CL_LogoutEffect(vec3_t org, int type) {
 	for (int i = 0; i < 500; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1.0 + frandk() * 0.3f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1.0 + frandk() * 0.3f));
         if (!p) {
             return;
         }
@@ -841,7 +826,7 @@ static void CL_LogoutEffect(vec3_t org, int type) {
 
 static void CL_ItemRespawnParticles(vec3_t org) {
 	for (int i = 0; i < 64; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1.0f + frandk() * 0.3f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1.0f + frandk() * 0.3f));
         if (!p) {
             return;
         }
@@ -861,7 +846,7 @@ static void CL_ItemRespawnParticles(vec3_t org) {
 
 void CL_ExplosionParticles(vec3_t org) {
 	for (int i = 0; i < 256; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -0.8f / (0.5f + frandk() * 0.3f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.8f / (0.5f + frandk() * 0.3f));
         if (!p) {
             return;
         }
@@ -881,7 +866,7 @@ void CL_BigTeleportParticles(vec3_t org) {
 	static int colortable[4] = {2 * 8, 13 * 8, 21 * 8, 18 * 8};
 
 	for (int i = 0; i < 4096; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -0.3f / (0.5f + frandk() * 0.3f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.3f / (0.5f + frandk() * 0.3f));
         if (!p) {
             return;
         }
@@ -908,7 +893,7 @@ void CL_BigTeleportParticles(vec3_t org) {
  */
 void CL_BlasterParticles(vec3_t org, vec3_t dir) {
 	for (int i = 0; i < 40; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
         if (!p) {
             return;
         }
@@ -937,7 +922,7 @@ void CL_BlasterTrail(vec3_t start, vec3_t end) {
 
 	while (len > 0) {
 		len -= dec;
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.3f + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.3f + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -965,7 +950,7 @@ void CL_FlagTrail(vec3_t start, vec3_t end, int color) {
 
 	while (len > 0) {
 		len -= dec;
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.8f + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.8f + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -1026,7 +1011,7 @@ void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags) {
 
 		/* drop less particles as it flies */
 		if ((randk() & 1023) < old->trailcount) {
-            cparticle_t* p = GetParticle(cl.time, 1.0f, 1);
+            cparticle_t* p = CL_GetParticle(cl.time, 1.0f, 1);
             if (!p) {
                 return;
             }
@@ -1112,7 +1097,7 @@ void CL_RocketTrail(vec3_t start, vec3_t end, centity_t *old) {
 		}
 
 		if ((randk() & 7) == 0) {
-            cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
+            cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
             if (!p) {
                 return;
             }
@@ -1147,7 +1132,7 @@ void CL_RailTrail(vec3_t start, vec3_t end) {
 	MakeNormalVectors(vec, right, up);
 
 	for (int i = 0; i < len; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -1176,7 +1161,7 @@ void CL_RailTrail(vec3_t start, vec3_t end) {
 	VectorCopy(start, move);
 
 	while (len > 0) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.6f + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.6f + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -1208,7 +1193,7 @@ void CL_IonripperTrail(vec3_t start, vec3_t ent) {
 	VectorScale(vec, 5, vec);
 
 	while (len > 0) {
-        cparticle_t* p = GetParticle(cl.time, 0.5f, -1.0f / (0.3f + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 0.5f, -1.0f / (0.3f + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -1249,7 +1234,7 @@ void CL_BubbleTrail(vec3_t start, vec3_t end) {
 	VectorScale(vec, dec, vec);
 
 	for (int i = 0; i < len; i += 32) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -1296,7 +1281,7 @@ void CL_FlyParticles(vec3_t origin, int count) {
 		forward[1] = cp * sy;
 		forward[2] = -sp;
 
-        cparticle_t* p = GetParticle(cl.time, 1, -100);
+        cparticle_t* p = CL_GetParticle(cl.time, 1, -100);
         if (!p) {
             return;
         }
@@ -1367,7 +1352,7 @@ void CL_BfgParticles(entity_t *ent) {
 		forward[1] = cp * sy;
 		forward[2] = -sp;
 
-        cparticle_t* p = GetParticle(time, 0, -100);
+        cparticle_t* p = CL_GetParticle(time, 0, -100);
         if (!p) {
             return;
         }
@@ -1405,7 +1390,7 @@ void CL_TrapParticles(entity_t *ent) {
 	VectorScale(vec, 5, vec);
 
 	while (len > 0) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.3f + frandk() * 0.2f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.3f + frandk() * 0.2f));
         if (!p) {
             return;
         }
@@ -1434,7 +1419,7 @@ void CL_TrapParticles(entity_t *ent) {
 		for (int i = -2; i <= 2; i += 4) {
 			for (int j = -2; j <= 2; j += 4) {
 				for (int k = -2; k <= 4; k += 4) {
-                    cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.3f + (randk() & 7) * 0.02f));
+                    cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.3f + (randk() & 7) * 0.02f));
                     if (!p) {
                         return;
                     }
@@ -1462,7 +1447,7 @@ void CL_TrapParticles(entity_t *ent) {
 
 void CL_BFGExplosionParticles(vec3_t org) {
 	for (int i = 0; i < 256; i++) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -0.8f / (0.5f + frandk() * 0.3f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.8f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -1484,7 +1469,7 @@ void CL_TeleportParticles(vec3_t org) {
 	for (int i = -16; i <= 16; i += 4) {
 		for (int j = -16; j <= 16; j += 4) {
 			for (int k = -16; k <= 32; k += 4) {
-                cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.3f + (randk() & 7) * 0.02f));
+                cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.3f + (randk() & 7) * 0.02f));
                 if (!p) {
                     return;
                 }
@@ -1592,7 +1577,7 @@ void CL_DebugTrail(vec3_t start, vec3_t end) {
 	VectorCopy(start, move);
 
 	while (len > 0) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -0.1f);
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.1f);
         if (!p) {
             return;
         }
@@ -1618,7 +1603,7 @@ void CL_SmokeTrail(vec3_t start, vec3_t end, int colorStart, int colorRun, int s
 	VectorScale(vec, spacing, vec);
 
 	while (len > 0) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.5f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.5f));
         if (!p) {
             return;
         }
@@ -1651,7 +1636,7 @@ void CL_ForceWall(vec3_t start, vec3_t end, int color8) {
 			return;
 		}
 		if (frandk() > 0.3) {
-            cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (3.0 + frandk() * 0.5f));
+            cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (3.0 + frandk() * 0.5f));
             if (!p) {
                 return;
             }
@@ -1688,7 +1673,7 @@ void CL_BubbleTrail2(vec3_t start, vec3_t end, int dist) {
 	VectorScale(vec, dist, vec);
 
 	for (int i = 0; i < len; i += dist) {
-        cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.1f));
+        cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.1f));
         if (!p) {
             return;
         }
@@ -1747,7 +1732,7 @@ void CL_Heatbeam(vec3_t start, vec3_t forward) {
 		}
 
 		for (rot = 0; rot < M_PI * 2; rot += rstep) {
-            cparticle_t* p = GetParticle(cl.time, 0.5f, -1000.0f);
+            cparticle_t* p = CL_GetParticle(cl.time, 0.5f, -1000.0f);
             if (!p) {
                 return;
             }
@@ -1786,7 +1771,7 @@ void CL_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int ma
 	MakeNormalVectors(dir, r, u);
 
 	for (int i = 0; i < count; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -1815,7 +1800,7 @@ void CL_ParticleSteamEffect2(cl_sustain_t *self) {
 	MakeNormalVectors(dir, r, u);
 
 	for (int i = 0; i < self->count; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -1854,7 +1839,7 @@ void CL_TrackerTrail(vec3_t start, vec3_t end, int particleColor) {
 	VectorScale(vec, 3, vec);
 
 	while (len > 0) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -2.0f);
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -2.0f);
 		if (!p) {
 			return;
 		}
@@ -1874,7 +1859,7 @@ void CL_TrackerTrail(vec3_t start, vec3_t end, int particleColor) {
 }
 
 static int ActivateInstantParticle(vec3_t origin, float scale, float color){
-    cparticle_t* p = GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
+    cparticle_t* p = CL_GetParticle(cl.time, 1.0f, INSTANT_PARTICLE);
     if (!p) {
         return 0;
     }
@@ -1927,7 +1912,7 @@ void CL_WidowSplash(vec3_t org) {
 
 	vec3_t dir;
 	for (int i = 0; i < 256; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -0.8f / (0.5f + frandk() * 0.3f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.8f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -1954,7 +1939,7 @@ void CL_TagTrail(vec3_t start, vec3_t end, int color) {
 	VectorScale(vec, 5, vec);
 
 	while (len >= 0) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.8f + frandk() * 0.2f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.8f + frandk() * 0.2f));
 		if (!p) {
 			return;
 		}
@@ -1975,7 +1960,7 @@ void CL_TagTrail(vec3_t start, vec3_t end, int color) {
 
 void CL_ColorExplosionParticles(vec3_t org, int color, int run) {
 	for (int i = 0; i < 128; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -0.4f / (0.6f + frandk() * 0.2f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -0.4f / (0.6f + frandk() * 0.2f));
 		if (!p) {
 			return;
 		}
@@ -1999,7 +1984,7 @@ void CL_ParticleSmokeEffect(vec3_t org, vec3_t dir, int color, int count, int ma
 	MakeNormalVectors(dir, r, u);
 
 	for (int i = 0; i < count; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -2024,7 +2009,7 @@ void CL_ParticleSmokeEffect(vec3_t org, vec3_t dir, int color, int count, int ma
  */
 void CL_BlasterParticles2(vec3_t org, vec3_t dir, unsigned int color) {
 	for (int i = 0; i < 40; i++) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (0.5f + frandk() * 0.3f));
 		if (!p) {
 			return;
 		}
@@ -2055,7 +2040,7 @@ void CL_BlasterTrail2(vec3_t start, vec3_t end) {
 	VectorScale(vec, 5, vec);
 
 	while (len > 0) {
-		cparticle_t* p = GetParticle(cl.time, 1.0f, -1.0f / (float)(0.3f + frandk() * 0.2f));
+		cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (float)(0.3f + frandk() * 0.2f));
 		if (!p) {
 			return;
 		}

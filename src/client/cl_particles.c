@@ -46,6 +46,20 @@ CL_ClearParticles(void)
 	particles[cl_numparticles - 1].next = NULL;
 }
 
+cparticle_t* CL_GetParticle(float time, float alpha, float alphavel){
+    if(!free_particles){
+        return NULL;
+    }
+    cparticle_t* p = free_particles;
+    free_particles = p->next;
+    p->next = active_particles;
+    active_particles = p;
+    p->time = time;
+    p->alpha = alpha;
+    p->alphavel = alphavel;
+    return p;
+}
+
 void
 CL_ParticleEffect(vec3_t org, vec3_t dir, int color, int count)
 {
