@@ -221,6 +221,9 @@ static void R_DrawSpriteModel(entity_t *e) {
 	glColor4f(1, 1, 1, 1);
 }
 
+/* NOTE: does not seem to be ever used. */
+/* Can be used to draw a placeholder "model" for an entity. */
+/* Can be used during testing or prototyping */
 static void R_DrawNullModel(entity_t* ent) {
     dlight_t* dlights = r_newrefdef.dlights;
     int num_dlights = r_newrefdef.num_dlights;
@@ -309,8 +312,6 @@ static void R_DrawEntitiesOnList(entity_t* entities, int num_entities) {
 }
 
 static void R_DrawParticles2(const particle_t particles[], int num_particles, const unsigned colortable[768]) {
-	const particle_t *p;
-	int i;
 	vec3_t up, right;
 	float scale;
 	byte color[4];
@@ -324,19 +325,16 @@ static void R_DrawParticles2(const particle_t particles[], int num_particles, co
 	VectorScale(vup, 1.5, up);
 	VectorScale(vright, 1.5, right);
 
-	for (p = particles, i = 0; i < num_particles; i++, p++)
-	{
+    for(int i = 0; i < num_particles; i++){
+        const particle_t* p = &particles[i];
 		/* hack a scale up to keep particles from disapearing */
 		scale = (p->origin[0] - r_origin[0]) * vpn[0] +
 				(p->origin[1] - r_origin[1]) * vpn[1] +
 				(p->origin[2] - r_origin[2]) * vpn[2];
 
-		if (scale < 20)
-		{
+		if (scale < 20) {
 			scale = 1;
-		}
-		else
-		{
+		} else {
 			scale = 1 + scale * 0.004;
 		}
 
@@ -368,15 +366,12 @@ static void R_DrawParticles2(const particle_t particles[], int num_particles, co
 
 static void R_DrawParticles(const particle_t particles[], int num_particles) {
     if (gl_ext_pointparameters->value && qglPointParameterfEXT) {
-
         glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
-
         glPointSize(LittleFloat(gl_particle_size->value));
 
         glBegin(GL_POINTS);
-
         for (int i = 0; i < num_particles; i++) {
             const particle_t* p = &particles[i];
             unsigned char color[4];
@@ -385,7 +380,6 @@ static void R_DrawParticles(const particle_t particles[], int num_particles) {
             glColor4ubv(color);
             glVertex3fv(p->origin);
         }
-
         glEnd();
 
         glDisable(GL_BLEND);
@@ -567,43 +561,29 @@ static void R_SetupGL(refdef_t* refdef){
 
 void R_Clear(void) {
 	if (gl_ztrick->value) {
-		static int trickframe;
 
+		static int trickframe;
 		if (gl_clear->value) {
 			glClear(GL_COLOR_BUFFER_BIT);
 		}
-
 		trickframe++;
 
-		if (trickframe & 1) {
-			gldepthmin = 0;
-			gldepthmax = 0.49999;
-			glDepthFunc(GL_LEQUAL);
-		} else {
-			gldepthmin = 1;
-			gldepthmax = 0.5;
-			glDepthFunc(GL_GEQUAL);
-		}
+        gldepthmin = trickframe & 1 ? 0 : 1;
+        gldepthmax = trickframe & 1 ? 0.49999f : 0.5f;
+        GLenum dfunc = trickframe & 1 ? GL_LEQUAL : GL_GEQUAL;
+        glDepthFunc(dfunc);
 	} else {
-		if (gl_clear->value) {
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		} else {
-			glClear(GL_DEPTH_BUFFER_BIT);
-		}
 
+        GLbitfield clearbit = gl_clear->value ? GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT : GL_DEPTH_BUFFER_BIT;
+        glClear(clearbit);
 		gldepthmin = 0;
 		gldepthmax = 1;
 		glDepthFunc(GL_LEQUAL);
 	}
-
 	glDepthRange(gldepthmin, gldepthmax);
-
 	if (gl_zfix->value) {
-		if (gldepthmax > gldepthmin) {
-			glPolygonOffset(0.05, 1);
-		} else {
-			glPolygonOffset(-0.05, -1);
-		}
+        int sign = gldepthmax > gldepthmin ? 1 : -1;
+        glPolygonOffset(sign * 0.05f, sign * 1);
 	}
 
 	/* stencilbuffer shadows */
@@ -737,13 +717,14 @@ void R_SetGL2D(int width, int height) {
 	glColor4f(1, 1, 1, 1);
 }
 
-static void R_SetLightLevel(void) {
+static void R_SetLightLevel(refdef_t* refdef) {
 	if (r_newrefdef.rdflags & RDF_NOWORLDMODEL) {
 		return;
 	}
+
 	/* save off light value for server to look at */
 	vec3_t shadelight;
-	R_LightPoint(r_newrefdef.vieworg, r_newrefdef.vieworg, shadelight, r_newrefdef.dlights, r_newrefdef.num_dlights, r_newrefdef.lightstyles);
+	R_LightPoint(refdef->vieworg, refdef->vieworg, shadelight, refdef->dlights, refdef->num_dlights, refdef->lightstyles);
 	/* pick the greatest component, which should be the
 	 * same as the mono value returned by software */
 	if (shadelight[0] > shadelight[1]) {
@@ -763,7 +744,7 @@ static void R_SetLightLevel(void) {
 
 void R_RenderFrame(refdef_t *fd) {
 	R_RenderView(fd);
-	R_SetLightLevel();
+	R_SetLightLevel(fd);
 	R_SetGL2D(vid.width, vid.height);
 }
 

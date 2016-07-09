@@ -26,8 +26,9 @@
 
 #include "header/client.h"
 
-cparticle_t *active_particles, *free_particles;
-cparticle_t particles[MAX_PARTICLES];
+static cparticle_t *active_particles;
+static cparticle_t *free_particles;
+static cparticle_t particles[MAX_PARTICLES];
 int cl_numparticles = MAX_PARTICLES;
 
 void CL_ClearParticles(void) {

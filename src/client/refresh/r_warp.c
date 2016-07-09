@@ -274,48 +274,31 @@ R_SubdivideSurface(msurface_t *fa)
 /*
  * Does a water warp on the pre-fragmented glpoly_t chain
  */
-void
-R_EmitWaterPolys(msurface_t *fa)
-{
-	glpoly_t *p, *bp;
-	float *v;
-	int i;
-	float s, t, os, ot;
+void R_EmitWaterPolys(msurface_t *fa, float time) {
 	float scroll;
-	float rdt = r_newrefdef.time;
-
-	if (fa->texinfo->flags & SURF_FLOWING)
-	{
-		scroll = -64 * ((r_newrefdef.time * 0.5) - (int)(r_newrefdef.time * 0.5));
-	}
-	else
-	{
+	if (fa->texinfo->flags & SURF_FLOWING) {
+		scroll = -64 * ((time * 0.5) - (int)(time * 0.5));
+	} else {
 		scroll = 0;
 	}
 
-	for (bp = fa->polys; bp; bp = bp->next)
-	{
-		p = bp;
+	for (glpoly_t* p = fa->polys; p; p = p->next) {
 
 		glBegin(GL_TRIANGLE_FAN);
-
-		for (i = 0, v = p->verts[0]; i < p->numverts; i++, v += VERTEXSIZE)
-		{
-			os = v[3];
-			ot = v[4];
-
-			s = os + r_turbsin[(int)((ot * 0.125 + r_newrefdef.time) * TURBSCALE) & 255];
+		for (int i = 0; i < p->numverts; i++) {
+            float* v = p->verts[0] + (i * VERTEXSIZE);
+			float os = v[3];
+			float ot = v[4];
+			float s = os + r_turbsin[(int)((ot * 0.125 + time) * TURBSCALE) & 255];
 			s += scroll;
 			s *= (1.0 / 64);
-
-			t = ot + r_turbsin[(int)((os * 0.125 + rdt) * TURBSCALE) & 255];
+			float t = ot + r_turbsin[(int)((os * 0.125 + time) * TURBSCALE) & 255];
 			t *= (1.0 / 64);
-
 			glTexCoord2f(s, t);
 			glVertex3fv(v);
 		}
-
 		glEnd();
+
 	}
 }
 
@@ -638,45 +621,32 @@ R_MakeSkyVec(float s, float t, int axis)
 	glVertex3fv(v);
 }
 
-void
-R_DrawSkyBox(void)
-{
-	int i;
-
-	if (skyrotate)
-	{   /* check for no sky at all */
-		for (i = 0; i < 6; i++)
-		{
-			if ((skymins[0][i] < skymaxs[0][i]) &&
-				(skymins[1][i] < skymaxs[1][i]))
-			{
+void R_DrawSkyBox(float time) {
+	if (skyrotate) {   /* check for no sky at all */
+        int i;
+		for (i = 0; i < 6; i++) {
+			if ((skymins[0][i] < skymaxs[0][i]) && (skymins[1][i] < skymaxs[1][i])) {
 				break;
 			}
 		}
-
-		if (i == 6)
-		{
+		if (i == 6) {
 			return; /* nothing visible */
 		}
 	}
 
 	glPushMatrix();
 	glTranslatef(r_origin[0], r_origin[1], r_origin[2]);
-	glRotatef(r_newrefdef.time * skyrotate, skyaxis[0], skyaxis[1], skyaxis[2]);
+	glRotatef(time * skyrotate, skyaxis[0], skyaxis[1], skyaxis[2]);
 
-	for (i = 0; i < 6; i++)
-	{
-		if (skyrotate)
-		{
+	for (int i = 0; i < 6; i++) {
+		if (skyrotate) {
 			skymins[0][i] = -1;
 			skymins[1][i] = -1;
 			skymaxs[0][i] = 1;
 			skymaxs[1][i] = 1;
 		}
 
-		if ((skymins[0][i] >= skymaxs[0][i]) ||
-			(skymins[1][i] >= skymaxs[1][i]))
-		{
+		if ((skymins[0][i] >= skymaxs[0][i]) || (skymins[1][i] >= skymaxs[1][i])) {
 			continue;
 		}
 

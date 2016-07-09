@@ -315,7 +315,7 @@ static void R_RenderBrushPoly(msurface_t *fa, int frame){
         float r,g,b;
         r = g = b = gl_state.inverse_intensity;
 		glColor4f(r, g, b, 1.0f);
-		R_EmitWaterPolys(fa);
+		R_EmitWaterPolys(fa, r_newrefdef.time);
 		R_TexEnv(GL_REPLACE);
 		return;
 	} else {
@@ -412,7 +412,7 @@ R_DrawAlphaSurfaces(void)
 
 		if (s->flags & SURF_DRAWTURB)
 		{
-			R_EmitWaterPolys(s);
+			R_EmitWaterPolys(s, r_newrefdef.time);
 		}
 		else if (s->texinfo->flags & SURF_FLOWING)
 		{
@@ -884,7 +884,7 @@ void R_DrawWorld(refdef_t* refdef) {
 
 	R_DrawTextureChains(gltextures, numgltextures, ent.frame);
 	R_BlendLightmaps(ent.model);
-	R_DrawSkyBox();
+	R_DrawSkyBox(refdef->time);
 	R_DrawTriangleOutlines();
 }
 

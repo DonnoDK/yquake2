@@ -36,8 +36,6 @@ static vec3_t avelocities[NUMVERTEXNORMALS];
 extern struct model_s *cl_mod_smoke;
 extern struct model_s *cl_mod_flash;
 
-extern cparticle_t *free_particles;
-
 void
 CL_AddMuzzleFlash(void)
 {
@@ -942,6 +940,7 @@ void CL_BlasterTrail(vec3_t start, vec3_t end) {
 void CL_FlagTrail(vec3_t start, vec3_t end, int color) {
 	vec3_t move;
 	vec3_t vec;
+
 	VectorCopy(start, move);
 	VectorSubtract(end, start, vec);
 	int len = (int)VectorNormalize(vec);
@@ -984,31 +983,19 @@ void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags) {
 	dec = 0.5;
 	VectorScale(vec, dec, vec);
 
-	if (old->trailcount > 900)
-	{
+	if (old->trailcount > 900) {
 		orgscale = 4;
 		velscale = 15;
-	}
-	else if (old->trailcount > 800)
-	{
+	} else if (old->trailcount > 800) {
 		orgscale = 2;
 		velscale = 10;
-	}
-	else
-	{
+	} else {
 		orgscale = 1;
 		velscale = 5;
 	}
 
-	while (len > 0)
-	{
+	while (len > 0) {
 		len -= dec;
-
-		if (!free_particles)
-		{
-			return;
-		}
-
 		/* drop less particles as it flies */
 		if ((randk() & 1023) < old->trailcount) {
             cparticle_t* p = CL_GetParticle(cl.time, 1.0f, 1);
@@ -1054,8 +1041,7 @@ void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags) {
 
 		old->trailcount -= 5;
 
-		if (old->trailcount < 100)
-		{
+		if (old->trailcount < 100) {
 			old->trailcount = 100;
 		}
 
@@ -1063,7 +1049,7 @@ void CL_DiminishingTrail(vec3_t start, vec3_t end, centity_t *old, int flags) {
 	}
 }
 
-void MakeNormalVectors(vec3_t forward, vec3_t right, vec3_t up) {
+static void MakeNormalVectors(vec3_t forward, vec3_t right, vec3_t up) {
 	/* this rotate and negate guarantees a 
 	   vector not colinear with the original */
 	right[1] = -forward[0];
@@ -1092,10 +1078,6 @@ void CL_RocketTrail(vec3_t start, vec3_t end, centity_t *old) {
 	VectorScale(vec, dec, vec);
 
 	while (len > 0) {
-		if (!free_particles) {
-			return;
-		}
-
 		if ((randk() & 7) == 0) {
             cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (1 + frandk() * 0.2f));
             if (!p) {
@@ -1632,9 +1614,6 @@ void CL_ForceWall(vec3_t start, vec3_t end, int color8) {
 	VectorScale(vec, 4, vec);
 
 	while (len > 0) {
-		if (!free_particles) {
-			return;
-		}
 		if (frandk() > 0.3) {
             cparticle_t* p = CL_GetParticle(cl.time, 1.0f, -1.0f / (3.0 + frandk() * 0.5f));
             if (!p) {

@@ -299,10 +299,10 @@ void R_RotateForEntity(entity_t *e);
 void R_MarkLeaves(void);
 
 glpoly_t *WaterWarpPolyVerts(glpoly_t *p);
-void R_EmitWaterPolys(msurface_t *fa);
+void R_EmitWaterPolys(msurface_t *fa, float time);
 void R_AddSkySurface(msurface_t *fa);
 void R_ClearSkyBox(void);
-void R_DrawSkyBox(void);
+void R_DrawSkyBox(float time);
 void R_MarkLights(const dlight_t *light, int bit, mnode_t *node);
 
 void COM_StripExtension(char *in, char *out);
