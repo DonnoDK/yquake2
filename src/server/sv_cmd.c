@@ -83,66 +83,47 @@ SV_SetMaster_f(void)
 	svs.last_heartbeat = -9999999;
 }
 
+/* TODO: consider splitting this up even further */
+client_t* SV_ClientForString(const char* string, client_t* clients, int num_clients){
+    if((string[0] >= '0') && (string[0] <= '9')){
+        int index = (int)strtol(string, (char**)NULL, 10);
+        if(index < 0 || index >= num_clients){
+            return NULL;
+        }
+        return &clients[index];
+    }
+
+    for(int i = 0; i < num_clients; i++){
+        client_t* cl = &clients[i];
+		if (!strcmp(cl->name, string)) {
+            return cl;
+		}
+    }
+    return NULL;
+}
+
 /*
  * Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
  */
-/* TODO: refactor this to accept a string to search for a player */
-qboolean
-SV_SetPlayer(void)
-{
-	client_t *cl;
-	int i;
-	int idnum;
-	char *s;
-
-	if (Cmd_Argc() < 2)
-	{
+qboolean SV_SetPlayer(void) {
+	if (Cmd_Argc() < 2) {
 		return false;
 	}
 
-	s = Cmd_Argv(1);
+	const char* s = Cmd_Argv(1);
+	client_t *cl = SV_ClientForString(s, svs.clients, maxclients->value);
+    if(!cl){
+        Com_Printf("Userid or slot %s is not on the server\n", s);
+        return false;
+    }
 
-	/* numeric values are just slot numbers */
-	if ((s[0] >= '0') && (s[0] <= '9'))
-	{
-		idnum = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
-
-		if ((idnum < 0) || (idnum >= maxclients->value))
-		{
-			Com_Printf("Bad client slot: %i\n", idnum);
-			return false;
-		}
-
-		sv_client = &svs.clients[idnum];
-		sv_player = sv_client->edict;
-
-		if (!sv_client->state)
-		{
-			Com_Printf("Client %i is not active\n", idnum);
-			return false;
-		}
-
-		return true;
-	}
-
-	/* check for a name match */
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
-		if (!cl->state)
-		{
-			continue;
-		}
-
-		if (!strcmp(cl->name, s))
-		{
-			sv_client = cl;
-			sv_player = sv_client->edict;
-			return true;
-		}
-	}
-
-	Com_Printf("Userid %s is not on the server\n", s);
-	return false;
+    sv_client = cl;
+    sv_player = cl->edict;
+    if(!cl->state){
+        Com_Printf("Client %s is not active\n", s);
+        return false;
+    }
+    return true;
 }
 
 /*
@@ -307,45 +288,34 @@ SV_Kick_f(void)
 	sv_client->lastmessage = svs.realtime; /* min case there is a funny zombie */
 }
 
-void
-SV_Status_f(void)
-{
+void SV_Status_f(void) {
 	int i, j, l;
 	client_t *cl;
 	char *s;
 	int ping;
 
-	if (!svs.clients)
-	{
+	if (!svs.clients) {
 		Com_Printf("No server running.\n");
 		return;
 	}
 
 	Com_Printf("map              : %s\n", sv.name);
-
 	Com_Printf("num score ping name            lastmsg address               qport \n");
 	Com_Printf("--- ----- ---- --------------- ------- --------------------- ------\n");
 
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
-		if (!cl->state)
-		{
+	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++) {
+		if (!cl->state) {
 			continue;
 		}
 
 		Com_Printf("%2i ", i);
 		Com_Printf("%5i ", cl->edict->client->ps.stats[STAT_FRAGS]);
 
-		if (cl->state == cs_connected)
-		{
+		if (cl->state == cs_connected) {
 			Com_Printf("CNCT ");
-		}
-		else if (cl->state == cs_zombie)
-		{
+		} else if (cl->state == cs_zombie) {
 			Com_Printf("ZMBI ");
-		}
-		else
-		{
+		} else {
 			ping = cl->ping < 9999 ? cl->ping : 9999;
 			Com_Printf("%4i ", ping);
 		}
@@ -353,27 +323,22 @@ SV_Status_f(void)
 		Com_Printf("%s", cl->name);
 		l = 16 - strlen(cl->name);
 
-		for (j = 0; j < l; j++)
-		{
+		for (j = 0; j < l; j++) {
 			Com_Printf(" ");
 		}
 
 		Com_Printf("%7i ", svs.realtime - cl->lastmessage);
-
 		s = NET_AdrToString(cl->netchan.remote_address);
 		Com_Printf("%s", s);
 		l = 22 - strlen(s);
 
-		for (j = 0; j < l; j++)
-		{
+		for (j = 0; j < l; j++) {
 			Com_Printf(" ");
 		}
 
 		Com_Printf("%5i", cl->netchan.qport);
-
 		Com_Printf("\n");
 	}
-
 	Com_Printf("\n");
 }
 
