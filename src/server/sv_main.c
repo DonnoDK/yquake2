@@ -26,17 +26,14 @@
 
 #include "header/server.h"
 
-#define HEARTBEAT_SECONDS 300
+static const int HEARTBEAT_SECONDS = 300;
 
 netadr_t master_adr[MAX_MASTERS]; /* address of group servers */
 
 client_t *sv_client; /* current client */
 
 cvar_t *sv_paused;
-cvar_t *sv_timedemo;
 cvar_t *sv_enforcetime;
-cvar_t *timeout; /* seconds without any message */
-cvar_t *zombietime; /* seconds to sink messages after disconnect */
 cvar_t *rcon_password; /* password for remote server commands */
 cvar_t *allow_download;
 cvar_t *allow_download_players;
@@ -46,11 +43,14 @@ cvar_t *allow_download_maps;
 cvar_t *sv_airaccelerate;
 cvar_t *sv_noreload; /* don't reload level state when reentering */
 cvar_t *maxclients; /* rename sv_maxclients */
-cvar_t *sv_showclamp;
 cvar_t *hostname;
-cvar_t *public_server; /* should heartbeats be sent */
+static cvar_t *sv_showclamp;
+static cvar_t *public_server; /* should heartbeats be sent */
+static cvar_t *sv_timedemo;
+static cvar_t *timeout; /* seconds without any message */
+static cvar_t *zombietime; /* seconds to sink messages after disconnect */
 
-void Master_Shutdown(void);
+void Master_Shutdown(const netadr_t* masters, int num_masters);
 void SV_ConnectionlessPacket(void);
 
 /*
@@ -58,21 +58,16 @@ void SV_ConnectionlessPacket(void);
  * or unwillingly.  This is NOT called if the entire server is quiting
  * or crashing.
  */
-void
-SV_DropClient(client_t *drop)
-{
+void SV_DropClient(client_t *drop) {
 	/* add the disconnect */
 	MSG_WriteByte(&drop->netchan.message, svc_disconnect);
-
-	if (drop->state == cs_spawned)
-	{
+	if (drop->state == cs_spawned) {
 		/* call the prog function for removing a client
 		   this will remove the body, among other things */
 		ge->ClientDisconnect(drop->edict);
 	}
 
-	if (drop->download)
-	{
+	if (drop->download) {
 		FS_FreeFile(drop->download);
 		drop->download = NULL;
 	}
@@ -84,40 +79,27 @@ SV_DropClient(client_t *drop)
 /*
  * Builds the string that is sent as heartbeats and status replies
  */
-char *
-SV_StatusString(void)
-{
+char* SV_StatusString(const client_t* clients, int num_clients) {
 	char player[1024];
 	static char status[MAX_MSGLEN - 16];
-	int i;
-	client_t *cl;
-	int statusLength;
-	int playerLength;
 
 	strcpy(status, Cvar_Serverinfo());
 	strcat(status, "\n");
-	statusLength = (int)strlen(status);
+	int slen = (int)strlen(status);
 
-	for (i = 0; i < maxclients->value; i++)
-	{
-		cl = &svs.clients[i];
+	for (int i = 0; i < num_clients; i++) {
+		const client_t* cl = &clients[i];
 
-		if ((cl->state == cs_connected) || (cl->state == cs_spawned))
-		{
-			Com_sprintf(player, sizeof(player), "%i %i \"%s\"\n",
-					cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
-			playerLength = (int)strlen(player);
-
-			if (statusLength + playerLength >= sizeof(status))
-			{
+		if ((cl->state == cs_connected) || (cl->state == cs_spawned)) {
+			Com_sprintf(player, sizeof(player), "%i %i \"%s\"\n", cl->edict->client->ps.stats[STAT_FRAGS], cl->ping, cl->name);
+			int plen = (int)strlen(player);
+			if (slen + plen >= sizeof(status)) {
 				break; /* can't hold any more */
 			}
-
-			strcpy(status + statusLength, player);
-			statusLength += playerLength;
+			strcpy(status + slen, player);
+			slen += plen;
 		}
 	}
-
 	return status;
 }
 
@@ -167,18 +149,10 @@ void SV_GiveMsec(client_t* clients, int maxclients, int msecs, int framenum){
 	}
 }
 
-void
-SV_ReadPackets(void)
-{
-	int i;
-	client_t *cl;
-	int qport;
-
-	while (NET_GetPacket(NS_SERVER, &net_from, &net_message))
-	{
+void SV_ReadPackets(void) {
+	while (NET_GetPacket(NS_SERVER, &net_from, &net_message)) {
 		/* check for connectionless packet (0xffffffff) first */
-		if (*(int *)net_message.data == -1)
-		{
+		if (*(int *)net_message.data == -1) {
 			SV_ConnectionlessPacket();
 			continue;
 		}
@@ -188,52 +162,40 @@ SV_ReadPackets(void)
 		MSG_BeginReading(&net_message);
 		MSG_ReadLong(&net_message); /* sequence number */
 		MSG_ReadLong(&net_message); /* sequence number */
-		qport = MSG_ReadShort(&net_message) & 0xffff;
+		int qport = MSG_ReadShort(&net_message) & 0xffff;
 
 		/* check for packets from connected clients */
-		for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-		{
-			if (cl->state == cs_free)
-			{
+        /* TODO: refactor this to find a specific client for a qport */
+		for (int i = 0; i < maxclients->value; i++) {
+            client_t* cl = &svs.clients[i];
+			if (cl->state == cs_free) {
 				continue;
 			}
 
-			if (!NET_CompareBaseAdr(net_from, cl->netchan.remote_address))
-			{
+			if (!NET_CompareBaseAdr(net_from, cl->netchan.remote_address)) {
 				continue;
 			}
 
-			if (cl->netchan.qport != qport)
-			{
+			if (cl->netchan.qport != qport) {
 				continue;
 			}
 
-			if (cl->netchan.remote_address.port != net_from.port)
-			{
+			if (cl->netchan.remote_address.port != net_from.port) {
 				Com_Printf("SV_ReadPackets: fixing up a translated port\n");
 				cl->netchan.remote_address.port = net_from.port;
 			}
 
-			if (Netchan_Process(&cl->netchan, &net_message))
-			{
+			if (Netchan_Process(&cl->netchan, &net_message)) {
 				/* this is a valid, sequenced packet, so process it */
-				if (cl->state != cs_zombie)
-				{
+				if (cl->state != cs_zombie) {
 					cl->lastmessage = svs.realtime; /* don't timeout */
 
-					if (!(sv.demofile && (sv.state == ss_demo)))
-					{
+					if (!(sv.demofile && (sv.state == ss_demo))) {
 						SV_ExecuteClientMessage(cl);
 					}
 				}
 			}
-
 			break;
-		}
-
-		if (i != maxclients->value)
-		{
-			continue;
 		}
 	}
 }
@@ -369,7 +331,11 @@ void SV_Frame(int msec) {
 	/* save the entire world state if recording a serverdemo */
 	SV_RecordDemoMessage();
 	/* send a heartbeat to the master if needed */
-	Master_Heartbeat();
+    if(dedicated && dedicated->value && public_server && public_server->value){
+        /* only a dedicated and public server sends heartbeats */
+        /* send to group master */
+        Master_Heartbeat(&svs);
+    }
 	/* clear teleport flags, etc for next frame */
 	SV_PrepWorldFrame();
 }
@@ -378,47 +344,24 @@ void SV_Frame(int msec) {
  * Send a message to the master every few minutes to
  * let it know we are alive, and log information
  */
-void
-Master_Heartbeat(void)
-{
-	char *string;
-	int i;
-
-	if (!dedicated || !dedicated->value)
-	{
-		return; /* only dedicated servers send heartbeats */
-	}
-
-	if (!public_server || !public_server->value)
-	{
-		return; /* a private dedicated game */
-	}
-
+void Master_Heartbeat(server_static_t* server) {
 	/* check for time wraparound */
-	if (svs.last_heartbeat > svs.realtime)
-	{
-		svs.last_heartbeat = svs.realtime;
+	if (server->last_heartbeat > server->realtime) {
+		server->last_heartbeat = server->realtime;
 	}
 
-	if (svs.realtime - svs.last_heartbeat < HEARTBEAT_SECONDS * 1000)
-	{
+	if (server->realtime - server->last_heartbeat < HEARTBEAT_SECONDS * 1000) {
 		return; /* not time to send yet */
 	}
 
-	svs.last_heartbeat = svs.realtime;
-
+	server->last_heartbeat = server->realtime;
 	/* send the same string that we would give for a status OOB command */
-	string = SV_StatusString();
-
+	const char* string = SV_StatusString(server->clients, maxclients->value);
 	/* send to group master */
-	for (i = 0; i < MAX_MASTERS; i++)
-	{
-		if (master_adr[i].port)
-		{
-			Com_Printf("Sending heartbeat to %s\n",
-					NET_AdrToString(master_adr[i]));
-			Netchan_OutOfBandPrint(NS_SERVER, master_adr[i],
-					"heartbeat\n%s", string);
+	for (int i = 0; i < MAX_MASTERS; i++) {
+		if (master_adr[i].port) {
+			Com_Printf("Sending heartbeat to %s\n", NET_AdrToString(master_adr[i]));
+			Netchan_OutOfBandPrint(NS_SERVER, master_adr[i], "heartbeat\n%s", string);
 		}
 	}
 }
@@ -426,35 +369,15 @@ Master_Heartbeat(void)
 /*
  * Informs all masters that this server is going down
  */
-void
-Master_Shutdown(void)
-{
-	int i;
-
-	if (!dedicated || !dedicated->value)
-	{
-		return; /* only dedicated servers send heartbeats */
-	}
-
-	if (!public_server || !public_server->value)
-	{
-		return; /* a private dedicated game */
-	}
-
-	/* send to group master */
-	for (i = 0; i < MAX_MASTERS; i++)
-	{
-		if (master_adr[i].port)
-		{
-			if (i > 0)
-			{
-				Com_Printf("Sending heartbeat to %s\n",
-						NET_AdrToString(master_adr[i]));
-			}
-
-			Netchan_OutOfBandPrint(NS_SERVER, master_adr[i], "shutdown");
-		}
-	}
+void Master_Shutdown(const netadr_t* masters, int num_masters) {
+    for (int i = 0; i < num_masters; i++) {
+        if (masters[i].port) {
+            if (i > 0) {
+                Com_Printf("Sending heartbeat to %s\n", NET_AdrToString(masters[i]));
+            }
+            Netchan_OutOfBandPrint(NS_SERVER, masters[i], "shutdown");
+        }
+    }
 }
 
 /*
@@ -610,7 +533,12 @@ SV_Shutdown(char *finalmsg, qboolean reconnect)
 		SV_FinalMessage(finalmsg, reconnect);
 	}
 
-	Master_Shutdown();
+    if(dedicated && dedicated->value && public_server && public_server->value){
+        /* only a dedicated and public server sends heartbeats */
+        /* send to group master */
+        Master_Shutdown(master_adr, MAX_MASTERS);
+    }
+
 	SV_ShutdownGameProgs();
 
 	/* free current level */

@@ -495,46 +495,37 @@ SV_ClientThink(client_t *cl, usercmd_t *cmd)
 /*
  * The current net_message is parsed for the given client
  */
-void
-SV_ExecuteClientMessage(client_t *cl)
-{
-	int c;
+/* TODO: refactor this mess */
+void SV_ExecuteClientMessage(client_t *cl) {
 	char *s;
-
 	usercmd_t nullcmd;
 	usercmd_t oldest, oldcmd, newcmd;
 	int net_drop;
-	int stringCmdCount;
 	int checksum, calculatedChecksum;
 	int checksumIndex;
-	qboolean move_issued;
 	int lastframe;
 
+    /* TODO: refactor and remove these global vars */
 	sv_client = cl;
-	sv_player = sv_client->edict;
+	sv_player = cl->edict;
 
 	/* only allow one move command */
-	move_issued = false;
-	stringCmdCount = 0;
+	qboolean move_issued = false;
+	int stringCmdCount = 0;
 
-	while (1)
-	{
-		if (net_message.readcount > net_message.cursize)
-		{
+	while (1) {
+		if (net_message.readcount > net_message.cursize) {
 			Com_Printf("SV_ReadClientMessage: badread\n");
 			SV_DropClient(cl);
 			return;
 		}
 
-		c = MSG_ReadByte(&net_message);
-
-		if (c == -1)
-		{
+		int c = MSG_ReadByte(&net_message);
+		if (c == -1) {
 			break;
 		}
 
-		switch (c)
-		{
+		switch (c) {
 			default:
 				Com_Printf("SV_ReadClientMessage: unknown command char\n");
 				SV_DropClient(cl);
@@ -549,23 +540,16 @@ SV_ExecuteClientMessage(client_t *cl)
 				break;
 
 			case clc_move:
-
-				if (move_issued)
-				{
+				if (move_issued) {
 					return; /* someone is trying to cheat... */
 				}
-
 				move_issued = true;
 				checksumIndex = net_message.readcount;
 				checksum = MSG_ReadByte(&net_message);
 				lastframe = MSG_ReadLong(&net_message);
-
-				if (lastframe != cl->lastframe)
-				{
+				if (lastframe != cl->lastframe) {
 					cl->lastframe = lastframe;
-
-					if (cl->lastframe > 0)
-					{
+					if (cl->lastframe > 0) {
 						cl->frame_latency[cl->lastframe & (LATENCY_COUNTS - 1)] =
 							svs.realtime - cl->frames[cl->lastframe & UPDATE_MASK].senttime;
 					}
@@ -576,8 +560,7 @@ SV_ExecuteClientMessage(client_t *cl)
 				MSG_ReadDeltaUsercmd(&net_message, &oldest, &oldcmd);
 				MSG_ReadDeltaUsercmd(&net_message, &oldcmd, &newcmd);
 
-				if (cl->state != cs_spawned)
-				{
+				if (cl->state != cs_spawned) {
 					cl->lastframe = -1;
 					break;
 				}
@@ -588,58 +571,42 @@ SV_ExecuteClientMessage(client_t *cl)
 					net_message.readcount - checksumIndex - 1,
 					cl->netchan.incoming_sequence);
 
-				if (calculatedChecksum != checksum)
-				{
+				if (calculatedChecksum != checksum) {
 					Com_DPrintf("Failed command checksum for %s (%d != %d)/%d\n",
 							cl->name, calculatedChecksum, checksum,
 							cl->netchan.incoming_sequence);
 					return;
 				}
 
-				if (!sv_paused->value)
-				{
+				if (!sv_paused->value) {
 					net_drop = cl->netchan.dropped;
-
-					if (net_drop < 20)
-					{
-						while (net_drop > 2)
-						{
+					if (net_drop < 20) {
+						while (net_drop > 2) {
 							SV_ClientThink(cl, &cl->lastcmd);
-
 							net_drop--;
 						}
-
-						if (net_drop > 1)
-						{
+						if (net_drop > 1) {
 							SV_ClientThink(cl, &oldest);
 						}
-
-						if (net_drop > 0)
-						{
+						if (net_drop > 0) {
 							SV_ClientThink(cl, &oldcmd);
 						}
 					}
-
 					SV_ClientThink(cl, &newcmd);
 				}
-
 				cl->lastcmd = newcmd;
 				break;
 
 			case clc_stringcmd:
 				s = MSG_ReadString(&net_message);
-
 				/* malicious users may try using too many string commands */
-				if (++stringCmdCount < MAX_STRINGCMDS)
-				{
+				if (++stringCmdCount < MAX_STRINGCMDS) {
 					SV_ExecuteUserCommand(s);
 				}
 
-				if (cl->state == cs_zombie)
-				{
+				if (cl->state == cs_zombie) {
 					return; /* disconnect command */
 				}
-
 				break;
 		}
 	}

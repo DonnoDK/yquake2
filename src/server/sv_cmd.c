@@ -86,6 +86,7 @@ SV_SetMaster_f(void)
 /*
  * Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
  */
+/* TODO: refactor this to accept a string to search for a player */
 qboolean
 SV_SetPlayer(void)
 {
