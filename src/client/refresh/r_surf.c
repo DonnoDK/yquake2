@@ -38,7 +38,7 @@ void LM_InitBlock(void);
 void LM_UploadBlock(qboolean dynamic);
 qboolean LM_AllocBlock(int w, int h, int *x, int *y);
 
-void R_SetCacheState(msurface_t *surf, lightstyle_t* lightstyles);
+void R_SetCacheState(msurface_t *surf, const lightstyle_t* lightstyles);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
 /*
@@ -376,50 +376,32 @@ static void R_RenderBrushPoly(msurface_t *fa, int frame){
  * The BSP tree is waled front to back, so unwinding the chain
  * of alpha_surfaces will draw back to front, giving proper ordering.
  */
-void
-R_DrawAlphaSurfaces(void)
-{
-	msurface_t *s;
-	float intens;
-
+void R_DrawAlphaSurfaces(void) {
 	/* go back to the world matrix */
 	glLoadMatrixf(r_world_matrix);
-
 	glEnable(GL_BLEND);
 	R_TexEnv(GL_MODULATE);
 
 	/* the textures are prescaled up for a better
 	   lighting range, so scale it back down */
-	intens = gl_state.inverse_intensity;
-
-	for (s = r_alpha_surfaces; s; s = s->texturechain)
-	{
+	float intens = gl_state.inverse_intensity;
+	for (msurface_t* s = r_alpha_surfaces; s; s = s->texturechain) {
 		R_Bind(s->texinfo->image->texnum);
 		c_brush_polys++;
 
-		if (s->texinfo->flags & SURF_TRANS33)
-		{
+		if (s->texinfo->flags & SURF_TRANS33) {
 			glColor4f(intens, intens, intens, 0.33);
-		}
-		else if (s->texinfo->flags & SURF_TRANS66)
-		{
+		} else if (s->texinfo->flags & SURF_TRANS66) {
 			glColor4f(intens, intens, intens, 0.66);
-		}
-		else
-		{
+		} else {
 			glColor4f(intens, intens, intens, 1);
 		}
 
-		if (s->flags & SURF_DRAWTURB)
-		{
+		if (s->flags & SURF_DRAWTURB) {
 			R_EmitWaterPolys(s, r_newrefdef.time);
-		}
-		else if (s->texinfo->flags & SURF_FLOWING)
-		{
+		} else if (s->texinfo->flags & SURF_FLOWING) {
 			R_DrawGLFlowingPoly(s, r_newrefdef.time);
-		}
-		else
-		{
+		} else {
 			R_DrawGLPoly(s->polys);
 		}
 	}
@@ -491,7 +473,7 @@ static void R_DrawTextureChains(image_t* textures, int texturecount, int frame) 
 	R_TexEnv(GL_REPLACE);
 }
 
-static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
+static void R_RenderLightmappedPoly(msurface_t *surf, int frame, const lightstyle_t* lightstyles, float time) {
 	int i, nv = surf->polys->numverts;
 	int map;
 	float *v;
@@ -499,9 +481,6 @@ static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
 	qboolean is_dynamic = false;
 	unsigned lmtex = surf->lightmaptexturenum;
 	glpoly_t *p;
-
-    lightstyle_t* lightstyles = r_newrefdef.lightstyles;
-    float time = r_newrefdef.time;
 
 	for (map = 0; map < MAXLIGHTMAPS && surf->styles[map] != 255; map++) {
 		if (lightstyles[surf->styles[map]].white != surf->cached_light[map]) {
@@ -562,15 +541,10 @@ static void R_RenderLightmappedPoly(msurface_t *surf, int frame) {
 }
 
 
-static void R_DrawInlineBModel(model_t* model, int frame, int flags) {
-    const dlight_t* const dlights = r_newrefdef.dlights;
-    const int num_dlights = r_newrefdef.num_dlights;
+static void R_DrawInlineBModel(model_t* model, int frame, int flags, refdef_t* refdef) {
 	/* calculate dynamic lighting for bmodel */
 	if (!gl_flashblend->value) {
-		for (int i = 0; i < num_dlights; i++) {
-            const dlight_t* l = &dlights[i];
-			R_MarkLights(l, 1 << i, model->nodes + model->firstnode);
-		}
+        R_PushDlights(refdef->dlights, refdef->num_dlights, model->nodes + model->firstnode);
 	}
 
 	if (flags & RF_TRANSLUCENT) {
@@ -594,7 +568,7 @@ static void R_DrawInlineBModel(model_t* model, int frame, int flags) {
 				psurf->texturechain = r_alpha_surfaces;
 				r_alpha_surfaces = psurf;
 			} else if (qglMultiTexCoord2fARB && !(psurf->flags & SURF_DRAWTURB)) {
-				R_RenderLightmappedPoly(psurf, frame);
+				R_RenderLightmappedPoly(psurf, frame, refdef->lightstyles, refdef->time);
 			} else {
 				R_EnableMultitexture(false);
 				R_RenderBrushPoly(psurf, frame);
@@ -706,7 +680,7 @@ void R_DrawBrushModel(entity_t *e) {
 		}
 	}
 
-	R_DrawInlineBModel(e->model, e->frame, e->flags);
+	R_DrawInlineBModel(e->model, e->frame, e->flags, &r_newrefdef);
 	R_EnableMultitexture(false);
 	glPopMatrix();
 
@@ -802,7 +776,7 @@ static void R_RecursiveWorldNode(mnode_t *node, int frame, const byte areabits[]
 			r_alpha_surfaces->texinfo->image = R_TextureAnimation(surf->texinfo, frame);
 		} else {
 			if (qglMultiTexCoord2fARB && !(surf->flags & SURF_DRAWTURB)) {
-				R_RenderLightmappedPoly(surf, frame);
+				R_RenderLightmappedPoly(surf, frame, r_newrefdef.lightstyles, r_newrefdef.time);
 			} else {
 				/* the polygon is visible, so add it to the texture sorted chain */
 				image_t* image = R_TextureAnimation(surf->texinfo, frame);

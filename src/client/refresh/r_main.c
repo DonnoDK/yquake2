@@ -611,7 +611,9 @@ static void R_RenderView(refdef_t *fd) {
 		c_alias_polys = 0;
 	}
 
-	R_PushDlights(fd->dlights, fd->num_dlights);
+	if (!gl_flashblend->value) {
+        R_PushDlightsUpdate(fd->dlights, fd->num_dlights, r_worldmodel->nodes);
+	}
 
 	if (gl_finish->value) {
 		glFinish();
