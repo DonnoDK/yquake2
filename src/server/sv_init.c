@@ -499,7 +499,8 @@ void SV_Map(qboolean attractloop, const char *levelstring, qboolean loadgame) {
 		SCR_BeginLoadingPlaque(); /* for local system */
 #endif
 		SV_BroadcastCommand("changing\n");
-		SV_SendClientMessages();
+        clientsinfo_t ci = {svs.clients, maxclients->value};
+		SV_SendClientMessages(&ci, &sv);
 		SV_SpawnServer(level, spawnpoint, ss_game, attractloop, loadgame);
 		Cbuf_CopyToDefer();
 	}

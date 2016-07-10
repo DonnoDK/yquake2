@@ -506,17 +506,17 @@ SV_RateDrop(client_t *c)
 	return false;
 }
 
-void SV_SendClientMessages(void) {
+void SV_SendClientMessages(clientsinfo_t* clientsinfo, server_t* local_server) {
 	byte msgbuf[MAX_MSGLEN];
 	int msglen = 0;
 
 	/* read the next demo message if needed */
-	if (sv.demofile && (sv.state == ss_demo)) {
+	if (local_server->demofile && (local_server->state == ss_demo)) {
 		if (sv_paused->value) {
 			msglen = 0;
 		} else {
 			/* get the next message */
-			size_t r = FS_FRead(&msglen, 4, 1, sv.demofile);
+			size_t r = FS_FRead(&msglen, 4, 1, local_server->demofile);
 			if (r != 4) {
 				SV_DemoCompleted();
 				return;
@@ -529,7 +529,7 @@ void SV_SendClientMessages(void) {
 			if (msglen > MAX_MSGLEN) {
 				Com_Error(ERR_DROP, "SV_SendClientMessages: msglen > MAX_MSGLEN");
 			}
-			r = FS_FRead(msgbuf, msglen, 1, sv.demofile);
+			r = FS_FRead(msgbuf, msglen, 1, local_server->demofile);
 			if (r != msglen) {
 				SV_DemoCompleted();
 				return;
@@ -538,8 +538,8 @@ void SV_SendClientMessages(void) {
 	}
 
 	/* send a message to each connected client */
-	for (int i = 0; i < maxclients->value; i++) {
-        client_t* c = &svs.clients[i];
+	for (int i = 0; i < clientsinfo->num_clients; i++) {
+        client_t* c = &clientsinfo->clients[i];
 		if (!c->state) {
 			continue;
 		}
@@ -550,7 +550,7 @@ void SV_SendClientMessages(void) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s overflowed\n", c->name);
 			SV_DropClient(c);
 		}
-		if ((sv.state == ss_cinematic) || (sv.state == ss_demo) || (sv.state == ss_pic)) {
+		if ((local_server->state == ss_cinematic) || (local_server->state == ss_demo) || (local_server->state == ss_pic)) {
 			Netchan_Transmit(&c->netchan, msglen, msgbuf);
 		} else if (c->state == cs_spawned) {
 			/* don't overrun bandwidth */

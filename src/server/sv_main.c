@@ -26,11 +26,6 @@
 
 #include "header/server.h"
 
-typedef struct clientsinfo_s{
-    client_t* clients;
-    int num_clients;
-}clientsinfo_t;
-
 static const int HEARTBEAT_SECONDS = 300;
 
 netadr_t master_adr[MAX_MASTERS]; /* address of group servers */
@@ -241,13 +236,14 @@ void SV_PrepWorldFrame(void) {
 	for (int i = 0; i < ge->num_edicts; i++) {
         /* TODO: refactor and dont depend on macro */
         /* NOTE: use the macro for now, as simply referring to index introduces bugs */
-		edict_t* ent = EDICT_NUM(i);
+        edict_t* ent = ((edict_t *)((byte *)ge->edicts + ge->edict_size * (i)));
+        //edict_t* ent = EDICT_NUM(i);
 		/* events only last for a single message */
 		ent->s.event = 0;
 	}
 }
 
-void SV_RunGameFrame(void) {
+void SV_RunGameFrame(game_export_t* game) {
 #ifndef DEDICATED_ONLY
 	if (host_speeds->value) {
 		time_before_game = Sys_Milliseconds();
@@ -261,7 +257,7 @@ void SV_RunGameFrame(void) {
 	sv.time = sv.framenum * 100;
 	/* don't run if paused */
 	if (!sv_paused->value || (maxclients->value > 1)) {
-		ge->RunFrame();
+		game->RunFrame();
 		/* never get more than one tic behind */
 		if (sv.time < svs.realtime) {
 			if (sv_showclamp->value) {
@@ -316,9 +312,9 @@ void SV_Frame(int msec) {
     /* give the clients some timeslices, 1600 + some slop */
     SV_GiveMsec(&ci, 1800, sv.framenum);
 	/* let everything in the world think and move */
-	SV_RunGameFrame();
+	SV_RunGameFrame(ge);
 	/* send messages back to the clients that had packets read this frame */
-	SV_SendClientMessages();
+	SV_SendClientMessages(&ci, &sv);
 	/* save the entire world state if recording a serverdemo */
 	SV_RecordDemoMessage();
 	/* send a heartbeat to the master if needed */

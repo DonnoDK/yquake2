@@ -140,6 +140,11 @@ typedef struct client_s
 	netchan_t netchan;
 } client_t;
 
+typedef struct clientsinfo_s{
+    client_t* clients;
+    int num_clients;
+}clientsinfo_t;
+
 typedef struct
 {
 	netadr_t adr;
@@ -220,7 +225,7 @@ extern char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
 void SV_FlushRedirect(int sv_redirected, char *outputbuf);
 
 void SV_DemoCompleted(void);
-void SV_SendClientMessages(void);
+void SV_SendClientMessages(clientsinfo_t* clientsinfo, server_t* local_server);
 
 void SV_Multicast(vec3_t origin, multicast_t to);
 void SV_StartSound(vec3_t origin, edict_t *entity, int channel,
