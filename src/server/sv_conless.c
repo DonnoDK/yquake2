@@ -384,54 +384,31 @@ SVC_RemoteCommand(void)
  * Clients that are in the game can still send
  * connectionless packets.
  */
-void
-SV_ConnectionlessPacket(void)
-{
-	char *s;
-	char *c;
+void SV_ConnectionlessPacket(sizebuf_t* message) {
+	MSG_BeginReading(message);
+	MSG_ReadLong(message); /* skip the -1 marker */
 
-	MSG_BeginReading(&net_message);
-	MSG_ReadLong(&net_message); /* skip the -1 marker */
-
-	s = MSG_ReadStringLine(&net_message);
-
+	char* s = MSG_ReadStringLine(message);
 	Cmd_TokenizeString(s, false);
-
-	c = Cmd_Argv(0);
+	char* c = Cmd_Argv(0);
 	Com_DPrintf("Packet %s : %s\n", NET_AdrToString(net_from), c);
 
-	if (!strcmp(c, "ping"))
-	{
+	if (!strcmp(c, "ping")) {
 		SVC_Ping();
-	}
-	else if (!strcmp(c, "ack"))
-	{
+	} else if (!strcmp(c, "ack")) {
 		SVC_Ack();
-	}
-	else if (!strcmp(c, "status"))
-	{
+	} else if (!strcmp(c, "status")) {
 		SVC_Status();
-	}
-	else if (!strcmp(c, "info"))
-	{
+	} else if (!strcmp(c, "info")) {
 		SVC_Info();
-	}
-	else if (!strcmp(c, "getchallenge"))
-	{
+	} else if (!strcmp(c, "getchallenge")) {
 		SVC_GetChallenge();
-	}
-	else if (!strcmp(c, "connect"))
-	{
+	} else if (!strcmp(c, "connect")) {
 		SVC_DirectConnect();
-	}
-	else if (!strcmp(c, "rcon"))
-	{
+	} else if (!strcmp(c, "rcon")) {
 		SVC_RemoteCommand();
-	}
-	else
-	{
-		Com_Printf("bad connectionless packet from %s:\n%s\n",
-				NET_AdrToString(net_from), s);
+	} else {
+		Com_Printf("bad connectionless packet from %s:\n%s\n", NET_AdrToString(net_from), s);
 	}
 }
 

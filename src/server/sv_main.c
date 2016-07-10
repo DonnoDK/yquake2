@@ -26,6 +26,11 @@
 
 #include "header/server.h"
 
+typedef struct clientsinfo_s{
+    client_t* clients;
+    int num_clients;
+}clientsinfo_t;
+
 static const int HEARTBEAT_SECONDS = 300;
 
 netadr_t master_adr[MAX_MASTERS]; /* address of group servers */
@@ -51,7 +56,7 @@ static cvar_t *timeout; /* seconds without any message */
 static cvar_t *zombietime; /* seconds to sink messages after disconnect */
 
 void Master_Shutdown(const netadr_t* masters, int num_masters);
-void SV_ConnectionlessPacket(void);
+void SV_ConnectionlessPacket(sizebuf_t* message);
 
 /*
  * Called when the player is totally leaving the server, either willingly
@@ -106,9 +111,9 @@ char* SV_StatusString(const client_t* clients, int num_clients) {
 /*
  * Updates the cl->ping variables
  */
-void SV_CalcPings(client_t* const clients, int count) {
-	for (int i = 0; i < count; i++) {
-		client_t* cl = &clients[i];
+void SV_CalcPings(clientsinfo_t* clientsinfo) {
+	for (int i = 0; i < clientsinfo->num_clients; i++) {
+		client_t* cl = &clientsinfo->clients[i];
 		if (cl->state != cs_spawned) {
 			continue;
 		}
@@ -122,11 +127,7 @@ void SV_CalcPings(client_t* const clients, int count) {
 			}
 		}
 
-		if (!count) {
-			cl->ping = 0;
-		} else {
-			cl->ping = total / count;
-		}
+        cl->ping = count ? total / count : 0;
 		/* let the game dll know about the ping */
 		cl->edict->client->ping = cl->ping;
 	}
@@ -136,12 +137,12 @@ void SV_CalcPings(client_t* const clients, int count) {
  * Every few frames, gives all clients an allotment of milliseconds
  * for their command moves. If they exceed it, assume cheating.
  */
-void SV_GiveMsec(client_t* clients, int maxclients, int msecs, int framenum){
+void SV_GiveMsec(clientsinfo_t* clientsinfo, int msecs, int framenum){
 	if (framenum & 15){
 		return;
 	}
-	for (int i = 0; i < maxclients; i++){
-		client_t* cl = &clients[i];
+	for (int i = 0; i < clientsinfo->num_clients; i++){
+		client_t* cl = &clientsinfo->clients[i];
 		if (cl->state == cs_free) {
 			continue;
 		}
@@ -149,54 +150,54 @@ void SV_GiveMsec(client_t* clients, int maxclients, int msecs, int framenum){
 	}
 }
 
-void SV_ReadPackets(void) {
-	while (NET_GetPacket(NS_SERVER, &net_from, &net_message)) {
+client_t* SV_ClientForAddr(client_t* clients, int num_clients, netadr_t* addr, int qport){
+    for(int i = 0; i < num_clients; i++){
+        client_t* cl = &clients[i];
+        if(cl->state == cs_free)
+            continue;
+        if(!NET_CompareBaseAdr(*addr, cl->netchan.remote_address))
+            continue;
+        if(cl->netchan.qport != qport)
+            continue;
+        if (cl->netchan.remote_address.port != addr->port) {
+            Com_Printf("SV_ReadPackets: fixing up a translated port\n");
+            cl->netchan.remote_address.port = addr->port;
+        }
+        return cl;
+    }
+    return NULL;
+}
+
+static void SV_ReadPackets(int realtime, clientsinfo_t* clientsinfo, netadr_t* addr, sizebuf_t* message) {
+	while (NET_GetPacket(NS_SERVER, addr, message)) {
 		/* check for connectionless packet (0xffffffff) first */
 		if (*(int *)net_message.data == -1) {
-			SV_ConnectionlessPacket();
+			SV_ConnectionlessPacket(message);
 			continue;
 		}
 
 		/* read the qport out of the message so we can fix up
 		   stupid address translating routers */
-		MSG_BeginReading(&net_message);
-		MSG_ReadLong(&net_message); /* sequence number */
-		MSG_ReadLong(&net_message); /* sequence number */
-		int qport = MSG_ReadShort(&net_message) & 0xffff;
+		MSG_BeginReading(message);
+		MSG_ReadLong(message); /* sequence number */
+		MSG_ReadLong(message); /* sequence number */
+		int qport = MSG_ReadShort(message) & 0xffff;
 
-		/* check for packets from connected clients */
-        /* TODO: refactor this to find a specific client for a qport */
-		for (int i = 0; i < maxclients->value; i++) {
-            client_t* cl = &svs.clients[i];
-			if (cl->state == cs_free) {
-				continue;
-			}
+        client_t* cl = SV_ClientForAddr(clientsinfo->clients, clientsinfo->num_clients, addr, qport);
+        if(!cl){
+            continue;
+        }
 
-			if (!NET_CompareBaseAdr(net_from, cl->netchan.remote_address)) {
-				continue;
-			}
-
-			if (cl->netchan.qport != qport) {
-				continue;
-			}
-
-			if (cl->netchan.remote_address.port != net_from.port) {
-				Com_Printf("SV_ReadPackets: fixing up a translated port\n");
-				cl->netchan.remote_address.port = net_from.port;
-			}
-
-			if (Netchan_Process(&cl->netchan, &net_message)) {
-				/* this is a valid, sequenced packet, so process it */
-				if (cl->state != cs_zombie) {
-					cl->lastmessage = svs.realtime; /* don't timeout */
-
-					if (!(sv.demofile && (sv.state == ss_demo))) {
-						SV_ExecuteClientMessage(cl);
-					}
-				}
-			}
-			break;
-		}
+        if (Netchan_Process(&cl->netchan, message)) {
+            // this is a valid, sequenced packet, so process it
+            if (cl->state != cs_zombie) {
+                // don't timeout
+                cl->lastmessage = realtime; 
+                if (!(sv.demofile && (sv.state == ss_demo))) {
+                    SV_ExecuteClientMessage(cl);
+                }
+            }
+        }
 	}
 }
 
@@ -209,35 +210,22 @@ void SV_ReadPackets(void) {
  * for a few seconds to make sure any final reliable message gets resent
  * if necessary
  */
-void
-SV_CheckTimeouts(void)
-{
-	int i;
-	client_t *cl;
-	int droppoint;
-	int zombiepoint;
-
-	droppoint = svs.realtime - 1000 * timeout->value;
-	zombiepoint = svs.realtime - 1000 * zombietime->value;
-
-	for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-	{
+static void SV_CheckTimeouts(int realtime, clientsinfo_t* clientsinfo, float timeout, float zombietime) {
+	int droppoint = realtime - 1000 * timeout;
+	int zombiepoint = realtime - 1000 * zombietime;
+	for (int i = 0; i < clientsinfo->num_clients; i++) {
+        client_t* cl =&clientsinfo->clients[i];
 		/* message times may be wrong across a changelevel */
-		if (cl->lastmessage > svs.realtime)
-		{
-			cl->lastmessage = svs.realtime;
+		if (cl->lastmessage > realtime) {
+			cl->lastmessage = realtime;
 		}
 
-		if ((cl->state == cs_zombie) &&
-			(cl->lastmessage < zombiepoint))
-		{
+		if ((cl->state == cs_zombie) && (cl->lastmessage < zombiepoint)) {
 			cl->state = cs_free; /* can now be reused */
 			continue;
 		}
 
-		if (((cl->state == cs_connected) || (cl->state == cs_spawned)) &&
-			(cl->lastmessage < droppoint))
-		{
+		if (((cl->state == cs_connected) || (cl->state == cs_spawned)) && (cl->lastmessage < droppoint)) {
 			SV_BroadcastPrintf(PRINT_HIGH, "%s timed out\n", cl->name);
 			SV_DropClient(cl);
 			cl->state = cs_free; /* don't bother with zombie state */
@@ -289,6 +277,7 @@ void SV_RunGameFrame(void) {
 #endif
 }
 
+
 void SV_Frame(int msec) {
 #ifndef DEDICATED_ONLY
 	time_before_game = time_after_game = 0;
@@ -302,10 +291,12 @@ void SV_Frame(int msec) {
 	/* keep the random time dependent */
 	randk();
 
+    clientsinfo_t ci = {svs.clients, maxclients->value};
+
 	/* check timeouts */
-	SV_CheckTimeouts();
+	SV_CheckTimeouts(svs.realtime, &ci, timeout->value, zombietime->value);
 	/* get packets from clients */
-	SV_ReadPackets();
+	SV_ReadPackets(svs.realtime, &ci, &net_from, &net_message);
 
 	/* move autonomous things around if enough time has passed */
 	if (!sv_timedemo->value && (svs.realtime < sv.time)) {
@@ -321,9 +312,9 @@ void SV_Frame(int msec) {
 	}
 
 	/* update ping based on the last known frame from all clients */
-	SV_CalcPings(svs.clients, maxclients->value);
+	SV_CalcPings(&ci);
     /* give the clients some timeslices, 1600 + some slop */
-    SV_GiveMsec(svs.clients, maxclients->value, 1800, sv.framenum);
+    SV_GiveMsec(&ci, 1800, sv.framenum);
 	/* let everything in the world think and move */
 	SV_RunGameFrame();
 	/* send messages back to the clients that had packets read this frame */

@@ -337,17 +337,11 @@ void Qcommon_Frame(int msec) {
 	Cbuf_Execute();
 
 #ifndef DEDICATED_ONLY
-	int time_before;
-	if (host_speeds->value) {
-		time_before = Sys_Milliseconds();
-	}
+    int time_before = host_speeds->value ? Sys_Milliseconds() : 0;
 #endif
 	SV_Frame(msec);
 #ifndef DEDICATED_ONLY
-	int time_between;
-	if (host_speeds->value) {
-		time_between = Sys_Milliseconds();
-	}
+	int time_between = host_speeds->value ? Sys_Milliseconds() : 0;
 
 	CL_Frame(msec);
 
