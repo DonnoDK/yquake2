@@ -633,34 +633,23 @@ cheatvar_t cheatvars[] = {
 
 int numcheatvars;
 
-void
-CL_FixCvarCheats(void)
-{
-	int i;
-	cheatvar_t *var;
-
-	if (!strcmp(cl.configstrings[CS_MAXCLIENTS], "1") ||
-		!cl.configstrings[CS_MAXCLIENTS][0])
-	{
+void CL_FixCvarCheats(void) {
+	if (!strcmp(cl.configstrings[CS_MAXCLIENTS], "1") || !cl.configstrings[CS_MAXCLIENTS][0]) {
 		return; /* single player can cheat  */
 	}
 
 	/* find all the cvars if we haven't done it yet */
-	if (!numcheatvars)
-	{
-		while (cheatvars[numcheatvars].name)
-		{
-			cheatvars[numcheatvars].var = Cvar_Get(cheatvars[numcheatvars].name,
-					cheatvars[numcheatvars].value, 0);
+	if (!numcheatvars) {
+		while (cheatvars[numcheatvars].name) {
+			cheatvars[numcheatvars].var = Cvar_Get(cheatvars[numcheatvars].name, cheatvars[numcheatvars].value, 0);
 			numcheatvars++;
 		}
 	}
 
 	/* make sure they are all set to the proper values */
-	for (i = 0, var = cheatvars; i < numcheatvars; i++, var++)
-	{
-		if (strcmp(var->var->string, var->value))
-		{
+	for (int i = 0; i < numcheatvars; i++) {
+        cheatvar_t* var = &cheatvars[i];
+		if (strcmp(var->var->string, var->value)) {
 			Cvar_Set(var->name, var->value);
 		}
 	}
