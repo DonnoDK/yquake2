@@ -313,7 +313,7 @@ OGG_LoadFileList(void)
 	}
 
 	/* Allocate list of files. */
-	ogg_filelist = malloc(sizeof(char *) * ogg_numfiles);
+	ogg_filelist = (char**)malloc(sizeof(char *) * ogg_numfiles);
 
 	/* Add valid Ogg Vorbis file to the list. */
 	for (i = 0, j = 0; i < ogg_numfiles; i++)
@@ -333,7 +333,7 @@ OGG_LoadFileList(void)
 	/* Adjust the list size (remove 
 	   space for invalid music files). */
 	ogg_numfiles = j;
-	ogg_filelist = realloc(ogg_filelist, sizeof(char *) * ogg_numfiles);
+	ogg_filelist = (char**)realloc(ogg_filelist, sizeof(char *) * ogg_numfiles);
 }
 
 /*
@@ -373,7 +373,7 @@ OGG_LoadPlaylist(char *playlist)
 	}
 
 	/* Allocate file list. */
-	ogg_filelist = malloc(sizeof(char *) * ogg_numfiles);
+	ogg_filelist = (char**)malloc(sizeof(char *) * ogg_numfiles);
 
 	i = 0;
 

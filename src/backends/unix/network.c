@@ -276,6 +276,7 @@ NET_BaseAdrToString(netadr_t a)
 	static char s[64], tmp[64];
 	struct sockaddr_storage ss;
 	struct sockaddr_in6 *s6;
+    socklen_t salen;
 
 	switch (a.type)
 	{
@@ -315,9 +316,11 @@ NET_BaseAdrToString(netadr_t a)
 			}
 
 #ifdef SIN6_LEN
-			socklen_t const salen = ss.ss_len;
+			//socklen_t const salen = ss.ss_len;
+			salen = ss.ss_len;
 #else
-			socklen_t const salen = sizeof(ss);
+			//socklen_t const salen = sizeof(ss);
+			salen = sizeof(ss);
 #endif
 
 			if (getnameinfo((struct sockaddr *)&ss, salen, s, sizeof(s), NULL,
@@ -807,7 +810,8 @@ NET_Config(qboolean multiplayer)
 int
 NET_Socket(char *net_interface, int port, netsrc_t type, int family)
 {
-	char Buf[BUFSIZ], *Host, *Service;
+	char Buf[BUFSIZ], *Service;
+    const char* Host;
 	int newsocket, Error;
 	struct sockaddr_storage ss;
 	struct addrinfo hints, *res, *ai;

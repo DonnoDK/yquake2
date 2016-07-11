@@ -119,7 +119,6 @@ R_SubdividePolygon(int numverts, float *verts)
 	int f, b;
 	float dist[64];
 	float frac;
-	glpoly_t *poly;
 	float s, t;
 	vec3_t total;
 	float total_s, total_t;
@@ -202,7 +201,7 @@ R_SubdividePolygon(int numverts, float *verts)
 	}
 
 	/* add a point in the center to help keep warp valid */
-	poly = Hunk_Alloc(sizeof(glpoly_t) + ((numverts - 4) + 2) * VERTEXSIZE * sizeof(float));
+	glpoly_t* poly = (glpoly_t*)Hunk_Alloc(sizeof(glpoly_t) + ((numverts - 4) + 2) * VERTEXSIZE * sizeof(float));
 	poly->next = warpface->polys;
 	warpface->polys = poly;
 	poly->numverts = numverts + 2;

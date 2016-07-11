@@ -308,12 +308,12 @@ void ED_CallSpawn(edict_t *ent) {
 char *
 ED_NewString(const char *string)
 {
-	char *newb, *new_p;
+	char *new_p;
 	int i, l;
 
 	l = strlen(string) + 1;
 
-	newb = gi.TagMalloc(l, TAG_LEVEL);
+	char* newb = (char*)gi.TagMalloc(l, TAG_LEVEL);
 
 	new_p = newb;
 

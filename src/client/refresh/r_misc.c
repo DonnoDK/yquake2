@@ -125,7 +125,7 @@ R_ScreenShot(void)
 
 	c = headerLength + vid.width * vid.height * 3;
 
-	buffer = malloc(c);
+	buffer = (byte*)malloc(c);
 	if (!buffer)
 	{
 		VID_Printf(PRINT_ALL, "SCR_ScreenShot_f: Couldn't malloc %d bytes\n", c);

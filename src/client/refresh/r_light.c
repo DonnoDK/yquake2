@@ -344,6 +344,9 @@ static void R_AddDynamicLights(msurface_t *surf, dlight_t* dlights, int num_dlig
 	}
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
 void R_SetCacheState(msurface_t *surf, const lightstyle_t* lightstyles) {
 	for (int maps = 0; maps < MAXLIGHTMAPS && surf->styles[maps] != 255; maps++) {
 		surf->cached_light[maps] = lightstyles[surf->styles[maps]].white;

@@ -191,40 +191,24 @@ vec3_t bytedirs[NUMVERTEXNORMALS] = {
 	{-0.688191, -0.587785, -0.425325}
 };
 
-void
-MSG_WriteChar(sizebuf_t *sb, int c)
-{
-	byte *buf;
-
-	buf = SZ_GetSpace(sb, 1);
+void MSG_WriteChar(sizebuf_t *sb, int c) {
+	byte* buf = (byte*)SZ_GetSpace(sb, 1);
 	buf[0] = c;
 }
 
-void
-MSG_WriteByte(sizebuf_t *sb, int c)
-{
-	byte *buf;
-
-	buf = SZ_GetSpace(sb, 1);
+void MSG_WriteByte(sizebuf_t *sb, int c) {
+	byte* buf = (byte*)SZ_GetSpace(sb, 1);
 	buf[0] = c;
 }
 
-void
-MSG_WriteShort(sizebuf_t *sb, int c)
-{
-	byte *buf;
-
-	buf = SZ_GetSpace(sb, 2);
+void MSG_WriteShort(sizebuf_t *sb, int c) {
+	byte* buf = (byte*)SZ_GetSpace(sb, 2);
 	buf[0] = c & 0xff;
 	buf[1] = c >> 8;
 }
 
-void
-MSG_WriteLong(sizebuf_t *sb, int c)
-{
-	byte *buf;
-
-	buf = SZ_GetSpace(sb, 4);
+void MSG_WriteLong(sizebuf_t *sb, int c) {
+	byte* buf = (byte*)SZ_GetSpace(sb, 4);
 	buf[0] = c & 0xff;
 	buf[1] = (c >> 8) & 0xff;
 	buf[2] = (c >> 16) & 0xff;
@@ -246,16 +230,10 @@ MSG_WriteFloat(sizebuf_t *sb, float f)
 	SZ_Write(sb, &dat.l, 4);
 }
 
-void
-MSG_WriteString(sizebuf_t *sb, char *s)
-{
-	if (!s)
-	{
-		SZ_Write(sb, "", 1);
-	}
-
-	else
-	{
+void MSG_WriteString(sizebuf_t *sb, char *s) {
+	if (!s) {
+		SZ_Write(sb, (void*)"", 1);
+	} else {
 		SZ_Write(sb, s, (int)strlen(s) + 1);
 	}
 }

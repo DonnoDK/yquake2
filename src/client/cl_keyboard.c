@@ -630,7 +630,7 @@ Key_KeynumToString(int keynum)
 void
 Key_SetBinding(int keynum, char *binding)
 {
-	char *new;
+	char *newk;
 	int l;
 
 	if (keynum == -1)
@@ -647,10 +647,10 @@ Key_SetBinding(int keynum, char *binding)
 
 	/* allocate memory for new binding */
 	l = strlen(binding);
-	new = Z_Malloc(l + 1);
-	strcpy(new, binding);
-	new[l] = 0;
-	keybindings[keynum] = new;
+	newk = (char*)Z_Malloc(l + 1);
+	strcpy(newk, binding);
+	newk[l] = 0;
+	keybindings[keynum] = newk;
 }
 
 void

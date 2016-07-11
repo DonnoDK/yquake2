@@ -877,7 +877,7 @@ SizeHUDString(char *string, int *w, int *h)
 }
 
 void
-DrawHUDStringScaled(char *string, int x, int y, int centerwidth, int xor, float factor)
+DrawHUDStringScaled(char *string, int x, int y, int centerwidth, int xord, float factor)
 {
 	int margin;
 	char line[1024];
@@ -910,7 +910,7 @@ DrawHUDStringScaled(char *string, int x, int y, int centerwidth, int xor, float 
 
 		for (i = 0; i < width; i++)
 		{
-			Draw_CharScaled(x, y, line[i] ^ xor, factor);
+			Draw_CharScaled(x, y, line[i] ^ xord, factor);
 			x += 8*factor;
 		}
 
@@ -923,9 +923,9 @@ DrawHUDStringScaled(char *string, int x, int y, int centerwidth, int xor, float 
 }
 
 void
-DrawHUDString(char *string, int x, int y, int centerwidth, int xor)
+DrawHUDString(char *string, int x, int y, int centerwidth, int xord)
 {
-	DrawHUDStringScaled(string, x, y, centerwidth, xor, 1.0f);
+	DrawHUDStringScaled(string, x, y, centerwidth, xord, 1.0f);
 }
 
 void

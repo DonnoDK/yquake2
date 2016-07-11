@@ -28,6 +28,9 @@
 
 extern gllightmapstate_t gl_lms;
 
+#ifdef __cplusplus
+extern "C"
+#endif
 void R_SetCacheState(msurface_t *surf, lightstyle_t* lightstyles);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
@@ -144,7 +147,7 @@ void LM_BuildPolygonFromSurface(msurface_t *fa, model_t* model) {
 	VectorClear(total);
 
 	/* draw texture */
-	glpoly_t* poly = Hunk_Alloc(sizeof(glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof(float));
+	glpoly_t* poly = (glpoly_t*)Hunk_Alloc(sizeof(glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof(float));
 	poly->next = fa->polys;
 	poly->flags = fa->flags;
 	fa->polys = poly;

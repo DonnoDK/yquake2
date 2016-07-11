@@ -37,16 +37,18 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
-#ifdef true
- #undef true
-#endif
+//#ifdef true
+// #undef true
+//#endif
+//
+//#ifdef false
+// #undef false
+//#endif
 
-#ifdef false
- #undef false
-#endif
-
-typedef enum {false, true}  qboolean;
+//typedef enum {false, true}  qboolean;
+typedef bool qboolean;
 typedef unsigned char byte;
 
 #ifndef NULL

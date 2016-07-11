@@ -57,7 +57,7 @@ Hunk_Begin(int maxsize)
 	maxhunksize = maxsize + sizeof(int);
 	curhunksize = 0;
 
-	membase = mmap(0, maxhunksize, PROT_READ | PROT_WRITE,
+	membase = (byte*)mmap(0, maxhunksize, PROT_READ | PROT_WRITE,
 			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
 	if ((membase == NULL) || (membase == (byte *)-1))

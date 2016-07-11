@@ -920,7 +920,6 @@ SDL_Cache(sfx_t *sfx, wavinfo_t *info, byte *data)
 	int len;
 	int sample;
 	int srcsample;
-	sfxcache_t *sc;
 	unsigned int samplefrac = 0;
 
 	stepscale = (float)info->rate / sound.speed;
@@ -933,7 +932,7 @@ SDL_Cache(sfx_t *sfx, wavinfo_t *info, byte *data)
 	}
 
 	len = len * info->width * info->channels;
-	sc = sfx->cache = Z_Malloc(len + sizeof(sfxcache_t));
+	sfxcache_t* sc = sfx->cache = (sfxcache_t*)Z_Malloc(len + sizeof(sfxcache_t));
 
 	if (!sc)
 	{
@@ -1446,7 +1445,7 @@ SDL_BackendInit(void)
 	backend->submission_chunk = 1;
 	backend->speed = obtained.freq;
 	samplesize = (backend->samples * (backend->samplebits / 8));
-	backend->buffer = calloc(1, samplesize);
+	backend->buffer = (unsigned char*)calloc(1, samplesize);
 	s_numchannels = MAX_CHANNELS;
 
     s_underwater->modified = true;

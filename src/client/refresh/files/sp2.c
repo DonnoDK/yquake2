@@ -28,34 +28,26 @@
 
 extern int modfilelen;
 
-void
-LoadSP2(model_t *mod, void *buffer)
-{
-	dsprite_t *sprin, *sprout;
-	int i;
-
-	sprin = (dsprite_t *)buffer;
-	sprout = Hunk_Alloc(modfilelen);
+void LoadSP2(model_t *mod, void *buffer) {
+	dsprite_t* sprin = (dsprite_t *)buffer;
+	dsprite_t* sprout = (dsprite_t*)Hunk_Alloc(modfilelen);
 
 	sprout->ident = LittleLong(sprin->ident);
 	sprout->version = LittleLong(sprin->version);
 	sprout->numframes = LittleLong(sprin->numframes);
 
-	if (sprout->version != SPRITE_VERSION)
-	{
+	if (sprout->version != SPRITE_VERSION) {
 		VID_Error(ERR_DROP, "%s has wrong version number (%i should be %i)",
 				mod->name, sprout->version, SPRITE_VERSION);
 	}
 
-	if (sprout->numframes > MAX_MD2SKINS)
-	{
+	if (sprout->numframes > MAX_MD2SKINS) {
 		VID_Error(ERR_DROP, "%s has too many frames (%i > %i)",
 				mod->name, sprout->numframes, MAX_MD2SKINS);
 	}
 
 	/* byte swap everything */
-	for (i = 0; i < sprout->numframes; i++)
-	{
+	for (int i = 0; i < sprout->numframes; i++) {
 		sprout->frames[i].width = LittleLong(sprin->frames[i].width);
 		sprout->frames[i].height = LittleLong(sprin->frames[i].height);
 		sprout->frames[i].origin_x = LittleLong(sprin->frames[i].origin_x);

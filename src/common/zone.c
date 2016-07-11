@@ -76,13 +76,9 @@ Z_FreeTags(int tag)
 	}
 }
 
-void *
-Z_TagMalloc(int size, int tag)
-{
-	zhead_t *z;
-
+void * Z_TagMalloc(int size, int tag) {
 	size = size + sizeof(zhead_t);
-	z = malloc(size);
+	zhead_t* z = (zhead_t*)malloc(size);
 
 	if (!z)
 	{

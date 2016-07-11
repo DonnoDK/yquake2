@@ -24,6 +24,8 @@
  * =======================================================================
  */
 
+/* TODO: this file needs serious refactoring */
+
 #include "header/local.h"
 
 #define MAX_MOD_KNOWN 512
@@ -293,7 +295,7 @@ Mod_LoadLighting(lump_t *l)
 		return;
 	}
 
-	loadmodel->lightdata = Hunk_Alloc(l->filelen);
+	loadmodel->lightdata = (byte*)Hunk_Alloc(l->filelen);
 	memcpy(loadmodel->lightdata, mod_base + l->fileofs, l->filelen);
 }
 
@@ -308,7 +310,7 @@ Mod_LoadVisibility(lump_t *l)
 		return;
 	}
 
-	loadmodel->vis = Hunk_Alloc(l->filelen);
+	loadmodel->vis = (dvis_t*)Hunk_Alloc(l->filelen);
 	memcpy(loadmodel->vis, mod_base + l->fileofs, l->filelen);
 
 	loadmodel->vis->numclusters = LittleLong(loadmodel->vis->numclusters);
@@ -327,7 +329,7 @@ Mod_LoadVertexes(lump_t *l)
 	mvertex_t *out;
 	int i, count;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dvertex_t*)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -336,7 +338,7 @@ Mod_LoadVertexes(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	out = (mvertex_t*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->vertexes = out;
 	loadmodel->numvertexes = count;
@@ -366,11 +368,10 @@ Mod_RadiusFromBounds(vec3_t mins, vec3_t maxs)
 void
 Mod_LoadSubmodels(lump_t *l)
 {
-	dmodel_t *in;
 	mmodel_t *out;
 	int i, j, count;
 
-	in = (void *)(mod_base + l->fileofs);
+	dmodel_t* in = (dmodel_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -379,7 +380,7 @@ Mod_LoadSubmodels(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	out = (mmodel_t*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->submodels = out;
 	loadmodel->numsubmodels = count;
@@ -408,7 +409,7 @@ Mod_LoadEdges(lump_t *l)
 	medge_t *out;
 	int i, count;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dedge_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -417,7 +418,7 @@ Mod_LoadEdges(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc((count + 1) * sizeof(*out));
+	out = (medge_t*)Hunk_Alloc((count + 1) * sizeof(*out));
 
 	loadmodel->edges = out;
 	loadmodel->numedges = count;
@@ -438,7 +439,7 @@ Mod_LoadTexinfo(lump_t *l)
 	char name[MAX_QPATH];
 	int next;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (texinfo_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -447,7 +448,7 @@ Mod_LoadTexinfo(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	out = (mtexinfo_t*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->texinfo = out;
 	loadmodel->numtexinfo = count;
@@ -555,16 +556,12 @@ Mod_CalcSurfaceExtents(msurface_t *s)
 	}
 }
 
-void
-Mod_LoadFaces(lump_t *l)
-{
-	dface_t *in;
-	msurface_t *out;
+void Mod_LoadFaces(lump_t *l) {
 	int i, count, surfnum;
 	int planenum, side;
 	int ti;
 
-	in = (void *)(mod_base + l->fileofs);
+	dface_t* in = (dface_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -573,7 +570,7 @@ Mod_LoadFaces(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	msurface_t* out = (msurface_t*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->surfaces = out;
 	loadmodel->numsurfaces = count;
@@ -673,10 +670,7 @@ void
 Mod_LoadNodes(lump_t *l)
 {
 	int i, j, count, p;
-	dnode_t *in;
-	mnode_t *out;
-
-	in = (void *)(mod_base + l->fileofs);
+	dnode_t* in = (dnode_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -685,7 +679,7 @@ Mod_LoadNodes(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	mnode_t* out = (mnode_t*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->nodes = out;
 	loadmodel->numnodes = count;
@@ -726,11 +720,9 @@ Mod_LoadNodes(lump_t *l)
 void
 Mod_LoadLeafs(lump_t *l)
 {
-	dleaf_t *in;
-	mleaf_t *out;
 	int i, j, count, p;
 
-	in = (void *)(mod_base + l->fileofs);
+	dleaf_t* in = (dleaf_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -739,7 +731,7 @@ Mod_LoadLeafs(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	mleaf_t* out = (mleaf_t*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->leafs = out;
 	loadmodel->numleafs = count;
@@ -768,10 +760,8 @@ void
 Mod_LoadMarksurfaces(lump_t *l)
 {
 	int i, j, count;
-	short *in;
-	msurface_t **out;
 
-	in = (void *)(mod_base + l->fileofs);
+	short* in = (short *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -780,7 +770,7 @@ Mod_LoadMarksurfaces(lump_t *l)
 	}
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * sizeof(*out));
+	msurface_t** out = (msurface_t**)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->marksurfaces = out;
 	loadmodel->nummarksurfaces = count;
@@ -798,13 +788,8 @@ Mod_LoadMarksurfaces(lump_t *l)
 	}
 }
 
-void
-Mod_LoadSurfedges(lump_t *l)
-{
-	int i, count;
-	int *in, *out;
-
-	in = (void *)(mod_base + l->fileofs);
+void Mod_LoadSurfedges(lump_t *l) {
+	int* in = (int *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -812,7 +797,7 @@ Mod_LoadSurfedges(lump_t *l)
 				loadmodel->name);
 	}
 
-	count = l->filelen / sizeof(*in);
+	int count = l->filelen / sizeof(*in);
 
 	if ((count < 1) || (count >= MAX_MAP_SURFEDGES))
 	{
@@ -820,13 +805,12 @@ Mod_LoadSurfedges(lump_t *l)
 				loadmodel->name, count);
 	}
 
-	out = Hunk_Alloc(count * sizeof(*out));
+	int* out = (int*)Hunk_Alloc(count * sizeof(*out));
 
 	loadmodel->surfedges = out;
 	loadmodel->numsurfedges = count;
 
-	for (i = 0; i < count; i++)
-	{
+	for (int i = 0; i < count; i++) {
 		out[i] = LittleLong(in[i]);
 	}
 }
@@ -835,12 +819,9 @@ void
 Mod_LoadPlanes(lump_t *l)
 {
 	int i, j;
-	cplane_t *out;
-	dplane_t *in;
-	int count;
 	int bits;
 
-	in = (void *)(mod_base + l->fileofs);
+	dplane_t* in = (dplane_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 	{
@@ -848,8 +829,8 @@ Mod_LoadPlanes(lump_t *l)
 				loadmodel->name);
 	}
 
-	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc(count * 2 * sizeof(*out));
+	int count = l->filelen / sizeof(*in);
+	cplane_t* out = (cplane_t*)Hunk_Alloc(count * 2 * sizeof(*out));
 
 	loadmodel->planes = out;
 	loadmodel->numplanes = count;

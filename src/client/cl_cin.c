@@ -67,7 +67,7 @@ SCR_LoadPCX(char *filename, byte **pic, byte **palette, int *width, int *height)
 	int x, y;
 	int len;
 	int dataByte, runLength;
-	byte *out, *pix;
+	byte *pix;
 
 	*pic = NULL;
 
@@ -94,7 +94,7 @@ SCR_LoadPCX(char *filename, byte **pic, byte **palette, int *width, int *height)
 		return;
 	}
 
-	out = Z_Malloc((pcx->ymax + 1) * (pcx->xmax + 1));
+	byte* out = (byte*)Z_Malloc((pcx->ymax + 1) * (pcx->xmax + 1));
 
 	*pic = out;
 
@@ -102,7 +102,7 @@ SCR_LoadPCX(char *filename, byte **pic, byte **palette, int *width, int *height)
 
 	if (palette)
 	{
-		*palette = Z_Malloc(768);
+		*palette = (byte*)Z_Malloc(768);
 		memcpy(*palette, (byte *)pcx + len - 768, 768);
 	}
 
@@ -249,7 +249,7 @@ Huff1TableInit(void)
 	byte counts[256];
 	int numhnodes;
 
-	cin.hnodes1 = Z_Malloc(256 * 256 * 2 * 4);
+	cin.hnodes1 = (int*)Z_Malloc(256 * 256 * 2 * 4);
 	memset(cin.hnodes1, 0, 256 * 256 * 2 * 4);
 
 	for (prev = 0; prev < 256; prev++)
@@ -312,7 +312,7 @@ Huff1Decompress(cblock_t in)
 	count = in.data[0] +
 			(in.data[1] << 8) + (in.data[2] << 16) + (in.data[3] << 24);
 	input = in.data + 4;
-	out_p = out.data = Z_Malloc(count);
+	out_p = out.data = (byte*)Z_Malloc(count);
 
 	/* read bits */
 	hnodesbase = cin.hnodes1 - 256 * 2; /* nodes 0-255 aren't stored */

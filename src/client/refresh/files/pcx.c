@@ -79,7 +79,7 @@ LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
 		return;
 	}
 
-	out = malloc((pcx->ymax + 1) * (pcx->xmax + 1));
+	out = (byte*)malloc((pcx->ymax + 1) * (pcx->xmax + 1));
 
 	*pic = out;
 
@@ -87,7 +87,7 @@ LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
 
 	if (palette)
 	{
-		*palette = malloc(768);
+		*palette = (byte*)malloc(768);
 		memcpy(*palette, (byte *)pcx + len - 768, 768);
 	}
 

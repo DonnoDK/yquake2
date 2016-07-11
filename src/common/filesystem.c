@@ -483,7 +483,7 @@ FS_FOpenFile(const char *name, fileHandle_t *f, qboolean gamedir_only)
 						/* PK3 */
 						file_from_pk3 = 1;
 						Q_strlcpy(file_from_pk3_name, strrchr(pack->name, '/') + 1, sizeof(file_from_pk3_name));
-						handle->zip = unzOpen(pack->name);
+						handle->zip = (void**)unzOpen(pack->name);
 
 						if (handle->zip)
 						{
@@ -720,7 +720,7 @@ FS_LoadFile(char *path, void **buffer)
 		return size;
 	}
 
-	buf = Z_Malloc(size);
+	buf = (byte*)Z_Malloc(size);
 	*buffer = buf;
 
 	FS_Read(buf, size, f);
@@ -785,7 +785,7 @@ FS_LoadPAK(const char *packPath)
 				packPath, numFiles);
 	}
 
-	files = Z_Malloc(numFiles * sizeof(fsPackFile_t));
+	files = (fsPackFile_t*)Z_Malloc(numFiles * sizeof(fsPackFile_t));
 
 	fseek(handle, header.dirofs, SEEK_SET);
 	fread(info, 1, header.dirlen, handle);
@@ -798,7 +798,7 @@ FS_LoadPAK(const char *packPath)
 		files[i].size = LittleLong(info[i].filelen);
 	}
 
-	pack = Z_Malloc(sizeof(fsPack_t));
+	pack = (fsPack_t*)Z_Malloc(sizeof(fsPack_t));
 	Q_strlcpy(pack->name, packPath, sizeof(pack->name));
 	pack->pak = handle;
 #ifdef ZIP
@@ -832,7 +832,7 @@ FS_LoadPK3(const char *packPath)
 	unz_file_info info; /* Zip file info. */
 	unz_global_info global; /* Zip file global info. */
 
-	handle = unzOpen(packPath);
+	handle = (unzFile*)unzOpen(packPath);
 
 	if (handle == NULL)
 	{
@@ -854,7 +854,7 @@ FS_LoadPK3(const char *packPath)
 				packPath, numFiles);
 	}
 
-	files = Z_Malloc(numFiles * sizeof(fsPackFile_t));
+	files = (fsPackFile_t*)Z_Malloc(numFiles * sizeof(fsPackFile_t));
 
 	/* Parse the directory. */
 	status = unzGoToFirstFile(handle);
@@ -871,7 +871,7 @@ FS_LoadPK3(const char *packPath)
 		status = unzGoToNextFile(handle);
 	}
 
-	pack = Z_Malloc(sizeof(fsPack_t));
+	pack = (fsPack_t*)Z_Malloc(sizeof(fsPack_t));
 	Q_strlcpy(pack->name, packPath, sizeof(pack->name));
 	pack->pak = NULL;
 	pack->pk3 = handle;
@@ -909,7 +909,7 @@ FS_AddGameDirectory(const char *dir)
 	FS_CreatePath(fs_gamedir);
 
 	/* Add the directory to the search path. */
-	search = Z_Malloc(sizeof(fsSearchPath_t));
+	search = (fsSearchPath_t*)Z_Malloc(sizeof(fsSearchPath_t));
 	Q_strlcpy(search->path, dir, sizeof(search->path));
 	search->next = fs_searchPaths;
 	fs_searchPaths = search;
@@ -939,7 +939,7 @@ FS_AddGameDirectory(const char *dir)
 				continue;
 			}
 
-			search = Z_Malloc(sizeof(fsSearchPath_t));
+			search = (fsSearchPath_t*)Z_Malloc(sizeof(fsSearchPath_t));
 			search->pack = pack;
 			search->next = fs_searchPaths;
 			fs_searchPaths = search;
@@ -984,7 +984,7 @@ FS_AddGameDirectory(const char *dir)
 				continue;
 			}
 
-			search = Z_Malloc(sizeof(fsSearchPath_t));
+			search = (fsSearchPath_t*)Z_Malloc(sizeof(fsSearchPath_t));
 			search->pack = pack;
 			search->next = fs_searchPaths;
 			fs_searchPaths = search;
@@ -1281,7 +1281,7 @@ FS_Link_f(void)
 	}
 
 	/* Create a new link. */
-	l = Z_Malloc(sizeof(*l));
+	l = (fsLink_t*)Z_Malloc(sizeof(*l));
 	l->next = fs_links;
 	fs_links = l;
 	l->from = CopyString(Cmd_Argv(1));
@@ -1329,7 +1329,7 @@ FS_ListFiles(char *findname, int *numfiles,
 	*numfiles = nfiles;
 
 	/* Allocate the list. */
-	list = calloc(nfiles, sizeof(char *));
+	list = (char**)calloc(nfiles, sizeof(char *));
 
 	/* Fill the list. */
 	s = Sys_FindFirst(findname, musthave, canthave);
@@ -1431,7 +1431,7 @@ FS_ListFiles2(char *findname, int *numfiles,
 	char path[MAX_OSPATH]; /* Temporary path. */
 
 	nfiles = 0;
-	list = malloc(sizeof(char *));
+	list = (char**)malloc(sizeof(char *));
 
 	for (search = fs_searchPaths; search != NULL; search = search->next)
 	{
@@ -1457,7 +1457,7 @@ FS_ListFiles2(char *findname, int *numfiles,
 			}
 
 			nfiles += j;
-			list = realloc(list, nfiles * sizeof(char *));
+			list = (char**)realloc(list, nfiles * sizeof(char *));
 
 			for (i = 0, j = nfiles - j; i < search->pack->numFiles; i++)
 			{
@@ -1481,7 +1481,7 @@ FS_ListFiles2(char *findname, int *numfiles,
 		{
 			tmpnfiles--;
 			nfiles += tmpnfiles;
-			list = realloc(list, nfiles * sizeof(char *));
+			list = (char**)realloc(list, nfiles * sizeof(char *));
 
 			for (i = 0, j = nfiles - tmpnfiles; i < tmpnfiles; i++, j++)
 			{
@@ -1517,7 +1517,7 @@ FS_ListFiles2(char *findname, int *numfiles,
 	if (tmpnfiles > 0)
 	{
 		nfiles -= tmpnfiles;
-		tmplist = malloc(nfiles * sizeof(char *));
+		tmplist = (char**)malloc(nfiles * sizeof(char *));
 
 		for (i = 0, j = 0; i < nfiles + tmpnfiles; i++)
 		{
@@ -1535,7 +1535,7 @@ FS_ListFiles2(char *findname, int *numfiles,
 	if (nfiles > 0)
 	{
 		nfiles++;
-		list = realloc(list, nfiles * sizeof(char *));
+		list = (char**)realloc(list, nfiles * sizeof(char *));
 		list[nfiles - 1] = NULL;
 	}
 

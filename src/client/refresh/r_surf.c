@@ -38,6 +38,9 @@ void LM_InitBlock(void);
 void LM_UploadBlock(qboolean dynamic);
 qboolean LM_AllocBlock(int w, int h, int *x, int *y);
 
+#ifdef __cplusplus
+extern "C"
+#endif
 void R_SetCacheState(msurface_t *surf, const lightstyle_t* lightstyles);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
@@ -353,7 +356,7 @@ static void R_RenderBrushPoly(msurface_t *fa, int frame){
 			int smax = (fa->extents[0] >> 4) + 1;
 			int tmax = (fa->extents[1] >> 4) + 1;
 
-			R_BuildLightMap(fa, (void *)temp, smax * 4);
+			R_BuildLightMap(fa, (byte *)temp, smax * 4);
 			R_SetCacheState(fa, r_newrefdef.lightstyles);
 
 			R_Bind(gl_state.lightmap_textures + fa->lightmaptexturenum);
@@ -501,7 +504,7 @@ static void R_RenderLightmappedPoly(msurface_t *surf, int frame, const lightstyl
 		unsigned temp[128 * 128];
         int smax = (surf->extents[0] >> 4) + 1;
         int tmax = (surf->extents[1] >> 4) + 1;
-        R_BuildLightMap(surf, (void *)temp, smax * 4);
+        R_BuildLightMap(surf, (byte *)temp, smax * 4);
 
 		if (((surf->styles[map] >= 32) || (surf->styles[map] == 0)) && (surf->dlightframe != r_framecount)) {
 			R_SetCacheState(surf, lightstyles);

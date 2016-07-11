@@ -30,7 +30,7 @@ void
 LoadMD2(model_t *mod, void *buffer)
 {
 	int i, j;
-	dmdl_t *pinmodel, *pheader;
+	dmdl_t *pinmodel;
 	dstvert_t *pinst, *poutst;
 	dtriangle_t *pintri, *pouttri;
 	daliasframe_t *pinframe, *poutframe;
@@ -47,7 +47,7 @@ LoadMD2(model_t *mod, void *buffer)
 				mod->name, version, ALIAS_VERSION);
 	}
 
-	pheader = Hunk_Alloc(LittleLong(pinmodel->ofs_end));
+	dmdl_t* pheader = (dmdl_t*)Hunk_Alloc(LittleLong(pinmodel->ofs_end));
 
 	/* byte swap the header fields and sanity check */
 	for (i = 0; i < sizeof(dmdl_t) / 4; i++)

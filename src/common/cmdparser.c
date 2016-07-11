@@ -57,7 +57,6 @@ static cmdalias_t *cmd_alias;
 
 static qboolean cmd_wait;
 static int cmd_argc;
-static int cmd_argc;
 static char *cmd_argv[MAX_STRING_TOKENS];
 static char *cmd_null_string = "";
 static char cmd_args[MAX_STRING_CHARS];
@@ -99,7 +98,7 @@ void Cbuf_InsertText(char *text) {
 	/* copy off any commands still remaining in the exec buffer */
 	int templen = cmd_text.cursize;
 	if (templen) {
-		temp = Z_Malloc(templen);
+		temp = (char*)Z_Malloc(templen);
 		memcpy(temp, cmd_text.data, templen);
 		SZ_Clear(&cmd_text);
 	} else {
@@ -228,7 +227,7 @@ qboolean Cbuf_AddLateCommands(int argc, char** argv) {
 		return false;
 	}
 
-	char* text = Z_Malloc(s + 1);
+	char* text = (char*)Z_Malloc(s + 1);
 	text[0] = 0;
 
 	for (int i = 1; i < argc; i++) {
@@ -239,7 +238,7 @@ qboolean Cbuf_AddLateCommands(int argc, char** argv) {
 	}
 
 	/* pull out the commands */
-	char* build = Z_Malloc(s + 1);
+	char* build = (char*)Z_Malloc(s + 1);
 	build[0] = 0;
 
 	for (int i = 0; i < s - 1; i++) {
@@ -284,7 +283,7 @@ static void Cmd_Exec_f(void) {
 	Com_Printf("execing %s\n", Cmd_Argv(1));
 
 	/* the file doesn't have a trailing 0, so we need to copy it off */
-	char* f2 = Z_Malloc(len + 1);
+	char* f2 = (char*)Z_Malloc(len + 1);
 	memcpy(f2, f, len);
 	f2[len] = 0;
 
@@ -343,7 +342,7 @@ static void Cmd_Alias_f(void) {
 	//cmdalias_t *a = Cmd_GetAlias(s, cmd_alias);
     cmdalias_t* a = (cmdalias_t*)Cmd_GetFunction(s, (opaque_cmd_t*)cmd_alias);
     if(!a){
-		a = Z_Malloc(sizeof(cmdalias_t));
+		a = (cmdalias_t*)Z_Malloc(sizeof(cmdalias_t));
 		a->next = cmd_alias;
 		cmd_alias = a;
     }else{
@@ -516,7 +515,7 @@ void Cmd_TokenizeString(char *text, qboolean macroExpand) {
 		}
 
 		if (cmd_argc < MAX_STRING_TOKENS) {
-			cmd_argv[cmd_argc] = Z_Malloc(strlen(com_token) + 1);
+			cmd_argv[cmd_argc] = (char*)Z_Malloc(strlen(com_token) + 1);
 			strcpy(cmd_argv[cmd_argc], com_token);
 			cmd_argc++;
 		}
@@ -536,7 +535,7 @@ void Cmd_AddDelegate(char *cmd_name, delegate_t delegate) {
         return;
     }
 
-	cmd = Z_Malloc(sizeof(cmd_function_t));
+	cmd = (cmd_function_t*)Z_Malloc(sizeof(cmd_function_t));
 	cmd->name = cmd_name;
 	cmd->delegate = delegate;
 
@@ -563,7 +562,7 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function) {
         return;
     }
 
-	cmd = Z_Malloc(sizeof(cmd_function_t));
+	cmd = (cmd_function_t*)Z_Malloc(sizeof(cmd_function_t));
 	cmd->name = cmd_name;
 	cmd->function = function;
 
