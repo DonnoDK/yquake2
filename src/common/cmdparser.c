@@ -619,7 +619,22 @@ char* Cmd_CompleteCommand(char *partial) {
 		return NULL;
 	}
 
-	/* check for exact match */
+    /*
+    opaque_cmd_t* commands[] = {
+        (opaque_cmd_t*)cmd_functions,
+        (opaque_cmd_t*)cmd_alias,
+        (opaque_cmd_t*)cvar_vars
+    };
+
+    for(int i = 0; i < 3; i++){
+        opaque_cmd_t* cmdlist = commands[i];
+        opaque_cmd_t* cmd = Cmd_GetFunction(partial, cmdlist);
+        if(cmd){
+            return cmd->name;
+        }
+    }
+    */
+    /* check for exact match */
     cmd_function_t* cmd = (cmd_function_t*)Cmd_GetFunction(partial, (opaque_cmd_t*)cmd_functions);
     if(cmd){
         return cmd->name;
@@ -696,18 +711,11 @@ char* Cmd_CompleteCommand(char *partial) {
 
 qboolean Cmd_IsComplete(char *command) {
 	/* check for exact match */
-    if(Cmd_GetFunction(command, (opaque_cmd_t*)cmd_functions)){
+    if(Cmd_GetFunction(command, (opaque_cmd_t*)cmd_functions) ||
+       Cmd_GetFunction(command, (opaque_cmd_t*)cvar_vars) ||
+       Cmd_GetFunction(command, (opaque_cmd_t*)cmd_alias)){
         return true;
     }
-
-    if(Cmd_GetAlias(command, cmd_alias)){
-        return true;
-    }
-
-    if(Cmd_GetFunction(command, (opaque_cmd_t*)cvar_vars)){
-        return true;
-    }
-
 	return false;
 }
 
