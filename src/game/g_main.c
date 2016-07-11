@@ -178,11 +178,11 @@ Com_Printf(char *msg, ...)
 void
 Com_Printfln(char *msg, ...){
     char *newline = "\n";
-    char *newmsg;
-    newmsg = malloc(strlen(msg)+1+2);
+    char* newmsg = (char*)malloc(strlen(msg)+1+2);
     strcpy(newmsg, msg);
     strcat(newmsg, newline);
     Com_Printf(newmsg);
+    free(newmsg);
 }
 
 /* ====================================================================== */
