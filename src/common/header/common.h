@@ -157,6 +157,7 @@ extern float LittleFloat(float l);
 
 int COM_Argc(void);
 char *COM_Argv(int arg);    /* range and null checked */
+char** COM_Args(void);
 void COM_ClearArgv(int arg);
 int COM_CheckParm(char *parm);
 void COM_AddParm(char *parm);
@@ -349,7 +350,7 @@ void Cbuf_AddEarlyCommands(qboolean clear);
 
 /* adds all the +set commands from the command line */
 
-qboolean Cbuf_AddLateCommands(void);
+qboolean Cbuf_AddLateCommands(int argc, char** argv);
 
 /* adds all the remaining + commands from the command line */
 /* Returns true if any late commands were added, which */
@@ -407,7 +408,7 @@ void Cmd_TokenizeString(char *text, qboolean macroExpand);
 
 /* Takes a null terminated string.  Does not need to be /n terminated. */
 /* breaks the string up into arg tokens. */
-void Cmd_ExecuteString(char *text);
+void Cmd_ExecuteString(char *text, int alias_count);
 
 /* Parses a single line of text into arguments and tries to execute it */
 /* as if it was typed at the console */

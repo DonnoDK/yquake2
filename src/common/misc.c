@@ -239,8 +239,7 @@ void Qcommon_Init(int argc, char **argv) {
 	char* s = va("%s %s %s %s", YQ2VERSION, CPUSTRING, __DATE__, BUILDSTRING);
 	Cvar_Get("version", s, CVAR_SERVERINFO | CVAR_NOSET);
 
-	if (dedicated->value)
-	{
+	if (dedicated->value) {
 		Cmd_AddCommand("quit", Com_Quit);
 	}
 
@@ -253,18 +252,13 @@ void Qcommon_Init(int argc, char **argv) {
 #endif
 
 	/* add + commands from command line */
-	if (!Cbuf_AddLateCommands())
-	{
+	if (!Cbuf_AddLateCommands(COM_Argc(), COM_Args())) {
 		/* if the user didn't give any commands, run default action */
-		if (!dedicated->value)
-		{
+		if (!dedicated->value) {
 			Cbuf_AddText("d1\n");
-		}
-		else
-		{
+		} else {
 			Cbuf_AddText("dedicated_start\n");
 		}
-
 		Cbuf_Execute();
 	}
 #ifndef DEDICATED_ONLY

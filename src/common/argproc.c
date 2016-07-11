@@ -51,6 +51,10 @@ COM_CheckParm(char *parm)
 	return 0;
 }
 
+char** COM_Args(void){
+    return com_argv;
+}
+
 int
 COM_Argc(void)
 {
