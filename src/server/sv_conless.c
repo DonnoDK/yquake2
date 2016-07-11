@@ -28,6 +28,9 @@
 
 extern cvar_t *hostname;
 extern cvar_t *rcon_password;
+#ifdef __cplusplus
+extern "C"
+#endif
 char *SV_StatusString(void);
 
 /*

@@ -392,24 +392,20 @@ FS_FCloseFile(fileHandle_t f)
 	memset(handle, 0, sizeof(*handle));
 }
 
-int
-Developer_searchpath(int who)
-{
+#ifdef __cplusplus
+extern "C"
+#endif
+int Developer_searchpath(void){
 	fsSearchPath_t *search;
-
-	for (search = fs_searchPaths; search; search = search->next)
-	{
-		if (strstr(search->path, "xatrix"))
-		{
+	for (search = fs_searchPaths; search; search = search->next) {
+		if (strstr(search->path, "xatrix")) {
 			return 1;
 		}
 
-		if (strstr(search->path, "rogue"))
-		{
+		if (strstr(search->path, "rogue")) {
 			return 2;
 		}
 	}
-
 	return 0;
 }
 

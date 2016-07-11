@@ -26,8 +26,13 @@
 
 #include "header/local.h"
 
-void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
-		int damage);
+#ifdef __cplusplus
+extern "C" {
+#endif
+void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point);
+#ifdef __cplusplus
+}
+#endif
 void infantry_stand(edict_t *self);
 void monster_use(edict_t *self, edict_t *other, edict_t *activator);
 qboolean FindTarget(edict_t *self);
@@ -436,7 +441,7 @@ turret_driver_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
 	self->target_ent->owner = NULL;
 	self->target_ent->teammaster->owner = NULL;
 
-	infantry_die(self, inflictor, attacker, damage);
+	infantry_die(self, inflictor, attacker, damage, NULL);
 }
 
 void

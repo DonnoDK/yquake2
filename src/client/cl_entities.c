@@ -93,7 +93,10 @@ S_RegisterSexedModel(entity_state_t *ent, char *base)
 	return md2;
 }
 
-extern int Developer_searchpath(int who);
+#ifdef __cplusplus
+extern "C"
+#endif
+extern int Developer_searchpath(void);
 
 void
 CL_AddPacketEntities(frame_t *frame)
@@ -377,7 +380,7 @@ CL_AddPacketEntities(frame_t *frame)
 			   something special */
 			if (renderfx & RF_SHELL_HALF_DAM)
 			{
-				if (Developer_searchpath(2) == 2)
+				if (Developer_searchpath() == 2)
 				{
 					/* ditch the half damage shell if any of red, blue, or double are on */
 					if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_DOUBLE))
@@ -389,7 +392,7 @@ CL_AddPacketEntities(frame_t *frame)
 
 			if (renderfx & RF_SHELL_DOUBLE)
 			{
-				if (Developer_searchpath(2) == 2)
+				if (Developer_searchpath() == 2)
 				{
 					/* lose the yellow shell if we have a red, blue, or green shell */
 					if (renderfx & (RF_SHELL_RED | RF_SHELL_BLUE | RF_SHELL_GREEN))

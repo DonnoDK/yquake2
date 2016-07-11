@@ -1912,6 +1912,9 @@ M_Credits_Key(int key)
     return menu_out_sound;
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
 extern int Developer_searchpath(void);
 
 static void

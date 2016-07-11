@@ -40,7 +40,14 @@ void SP_item_health_mega(edict_t *self);
 void SP_info_player_start(edict_t *ent);
 void SP_info_player_deathmatch(edict_t *ent);
 void SP_info_player_coop(edict_t *ent);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 void SP_info_player_intermission(edict_t *ent);
+#ifdef __cplusplus
+}
+#endif
 
 void SP_func_plat(edict_t *ent);
 void SP_func_rotating(edict_t *ent);
@@ -548,6 +555,9 @@ G_FindTeams(void)
  * Creates a server's entity / program execution context by
  * parsing textual entity definitions out of an ent file.
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void SpawnEntities(const char *mapname, char *entities, const char *spawnpoint) {
 	if (!mapname || !entities || !spawnpoint) {
 		return;

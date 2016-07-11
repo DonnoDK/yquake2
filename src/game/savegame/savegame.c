@@ -748,6 +748,9 @@ ReadClient(FILE *f, gclient_t *client)
  * - client states
  * - help computer info
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 WriteGame(const char *filename, qboolean autosave)
 {
@@ -803,6 +806,9 @@ WriteGame(const char *filename, qboolean autosave)
  * a file. Called when ever a
  * savegames is loaded.
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 ReadGame(const char *filename)
 {
@@ -931,6 +937,9 @@ WriteLevelLocals(FILE *f)
  * Writes the current level
  * into a file.
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 WriteLevel(const char *filename)
 {
@@ -1021,6 +1030,9 @@ ReadLevelLocals(FILE *f)
  * this function is called, no clients
  * are connected to the server.
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 ReadLevel(const char *filename)
 {

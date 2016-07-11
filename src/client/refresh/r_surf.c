@@ -60,21 +60,13 @@ static image_t* R_TextureAnimation(mtexinfo_t *tex, int frame){
 	return tex->image;
 }
 
-void
-R_DrawGLPoly(glpoly_t *p)
-{
-	int i;
-	float *v;
-
+void R_DrawGLPoly(glpoly_t *p) {
 	glBegin(GL_POLYGON);
-	v = p->verts[0];
-
-	for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
-	{
+	float* v = p->verts[0];
+	for (int i = 0; i < p->numverts; i++, v += VERTEXSIZE){
 		glTexCoord2f(v[3], v[4]);
 		glVertex3fv(v);
 	}
-
 	glEnd();
 }
 

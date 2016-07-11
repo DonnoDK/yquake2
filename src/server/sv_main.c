@@ -79,6 +79,9 @@ void SV_DropClient(client_t *drop) {
 /*
  * Builds the string that is sent as heartbeats and status replies
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 char* SV_StatusString(const client_t* clients, int num_clients) {
 	char player[1024];
 	static char status[MAX_MSGLEN - 16];

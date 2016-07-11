@@ -391,6 +391,9 @@ SP_info_player_coop(edict_t *self)
  * Use 'angles' instead of 'angle', so you can set pitch or
  * roll as well as yaw.  'pitch yaw roll'
  */
+#ifdef __cplusplus
+extern "C"
+#endif
 void
 SP_info_player_intermission(void)
 {
