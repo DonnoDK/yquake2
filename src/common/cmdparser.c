@@ -31,6 +31,11 @@
 #define MAX_ALIAS_NAME 32
 #define ALIAS_LOOP_COUNT 16
 
+typedef struct opaque_cmd_s{
+    struct opaque_cmd_s* next;
+    char* name;
+}opaque_cmd_t;
+
 typedef struct cmd_function_s {
 	struct cmd_function_s *next;
 	char *name;
@@ -38,8 +43,6 @@ typedef struct cmd_function_s {
     delegate_t delegate;
 } cmd_function_t;
 
-/* possible commands to execute */
-static cmd_function_t *cmd_functions;
 
 typedef struct cmdalias_s {
 	struct cmdalias_s *next;
@@ -47,6 +50,8 @@ typedef struct cmdalias_s {
 	char *value;
 } cmdalias_t;
 
+/* possible commands to execute */
+static cmd_function_t *cmd_functions;
 /* user created aliases to execute */
 static cmdalias_t *cmd_alias;
 
@@ -321,14 +326,15 @@ static cmdalias_t* Cmd_GetAlias(const char* named, cmdalias_t* const aliases){
     return NULL;
 }
 
-static cmd_function_t* Cmd_GetFunction(const char* named, cmd_function_t* const functions){
-    for(cmd_function_t* cmd = functions; cmd; cmd = cmd->next){
+static opaque_cmd_t* Cmd_GetFunction(const char* named, opaque_cmd_t* const cmds){
+    for(opaque_cmd_t* cmd = cmds; cmd; cmd = cmd->next){
 		if (!strcmp(named, cmd->name)) {
             return cmd;
         }
     }
     return NULL;
 }
+
 /*
  * Creates a new command that executes
  * a command string (possibly ; seperated)
@@ -538,7 +544,7 @@ void Cmd_AddDelegate(char *cmd_name, delegate_t delegate) {
 	}
 
 	/* fail if the command already exists */
-    cmd_function_t* cmd = Cmd_GetFunction(cmd_name, cmd_functions);
+    cmd_function_t* cmd = (cmd_function_t*)Cmd_GetFunction(cmd_name, (opaque_cmd_t*)cmd_functions);
     if(cmd){
         Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
         return;
@@ -565,7 +571,7 @@ void Cmd_AddCommand(char *cmd_name, xcommand_t function) {
 	}
 
 	/* fail if the command already exists */
-    cmd_function_t* cmd = Cmd_GetFunction(cmd_name, cmd_functions);
+    cmd_function_t* cmd = (cmd_function_t*)Cmd_GetFunction(cmd_name, (opaque_cmd_t*)cmd_functions);
     if(cmd){
         Com_Printf("Cmd_AddCommand: %s already defined\n", cmd_name);
         return;
@@ -614,7 +620,7 @@ char* Cmd_CompleteCommand(char *partial) {
 	}
 
 	/* check for exact match */
-    cmd_function_t* cmd = Cmd_GetFunction(partial, cmd_functions);
+    cmd_function_t* cmd = (cmd_function_t*)Cmd_GetFunction(partial, (opaque_cmd_t*)cmd_functions);
     if(cmd){
         return cmd->name;
     }
@@ -624,18 +630,16 @@ char* Cmd_CompleteCommand(char *partial) {
         return alias->name;
     }
 
-	for (cvar_t* cvar = cvar_vars; cvar; cvar = cvar->next) {
-		if (!strcmp(partial, cvar->name)) {
-			return cvar->name;
-		}
-	}
+    cvar_t* cvar = (cvar_t*)Cmd_GetFunction(partial, (opaque_cmd_t*)cvar_vars);
+    if(cvar){
+        return cvar->name;
+    }
 
 	for (int i = 0; i < 1024; i++) {
 		pmatch[i] = NULL;
 	}
 
 	int i = 0;
-
 	/* check for partial match */
 	for (cmd_function_t* cmd = cmd_functions; cmd; cmd = cmd->next) {
 		if (!strncmp(partial, cmd->name, len)) {
@@ -692,7 +696,7 @@ char* Cmd_CompleteCommand(char *partial) {
 
 qboolean Cmd_IsComplete(char *command) {
 	/* check for exact match */
-    if(Cmd_GetFunction(command, cmd_functions)){
+    if(Cmd_GetFunction(command, (opaque_cmd_t*)cmd_functions)){
         return true;
     }
 
@@ -700,11 +704,9 @@ qboolean Cmd_IsComplete(char *command) {
         return true;
     }
 
-	for (cvar_t* cvar = cvar_vars; cvar; cvar = cvar->next) {
-		if (!strcmp(command, cvar->name)) {
-			return true;
-		}
-	}
+    if(Cmd_GetFunction(command, (opaque_cmd_t*)cvar_vars)){
+        return true;
+    }
 
 	return false;
 }

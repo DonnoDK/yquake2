@@ -331,15 +331,14 @@ void Com_Printfln(char *msg, ...);
  #define CVAR_LATCH 16      /* save changes until server restart */
 
 /* nothing outside the Cvar_*() functions should modify these fields! */
-typedef struct cvar_s
-{
+typedef struct cvar_s {
+	struct cvar_s *next;
 	char *name;
 	char *string;
 	char *latched_string; /* for CVAR_LATCH vars */
 	int flags;
 	qboolean modified; /* set each time the cvar is changed */
 	float value;
-	struct cvar_s *next;
 } cvar_t;
 
 #endif /* CVAR */
