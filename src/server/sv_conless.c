@@ -372,7 +372,7 @@ SVC_RemoteCommand(void)
 			strcat(remaining, " ");
 		}
 
-		Cmd_ExecuteString(remaining);
+		Cmd_ExecuteString(remaining, 0);
 	}
 
 	Com_EndRedirect();

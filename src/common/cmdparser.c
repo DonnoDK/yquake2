@@ -33,7 +33,7 @@
 
 typedef struct opaque_cmd_s{
     struct opaque_cmd_s* next;
-    char* name;
+    char name[];
 }opaque_cmd_t;
 
 typedef struct cmd_function_s {
@@ -55,8 +55,6 @@ static cmd_function_t *cmd_functions;
 /* user created aliases to execute */
 static cmdalias_t *cmd_alias;
 
-static char retval[256];
-static int alias_count; /* for detecting runaway loops */
 static qboolean cmd_wait;
 static int cmd_argc;
 static int cmd_argc;
@@ -131,7 +129,7 @@ void Cbuf_InsertFromDefer(void) {
 void Cbuf_Execute(void){
 	char line[1024];
 
-	alias_count = 0; /* don't allow infinite alias loops */
+	int alias_count = 0; /* don't allow infinite alias loops */
 	while (cmd_text.cursize) {
 		/* find a \n or ; line break */
 		char* text = (char *)cmd_text.data;
@@ -171,7 +169,7 @@ void Cbuf_Execute(void){
 		}
 
 		/* execute the command line */
-		Cmd_ExecuteString(line);
+		Cmd_ExecuteString(line, alias_count);
 
 		if (cmd_wait) {
 			/* skip out while text still remains in buffer,
@@ -218,16 +216,12 @@ void Cbuf_AddEarlyCommands(qboolean clear) {
  * Returns true if any late commands were added, which
  * will keep the demoloop from immediately starting
  */
-qboolean Cbuf_AddLateCommands(void) {
-	char *build, c;
-	qboolean ret;
-
+qboolean Cbuf_AddLateCommands(int argc, char** argv) {
 	/* build the combined string to parse from */
 	int s = 0;
-	int argc = COM_Argc();
 
 	for (int i = 1; i < argc; i++) {
-		s += strlen(COM_Argv(i)) + 1;
+		s += strlen(argv[i]) + 1;
 	}
 
 	if (!s) {
@@ -238,14 +232,14 @@ qboolean Cbuf_AddLateCommands(void) {
 	text[0] = 0;
 
 	for (int i = 1; i < argc; i++) {
-		strcat(text, COM_Argv(i));
+		strcat(text, argv[i]);
 		if (i != argc - 1) {
 			strcat(text, " ");
 		}
 	}
 
 	/* pull out the commands */
-	build = Z_Malloc(s + 1);
+	char* build = Z_Malloc(s + 1);
 	build[0] = 0;
 
 	for (int i = 0; i < s - 1; i++) {
@@ -254,7 +248,7 @@ qboolean Cbuf_AddLateCommands(void) {
             int j;
 			for (j = i; (text[j] != '+') && (text[j] != '-') && (text[j] != 0); j++) {
 			}
-			c = text[j];
+			char c = text[j];
 			text[j] = 0;
 			strcat(build, text + i);
 			strcat(build, "\n");
@@ -263,7 +257,7 @@ qboolean Cbuf_AddLateCommands(void) {
 		}
 	}
 
-	ret = (build[0] != 0);
+	qboolean ret = (build[0] != 0);
 	if (ret) {
 		Cbuf_AddText(build);
 	}
@@ -317,15 +311,6 @@ static void Cmd_PrintAliases(cmdalias_t* aliases){
     } 
 }
 
-static cmdalias_t* Cmd_GetAlias(const char* named, cmdalias_t* const aliases){
-    for(cmdalias_t* alias = aliases; alias; alias = alias->next){
-		if (!strcmp(named, alias->name)) {
-            return alias;
-        }
-    }
-    return NULL;
-}
-
 static opaque_cmd_t* Cmd_GetFunction(const char* named, opaque_cmd_t* const cmds){
     for(opaque_cmd_t* cmd = cmds; cmd; cmd = cmd->next){
 		if (!strcmp(named, cmd->name)) {
@@ -355,7 +340,8 @@ static void Cmd_Alias_f(void) {
 	}
 
 	/* if the alias already exists, reuse it */
-	cmdalias_t *a = Cmd_GetAlias(s, cmd_alias);
+	//cmdalias_t *a = Cmd_GetAlias(s, cmd_alias);
+    cmdalias_t* a = (cmdalias_t*)Cmd_GetFunction(s, (opaque_cmd_t*)cmd_alias);
     if(!a){
 		a = Z_Malloc(sizeof(cmdalias_t));
 		a->next = cmd_alias;
@@ -613,13 +599,14 @@ int qsort_strcomp(const void *s1, const void *s2) {
 }
 
 char* Cmd_CompleteCommand(char *partial) {
+    static char retval[256];
 	char *pmatch[1024];
 	int len = strlen(partial);
 	if (!len) {
 		return NULL;
 	}
 
-    /*
+    /* check for exact match */
     opaque_cmd_t* commands[] = {
         (opaque_cmd_t*)cmd_functions,
         (opaque_cmd_t*)cmd_alias,
@@ -632,22 +619,6 @@ char* Cmd_CompleteCommand(char *partial) {
         if(cmd){
             return cmd->name;
         }
-    }
-    */
-    /* check for exact match */
-    cmd_function_t* cmd = (cmd_function_t*)Cmd_GetFunction(partial, (opaque_cmd_t*)cmd_functions);
-    if(cmd){
-        return cmd->name;
-    }
-
-    cmdalias_t* alias = Cmd_GetAlias(partial, cmd_alias);
-    if(alias){
-        return alias->name;
-    }
-
-    cvar_t* cvar = (cvar_t*)Cmd_GetFunction(partial, (opaque_cmd_t*)cvar_vars);
-    if(cvar){
-        return cvar->name;
     }
 
 	for (int i = 0; i < 1024; i++) {
@@ -725,7 +696,7 @@ qboolean doneWithDefaultCfg;
 /*
  * A complete command line has been parsed, so try to execute it
  */
-void Cmd_ExecuteString(char *text) {
+void Cmd_ExecuteString(char *text, int alias_count) {
 	Cmd_TokenizeString(text, true);
 
     /* no tokens? */
@@ -749,7 +720,7 @@ void Cmd_ExecuteString(char *text) {
                 cmd->delegate(Cmd_Argc(), (const char**)cmd_argv);
             }else{
 				/* forward to server command */
-				Cmd_ExecuteString(va("cmd %s", text));
+				Cmd_ExecuteString(va("cmd %s", text), alias_count);
             }
             return;
 		}
