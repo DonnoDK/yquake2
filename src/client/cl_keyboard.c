@@ -837,26 +837,16 @@ Key_ReadConsoleHistory()
 	fclose(f);
 }
 
-void
-Key_Bindlist_f(void)
-{
-	int i;
-
-	for (i = 0; i < K_LAST; i++)
-	{
-		if (keybindings[i] && keybindings[i][0])
-		{
+void Key_Bindlist_f(void) {
+	for (int i = 0; i < K_LAST; i++) {
+		if (keybindings[i] && keybindings[i][0]) {
 			Com_Printf("%s \"%s\"\n", Key_KeynumToString(i), keybindings[i]);
 		}
 	}
 }
 
-void
-Key_Init(void)
-{
-	int i;
-	for (i = 0; i < NUM_KEY_LINES; i++)
-	{
+void Key_Init(void) {
+	for (int i = 0; i < NUM_KEY_LINES; i++) {
 		key_lines[i][0] = ']';
 		key_lines[i][1] = 0;
 	}
@@ -865,27 +855,29 @@ Key_Init(void)
 	key_linepos = 1;
 
 	/* init 128 bit ascii characters in console mode */
-	for (i = 32; i < 128; i++)
-	{
+	for (int i = 32; i < 128; i++) {
 		consolekeys[i] = true;
 	}
 
 	consolekeys[K_ENTER] = true;
-	consolekeys[K_KP_ENTER] = true;
 	consolekeys[K_TAB] = true;
+	consolekeys[K_KP_ENTER] = true;
+
 	consolekeys[K_LEFTARROW] = true;
-	consolekeys[K_KP_LEFTARROW] = true;
 	consolekeys[K_RIGHTARROW] = true;
-	consolekeys[K_KP_RIGHTARROW] = true;
 	consolekeys[K_UPARROW] = true;
-	consolekeys[K_KP_UPARROW] = true;
 	consolekeys[K_DOWNARROW] = true;
+
+	consolekeys[K_KP_HOME] = true;
+	consolekeys[K_KP_UPARROW] = true;
+	consolekeys[K_KP_LEFTARROW] = true;
+	consolekeys[K_KP_RIGHTARROW] = true;
 	consolekeys[K_KP_DOWNARROW] = true;
+	consolekeys[K_KP_END] = true;
+
 	consolekeys[K_BACKSPACE] = true;
 	consolekeys[K_HOME] = true;
-	consolekeys[K_KP_HOME] = true;
 	consolekeys[K_END] = true;
-	consolekeys[K_KP_END] = true;
 	consolekeys[K_PGUP] = true;
 	consolekeys[K_KP_PGUP] = true;
 	consolekeys[K_PGDN] = true;
@@ -905,8 +897,7 @@ Key_Init(void)
 
 	menubound[K_ESCAPE] = true;
 
-	for (i = 0; i < 12; i++)
-	{
+	for (int i = 0; i < 12; i++) {
 		menubound[K_F1 + i] = true;
 	}
 
@@ -975,7 +966,6 @@ Key_Event(int key, qboolean down, qboolean special)
 {
 	char cmd[1024];
 	char *kb;
-	cvar_t *fullscreen;
 	unsigned int time = Sys_Milliseconds();
 
     /* Track if key is down */
@@ -1003,46 +993,23 @@ Key_Event(int key, qboolean down, qboolean special)
 	}
 
 	/* Fullscreen switch through Alt + Return */
-	if (down && keydown[K_ALT] && key == K_ENTER)
-	{
-		fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
-
-		if (!fullscreen->value)
-		{
-			fullscreen->value = 1;
-			fullscreen->modified = true;
-		}
-		else
-		{
-			fullscreen->value = 0;
-			fullscreen->modified = true;
-		}
-
+	if (down && keydown[K_ALT] && key == K_ENTER) {
+		cvar_t* fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
+        fullscreen->value = fullscreen->value ? 0 : 1;
+        fullscreen->modified = true;
 		return;
 	}
 
 	/* Toogle console though Shift + Escape */
-	if (down && keydown[K_SHIFT] && key == K_ESCAPE)
-	{
+	if (down && keydown[K_SHIFT] && key == K_ESCAPE) {
 		Con_ToggleConsole_f();
 		return;
 	}
 
 	/* Key is unbound */
-	if ((key >= 200) && !keybindings[key] && (cls.key_dest != key_console))
-	{
+	if ((key >= 200) && !keybindings[key] && (cls.key_dest != key_console)) {
 		Com_Printf("%s is unbound, hit F4 to set.\n", Key_KeynumToString(key));
 	}
-
-    /* While in attract loop all keys besides F1 to F12 (to
-	   allow quick load and the like) are treated like escape. */
-    /*
-	if (cl.attractloop && (cls.key_dest != key_menu) &&
-		!((key >= K_F1) && (key <= K_F12)))
-	{
-		key = K_ESCAPE;
-	}
-    */
 
 	/* Escape has a special meaning. Depending on the situation it
 	   - pauses the game and breaks into the menu
@@ -1052,25 +1019,19 @@ Key_Event(int key, qboolean down, qboolean special)
 	   - closes the menu
 	   - closes the help computer
 	   - closes the chat window */
-	if (!cls.disable_screen)
-	{
-		if (key == K_ESCAPE)
-		{
-			if (!down)
-			{
+	if (!cls.disable_screen) {
+		if (key == K_ESCAPE) {
+			if (!down) {
 				return;
 			}
 
 			/* Close the help computer */
-			if (cl.frame.playerstate.stats[STAT_LAYOUTS] &&
-				(cls.key_dest == key_game))
-			{
+			if (cl.frame.playerstate.stats[STAT_LAYOUTS] && (cls.key_dest == key_game)) {
 				Cbuf_AddText("cmd putaway\n");
 				return;
 			}
 
-			switch (cls.key_dest)
-			{
+			switch (cls.key_dest) {
 				/* Close chat window */
 				case key_message:
 					Key_Message(key);
@@ -1112,19 +1073,13 @@ Key_Event(int key, qboolean down, qboolean special)
 	   Since we cannot alter the network protocol nor
 	   the server <-> game API, I'll leave things alone
 	   and try to forget. */
-	if (down)
-	{
-		if (key_repeats[key] == 1)
-		{
+	if (down) {
+		if (key_repeats[key] == 1) {
 			anykeydown++;
 		}
-	}
-	else
-	{
+	} else {
 		anykeydown--;
-
-		if (anykeydown < 0)
-		{
+		if (anykeydown < 0) {
 			anykeydown = 0;
 		}
 	}
@@ -1134,60 +1089,47 @@ Key_Event(int key, qboolean down, qboolean special)
 	   console mode, to keep the character from continuing an action
 	   started before a console switch. Button commands include the
 	   kenum as a parameter, so multiple downs can be matched with ups */
-	if (!down)
-	{
+	if (!down) {
 		kb = keybindings[key];
-
-		if (kb && (kb[0] == '+'))
-		{
+		if (kb && (kb[0] == '+')) {
 			Com_sprintf(cmd, sizeof(cmd), "-%s %i %i\n", kb + 1, key, time);
 			Cbuf_AddText(cmd);
 		}
-
 		return;
-	}
-	else if (((cls.key_dest == key_menu) && menubound[key]) ||
+	} else if (((cls.key_dest == key_menu) && menubound[key]) ||
 			((cls.key_dest == key_console) && !consolekeys[key]) ||
 			((cls.key_dest == key_game) && ((cls.state == ca_active) ||
 			  !consolekeys[key])))
 	{
 		kb = keybindings[key];
 
-		if (kb)
-		{
-			if (kb[0] == '+')
-			{
+		if (kb) {
+			if (kb[0] == '+') {
 				/* button commands add keynum and time as a parm */
 				Com_sprintf(cmd, sizeof(cmd), "%s %i %i\n", kb, key, time);
 				Cbuf_AddText(cmd);
-			}
-			else
-			{
+			} else {
 				Cbuf_AddText(kb);
 				Cbuf_AddText("\n");
 			}
 		}
-
 		return;
 	}
 
 	/* All input subsystems handled after this
 	   point only care for key down events. */
-	if (!down)
-	{
+	if (!down) {
 		return;
 	}
 
 	/* Everything that's not a special char
 	   is processed by Char_Event(). */
-	if (!special)
-	{
+	if (!special) {
 		return;
 	}
 
 	/* Send key to the active input subsystem */
-	switch (cls.key_dest)
-	{
+	switch (cls.key_dest) {
 		/* Chat */
 		case key_message:
 			Key_Message(key);
@@ -1209,13 +1151,8 @@ Key_Event(int key, qboolean down, qboolean special)
 /*
  * Marks all keys as "up"
  */
-void
-Key_MarkAllUp(void)
-{
-	int key;
-
-	for (key = 0; key < K_LAST; key++)
-	{
+void Key_MarkAllUp(void) {
+	for (int key = 0; key < K_LAST; key++) {
 		key_repeats[key] = 0;
 		keydown[key] = 0;
 	}
