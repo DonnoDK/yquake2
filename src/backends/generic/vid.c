@@ -89,32 +89,23 @@ qboolean ref_active = false;    /* Is the refresher being used? */
 #define VID_NUM_MODES (sizeof(vid_modes) / sizeof(vid_modes[0]))
 #define MAXPRINTMSG 4096
 
-void
-VID_Printf(int print_level, const char *fmt, ...)
-{
+void VID_Printf(int print_level, const char *fmt, ...) {
 	va_list argptr;
 	char msg[MAXPRINTMSG];
-
 	va_start(argptr, fmt);
 	vsnprintf(msg, MAXPRINTMSG, fmt, argptr);
 	va_end(argptr);
 
-	if (print_level == PRINT_ALL)
-	{
+	if (print_level == PRINT_ALL) {
 		Com_Printf("%s", msg);
-	}
-	else
-	{
+	} else {
 		Com_DPrintf("%s", msg);
 	}
 }
 
-void
-VID_Error(int err_level, const char *fmt, ...)
-{
+void VID_Error(int err_level, const char *fmt, ...) {
 	va_list argptr;
 	char msg[MAXPRINTMSG];
-
 	va_start(argptr, fmt);
 	vsnprintf(msg, MAXPRINTMSG, fmt, argptr);
 	va_end(argptr);
@@ -131,30 +122,22 @@ void VID_Restart_f(int argc, const char** argv) {
 	vid_fullscreen->modified = true;
 }
 
-qboolean
-VID_GetModeInfo(int *width, int *height, int mode)
-{
-	if ((mode < 0) || (mode >= VID_NUM_MODES))
-	{
+qboolean VID_GetModeInfo(int *width, int *height, int mode) {
+	if ((mode < 0) || (mode >= VID_NUM_MODES)) {
 		return false;
 	}
 
 	*width = vid_modes[mode].width;
 	*height = vid_modes[mode].height;
-
 	return true;
 }
 
-void
-VID_NewWindow(int width, int height)
-{
+void VID_NewWindow(int width, int height) {
 	viddef.width = width;
 	viddef.height = height;
 }
 
-qboolean
-VID_LoadRefresh(void)
-{
+qboolean VID_LoadRefresh(void) {
 	// If the refresher is already active
 	// we'll shut it down
 	VID_Shutdown();

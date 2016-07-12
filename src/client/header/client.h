@@ -452,7 +452,7 @@ void IN_CenterView (void);
 float CL_KeyState (kbutton_t *key);
 const char *Key_KeynumToString (int keynum);
 
-void CL_WriteDemoMessage (void);
+void CL_WriteDemoMessage (sizebuf_t* message, FILE* demofile);
 void CL_Stop_f (void);
 void CL_Record_f(int argc, const char** argv);
 

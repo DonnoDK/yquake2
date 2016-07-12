@@ -37,16 +37,6 @@ void CL_CheckForResend(void);
 
 extern cvar_t *freelook;
 
-cvar_t *adr0;
-cvar_t *adr1;
-cvar_t *adr2;
-cvar_t *adr3;
-cvar_t *adr4;
-cvar_t *adr5;
-cvar_t *adr6;
-cvar_t *adr7;
-cvar_t *adr8;
-
 cvar_t *rcon_client_password;
 cvar_t *rcon_address;
 
@@ -83,8 +73,6 @@ extern cvar_t *m_side;
 cvar_t *cl_lightlevel;
 
 /* userinfo */
-cvar_t *info_password;
-cvar_t *info_spectator;
 cvar_t *name;
 cvar_t *skin;
 cvar_t *rate;
@@ -114,33 +102,24 @@ extern cvar_t *allow_download_maps;
 /*
  * Dumps the current net message, prefixed by the length
  */
-void
-CL_WriteDemoMessage(void)
-{
-	int len, swlen;
-
+void CL_WriteDemoMessage(sizebuf_t* message, FILE* demofile) {
 	/* the first eight bytes are just packet sequencing stuff */
-	len = net_message.cursize - 8;
-	swlen = LittleLong(len);
-	fwrite(&swlen, 4, 1, cls.demofile);
-	fwrite(net_message.data + 8, len, 1, cls.demofile);
+	int len = message->cursize - 8;
+	int swlen = LittleLong(len);
+	fwrite(&swlen, 4, 1, demofile);
+	fwrite(message->data + 8, len, 1, demofile);
 }
 
 /*
  * stop recording a demo
  */
-void
-CL_Stop_f(void)
-{
-	int len;
-
-	if (!cls.demorecording)
-	{
+void CL_Stop_f(void) {
+	if (!cls.demorecording) {
 		Com_Printf("Not recording a demo.\n");
 		return;
 	}
 
-	len = -1;
+	int len = -1;
 
 	fwrite(&len, 4, 1, cls.demofile);
 	fclose(cls.demofile);
@@ -239,67 +218,38 @@ void CL_Record_f(int argc, const char** argv) {
 	fwrite(buf.data, buf.cursize, 1, cls.demofile);
 }
 
-void
-CL_Setenv_f(void)
-{
-	int argc = Cmd_Argc();
-
-	if (argc > 2)
-	{
+void CL_Setenv_f(int argc, const char** argv) {
+	if (argc > 2) {
 		char buffer[1000];
-		int i;
-
-		strcpy(buffer, Cmd_Argv(1));
+		strcpy(buffer, argv[1]);
 		strcat(buffer, "=");
-
-		for (i = 2; i < argc; i++)
-		{
-			strcat(buffer, Cmd_Argv(i));
+		for (int i = 2; i < argc; i++) {
+			strcat(buffer, argv[i]);
 			strcat(buffer, " ");
 		}
-
 		putenv(buffer);
-	}
-
-	else if (argc == 2)
-	{
-		char *env = getenv(Cmd_Argv(1));
-
-		if (env)
-		{
-			Com_Printf("%s=%s\n", Cmd_Argv(1), env);
-		}
-
-		else
-		{
-			Com_Printf("%s undefined\n", Cmd_Argv(1));
-		}
+	} else if (argc == 2) {
+		char *env = getenv(argv[1]);
+        const char* msg = env ? va("%s=%s\n", argv[1], env) : va("%s undefined\n", argv[1]);
+        Com_Printf(msg);
 	}
 }
 
-void
-CL_Pause_f(void)
-{
+void CL_Pause_f(void) {
 	/* never pause in multiplayer */
-	if ((Cvar_VariableValue("maxclients") > 1) || !Com_ServerState())
-	{
+	if ((Cvar_VariableValue("maxclients") > 1) || !Com_ServerState()) {
 		Cvar_SetValue("paused", 0);
 		return;
 	}
-
 	Cvar_SetValue("paused", !cl_paused->value);
 }
 
-void
-CL_Quit_f(void)
-{
+void CL_Quit_f(void) {
 	CL_Disconnect();
 	Com_Quit();
 }
 
-void
-CL_ClearState(void)
-{
+void CL_ClearState(void) {
 	S_StopAllSounds();
 	CL_ClearEffects();
 	CL_ClearTEnts();
@@ -307,20 +257,14 @@ CL_ClearState(void)
 	/* wipe the entire cl structure */
 	memset(&cl, 0, sizeof(cl));
 	memset(&cl_entities, 0, sizeof(cl_entities));
-
 	SZ_Clear(&cls.netchan.message);
 }
 
 /*
  * Handle a reply from a ping
  */
-void
-CL_ParseStatusMessage(void)
-{
-	char *s;
-
-	s = MSG_ReadString(&net_message);
-
+void CL_ParseStatusMessage(void) {
+	char* s = MSG_ReadString(&net_message);
 	Com_Printf("%s\n", s);
 	M_AddToServerList(net_from, s);
 }
@@ -328,71 +272,47 @@ CL_ParseStatusMessage(void)
 /*
  * Load or download any custom player skins and models
  */
-void
-CL_Skins_f(void)
-{
-	int i;
-
-	for (i = 0; i < MAX_CLIENTS; i++)
-	{
-		if (!cl.configstrings[CS_PLAYERSKINS + i][0])
-		{
+void CL_Skins_f(void) {
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (!cl.configstrings[CS_PLAYERSKINS + i][0]) {
 			continue;
 		}
 
 		Com_Printf("client %i: %s\n", i, cl.configstrings[CS_PLAYERSKINS + i]);
-
 		SCR_UpdateScreen();
-
 		Sys_SendKeyEvents();  /* pump message loop */
-
 		CL_ParseClientinfo(i);
 	}
 }
 
 /* This fixes some problems with wrong tagged models and skins */
-void
-CL_FixUpGender(void)
-{
-	char *p;
-	char sk[80];
-
-	if (gender_auto->value)
-	{
-		if (gender->modified)
-		{
+void CL_FixUpGender(void) {
+	if (gender_auto->value) {
+		if (gender->modified) {
 			/* was set directly, don't override the user */
 			gender->modified = false;
 			return;
 		}
 
+        char sk[80];
+        char *p;
 		Q_strlcpy(sk, skin->string, sizeof(sk));
-
-		if ((p = strchr(sk, '/')) != NULL)
-		{
+		if ((p = strchr(sk, '/')) != NULL) {
 			*p = 0;
 		}
 
-		if ((Q_stricmp(sk, "male") == 0) || (Q_stricmp(sk, "cyborg") == 0))
-		{
+		if ((Q_stricmp(sk, "male") == 0) || (Q_stricmp(sk, "cyborg") == 0)) {
 			Cvar_Set("gender", "male");
-		}
-		else if ((Q_stricmp(sk, "female") == 0) || (Q_stricmp(sk, "crackhor") == 0))
-		{
+		} else if ((Q_stricmp(sk, "female") == 0) || (Q_stricmp(sk, "crackhor") == 0)) {
 			Cvar_Set("gender", "female");
-		}
-		else
-		{
+		} else {
 			Cvar_Set("gender", "none");
 		}
-
 		gender->modified = false;
 	}
 }
 
-void
-CL_Userinfo_f(void)
-{
+void CL_Userinfo_f(void) {
 	Com_Printf("User info settings:\n");
 	Info_Print(Cvar_Userinfo());
 }
@@ -401,9 +321,7 @@ CL_Userinfo_f(void)
  * Restart the sound subsystem so it can pick up
  * new parameters and flush all sounds
  */
-void
-CL_Snd_Restart_f(void)
-{
+void CL_Snd_Restart_f(void) {
 	S_Shutdown();
 	S_Init();
 	CL_RegisterSounds();
@@ -420,14 +338,10 @@ byte *precache_model;
  * The server will send this command right
  * before allowing the client into the server
  */
-void
-CL_Precache_f(void)
-{
+void CL_Precache_f(int argc, const char** argv) {
 	/* Yet another hack to let old demos work */
-	if (Cmd_Argc() < 2)
-	{
+	if (argc < 2) {
 		unsigned map_checksum;    /* for detecting cheater maps */
-
 		CM_LoadMap(cl.configstrings[CS_MODELS + 1], true, &map_checksum);
 		CL_RegisterSounds();
 		CL_PrepRefresh();
@@ -435,11 +349,9 @@ CL_Precache_f(void)
 	}
 
 	precache_check = CS_MODELS;
-
-	precache_spawncount = (int)strtol(Cmd_Argv(1), (char **)NULL, 10);
+	precache_spawncount = (int)strtol(argv[1], (char **)NULL, 10);
 	precache_model = 0;
 	precache_model_skin = 0;
-
 	CL_RequestNextDownload();
 }
 
@@ -451,15 +363,15 @@ CL_InitLocal(void)
 
 	CL_InitInput();
 
-	adr0 = Cvar_Get("adr0", "", CVAR_ARCHIVE);
-	adr1 = Cvar_Get("adr1", "", CVAR_ARCHIVE);
-	adr2 = Cvar_Get("adr2", "", CVAR_ARCHIVE);
-	adr3 = Cvar_Get("adr3", "", CVAR_ARCHIVE);
-	adr4 = Cvar_Get("adr4", "", CVAR_ARCHIVE);
-	adr5 = Cvar_Get("adr5", "", CVAR_ARCHIVE);
-	adr6 = Cvar_Get("adr6", "", CVAR_ARCHIVE);
-	adr7 = Cvar_Get("adr7", "", CVAR_ARCHIVE);
-	adr8 = Cvar_Get("adr8", "", CVAR_ARCHIVE);
+	Cvar_Get("adr0", "", CVAR_ARCHIVE);
+	Cvar_Get("adr1", "", CVAR_ARCHIVE);
+	Cvar_Get("adr2", "", CVAR_ARCHIVE);
+	Cvar_Get("adr3", "", CVAR_ARCHIVE);
+	Cvar_Get("adr4", "", CVAR_ARCHIVE);
+	Cvar_Get("adr5", "", CVAR_ARCHIVE);
+	Cvar_Get("adr6", "", CVAR_ARCHIVE);
+	Cvar_Get("adr7", "", CVAR_ARCHIVE);
+	Cvar_Get("adr8", "", CVAR_ARCHIVE);
 
 	cin_force43 = Cvar_Get("cin_force43", "1", 0);
 
@@ -509,8 +421,8 @@ CL_InitLocal(void)
 	cl_lightlevel = Cvar_Get("gl_lightlevel", "0", 0);
 
 	/* userinfo */
-	info_password = Cvar_Get("password", "", CVAR_USERINFO);
-	info_spectator = Cvar_Get("spectator", "0", CVAR_USERINFO);
+	Cvar_Get("password", "", CVAR_USERINFO);
+	Cvar_Get("spectator", "0", CVAR_USERINFO);
 	name = Cvar_Get("name", "unnamed", CVAR_USERINFO | CVAR_ARCHIVE);
 	skin = Cvar_Get("skin", "male/grunt", CVAR_USERINFO | CVAR_ARCHIVE);
 	rate = Cvar_Get("rate", "8000", CVAR_USERINFO | CVAR_ARCHIVE);
@@ -546,9 +458,9 @@ CL_InitLocal(void)
 
 	Cmd_AddCommand("rcon", CL_Rcon_f);
 
-	Cmd_AddCommand("setenv", CL_Setenv_f);
+	Cmd_AddDelegate("setenv", CL_Setenv_f);
 
-	Cmd_AddCommand("precache", CL_Precache_f);
+	Cmd_AddDelegate("precache", CL_Precache_f);
 
 	Cmd_AddCommand("download", CL_Download_f);
 
@@ -580,32 +492,23 @@ CL_InitLocal(void)
 /*
  * Writes key bindings and archived cvars to config.cfg
  */
-void
-CL_WriteConfiguration(void)
-{
-	FILE *f;
-	char path[MAX_OSPATH];
-
-	if (cls.state == ca_uninitialized)
-	{
+void CL_WriteConfiguration(void) {
+	if (cls.state == ca_uninitialized) {
 		return;
 	}
 
+	char path[MAX_OSPATH];
 	Com_sprintf(path, sizeof(path), "%s/config.cfg", FS_Gamedir());
+	FILE* f = fopen(path, "w");
 
-	f = fopen(path, "w");
-
-	if (!f)
-	{
+	if (!f) {
 		Com_Printf("Couldn't write config.cfg.\n");
 		return;
 	}
 
 	fprintf(f, "// generated by quake, do not modify\n");
-
 	Key_WriteBindings(f);
 	fclose(f);
-
 	Cvar_WriteVariables(path);
 }
 
@@ -776,65 +679,41 @@ void CL_Frame(int msec) {
 	}
 }
 
-void
-CL_Init(void)
-{
-	if (dedicated->value)
-	{
+void CL_Init(void) {
+	if (dedicated->value) {
 		return; /* nothing running on the client */
 	}
 
 	/* all archived variables will now be loaded */
 	Con_Init();
-
 	S_Init();
-
 	SCR_Init();
-
 	VID_Init();
-
 	IN_Init();
-
 	V_Init();
-
 	net_message.data = net_message_buffer;
-
 	net_message.maxsize = sizeof(net_message_buffer);
-
 	M_Init();
-
 	cls.disable_screen = true; /* don't draw yet */
-
 #ifdef CDA
 	CDAudio_Init();
 #endif
-
 	CL_InitLocal();
-
 	FS_ExecAutoexec();
-
 	Cbuf_Execute();
-
 	Key_ReadConsoleHistory();
 }
 
-void
-CL_Shutdown(void)
-{
+void CL_Shutdown(void) {
 	static qboolean isdown = false;
-
-	if (isdown)
-	{
+	if (isdown) {
 		printf("recursive shutdown\n");
 		return;
 	}
 
 	isdown = true;
-
 	CL_WriteConfiguration();
-
 	Key_WriteConsoleHistory();
-
 #ifdef CDA
 	CDAudio_Shutdown();
 #endif
@@ -845,4 +724,3 @@ CL_Shutdown(void)
 	IN_Shutdown();
 	VID_Shutdown();
 }
-

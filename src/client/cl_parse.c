@@ -1364,7 +1364,7 @@ void CL_ParseServerMessage(sizebuf_t* message) {
 	   until after we have parsed the frame */
 	if (cls.demorecording && !cls.demowaiting)
 	{
-		CL_WriteDemoMessage();
+		CL_WriteDemoMessage(&net_message, cls.demofile);
 	}
 }
 
