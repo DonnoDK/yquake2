@@ -80,7 +80,7 @@ vidmode_t vid_modes[] = {
 cvar_t *vid_gamma;
 cvar_t *vid_xpos;               /* X coordinate of window position */
 cvar_t *vid_ypos;               /* Y coordinate of window position */
-cvar_t *vid_fullscreen;
+extern cvar_t *vid_fullscreen;
 
 /* Global variables used internally by this module */
 viddef_t viddef;                /* global video state; used by other modules */

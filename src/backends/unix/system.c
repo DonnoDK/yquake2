@@ -359,15 +359,8 @@ Sys_UnloadGame(void)
 /*
  * Loads the game dll
  */
-void *
-Sys_GetGameAPI(void *parms)
-{
-	void *(*GetGameAPI)(void *);
-
-	FILE *fp;
+void * Sys_GetGameAPI(void *parms) {
 	char name[MAX_OSPATH];
-	char *path;
-	char *str_p;
     #ifdef __APPLE__
         const char *gamename = "game.dylib";
     #else
@@ -377,73 +370,57 @@ Sys_GetGameAPI(void *parms)
 	setreuid(getuid(), getuid());
 	setegid(getgid());
 
-	if (game_library)
-	{
+	if (game_library) {
 		Com_Error(ERR_FATAL, "Sys_GetGameAPI without Sys_UnloadingGame");
 	}
-
 	Com_Printf("LoadLibrary(\"%s\")\n", gamename);
 
 	/* now run through the search paths */
-	path = NULL;
-
-	while (1)
-	{
+	char* path = NULL;
+	while (1) {
 		path = FS_NextPath(path);
-
-		if (!path)
-		{
+		if (!path) {
 			return NULL;     /* couldn't find one anywhere */
 		}
 
 		snprintf(name, MAX_OSPATH, "%s/%s", path, gamename);
-
 		/* skip it if it just doesn't exist */
-		fp = fopen(name, "rb");
-
-		if (fp == NULL)
-		{
+		FILE* fp = fopen(name, "rb");
+		if (fp == NULL) {
 			continue;
 		}
 
 		fclose(fp);
-
 		game_library = dlopen(name, RTLD_NOW);
 
-		if (game_library)
-		{
+		if (game_library) {
 			Com_MDPrintf("LoadLibrary (%s)\n", name);
 			break;
-		}
-		else
-		{
+		} else {
 			Com_Printf("LoadLibrary (%s):", name);
-
 			path = (char *)dlerror();
-			str_p = strchr(path, ':');   /* skip the path (already shown) */
+			char* str_p = strchr(path, ':');   /* skip the path (already shown) */
 
-			if (str_p == NULL)
-			{
+			if (str_p == NULL) {
 				str_p = path;
-			}
-			else
-			{
+			} else {
 				str_p++;
 			}
 
 			Com_Printf("%s\n", str_p);
-
 			return NULL;
 		}
 	}
 
-	GetGameAPI = (void* (*)(void*))dlsym(game_library, "GetGameAPI");
+	void *(*GetGameAPI)(void *) = (void* (*)(void*))dlsym(game_library, "GetGameAPI");
 
-	if (!GetGameAPI)
-	{
+    Com_Printf("loading...\n");
+	if (!GetGameAPI) {
 		Sys_UnloadGame();
 		return NULL;
 	}
+
+    Com_Printf("did load...\n");
 
 	return GetGameAPI(parms);
 }
@@ -483,41 +460,29 @@ Sys_GetProcAddress(void *handle, const char *sym)
 	return dlsym(handle, sym);
 }
 
-void *
-Sys_LoadLibrary(const char *path, const char *sym, void **handle)
-{
-	void *module, *entry;
-
+void * Sys_LoadLibrary(const char *path, const char *sym, void **handle) {
 	*handle = NULL;
+    void* entry;
+	void* module = dlopen(path, RTLD_LAZY);
 
-	module = dlopen(path, RTLD_LAZY);
-
-	if (!module)
-	{
+	if (!module) {
 		Com_Printf("%s failed: %s\n", __func__, dlerror());
 		return NULL;
 	}
 
-	if (sym)
-	{
+	if (sym) {
 		entry = dlsym(module, sym);
-
-		if (!entry)
-		{
+		if (!entry) {
 			Com_Printf("%s failed: %s\n", __func__, dlerror());
 			dlclose(module);
 			return NULL;
 		}
-	}
-	else
-	{
+	} else {
 		entry = NULL;
 	}
 
 	Com_DPrintf("%s succeeded: %s\n", __func__, path);
-
 	*handle = module;
-
 	return entry;
 }
 

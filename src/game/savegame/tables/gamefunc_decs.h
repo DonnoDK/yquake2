@@ -893,7 +893,15 @@ extern void ClientEndServerFrames ( void ) ;
 extern void Com_Printf ( char * msg , ... ) ;
 extern void Com_Printfln ( char * msg , ... ) ;
 extern void Sys_Error ( char * error , ... ) ;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern game_export_t * GetGameAPI ( game_import_t * import ) ;
+#ifdef __cplusplus
+}
+#endif
+
 extern void ShutdownGame ( void ) ;
 extern void SetItemNames ( void ) ;
 extern void InitItems ( void ) ;

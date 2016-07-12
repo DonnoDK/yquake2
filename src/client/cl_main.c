@@ -35,7 +35,7 @@ void CL_Connect_f(void);
 void CL_Rcon_f(void);
 void CL_CheckForResend(void);
 
-cvar_t *freelook;
+extern cvar_t *freelook;
 
 cvar_t *adr0;
 cvar_t *adr1;
@@ -63,7 +63,7 @@ cvar_t *cl_add_lights;
 cvar_t *cl_add_entities;
 cvar_t *cl_add_blend;
 
-cvar_t *cl_showmouse;
+extern cvar_t *cl_showmouse;
 cvar_t *cl_shownet;
 cvar_t *cl_showmiss;
 cvar_t *cl_showclamp;
@@ -72,13 +72,13 @@ cvar_t *cl_paused;
 cvar_t *cl_timedemo;
 
 cvar_t *lookspring;
-cvar_t *lookstrafe;
-cvar_t *sensitivity;
+extern cvar_t *lookstrafe;
+extern cvar_t *sensitivity;
 
-cvar_t *m_pitch;
-cvar_t *m_yaw;
-cvar_t *m_forward;
-cvar_t *m_side;
+extern cvar_t *m_pitch;
+extern cvar_t *m_yaw;
+extern cvar_t *m_forward;
+extern cvar_t *m_side;
 
 cvar_t *cl_lightlevel;
 

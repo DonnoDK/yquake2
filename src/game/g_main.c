@@ -119,8 +119,10 @@ ShutdownGame(void)
  * with all entry points and global
  * variables
  */
-game_export_t *
-GetGameAPI(game_import_t *import)
+#ifdef __cplusplus
+extern "C"
+#endif
+game_export_t * GetGameAPI(game_import_t *import)
 {
 	gi = *import;
 

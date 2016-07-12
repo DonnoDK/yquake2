@@ -136,8 +136,8 @@ cvar_t *gl_anisotropic_avail;
 cvar_t *gl_lockpvs;
 cvar_t *gl_msaa_samples;
 
-cvar_t *vid_fullscreen;
-cvar_t *vid_gamma;
+extern cvar_t *vid_fullscreen;
+extern cvar_t *vid_gamma;
 
 /*
  * Returns true if the box is completely outside the frustom
