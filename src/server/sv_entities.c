@@ -489,48 +489,34 @@ SV_FatPVS(vec3_t org)
  * Decides which entities are going to be visible to the client, and
  * copies off the playerstat and areabits.
  */
-void
-SV_BuildClientFrame(client_t *client)
-{
-	int e, i;
-	vec3_t org;
-	edict_t *ent;
-	edict_t *clent;
-	client_frame_t *frame;
+void SV_BuildClientFrame(client_t *client) {
+	int i;
 	entity_state_t *state;
 	int l;
-	int clientarea, clientcluster;
-	int leafnum;
-	int c_fullsend;
 	byte *clientphs;
 	byte *bitvector;
 
-	clent = client->edict;
-
-	if (!clent->client)
-	{
+	edict_t* clent = client->edict;
+	if (!clent->client) {
 		return; /* not in game yet */
 	}
 
 	/* this is the frame we are creating */
-	frame = &client->frames[sv.framenum & UPDATE_MASK];
-
+	client_frame_t* frame = &client->frames[sv.framenum & UPDATE_MASK];
 	frame->senttime = svs.realtime; /* save it for ping calc later */
 
 	/* find the client's PVS */
-	for (i = 0; i < 3; i++)
-	{
-		org[i] = clent->client->ps.pmove.origin[i] * 0.125 +
-				 clent->client->ps.viewoffset[i];
+	vec3_t org;
+	for (int i = 0; i < 3; i++) {
+		org[i] = clent->client->ps.pmove.origin[i] * 0.125 + clent->client->ps.viewoffset[i];
 	}
 
-	leafnum = CM_PointLeafnum(org);
-	clientarea = CM_LeafArea(leafnum);
-	clientcluster = CM_LeafCluster(leafnum);
+	int leafnum = CM_PointLeafnum(org);
+	int clientarea = CM_LeafArea(leafnum);
+	int clientcluster = CM_LeafCluster(leafnum);
 
 	/* calculate the visible areas */
 	frame->areabytes = CM_WriteAreaBits(frame->areabits, clientarea);
-
 	/* grab the current player_state_t */
 	frame->ps = clent->client->ps;
 
@@ -541,95 +527,66 @@ SV_BuildClientFrame(client_t *client)
 	frame->num_entities = 0;
 	frame->first_entity = svs.next_client_entities;
 
-	c_fullsend = 0;
-
-	for (e = 1; e < ge->num_edicts; e++)
-	{
-		ent = EDICT_NUM(e);
-
+	int c_fullsend = 0;
+	for (int e = 1; e < ge->num_edicts; e++) {
+		edict_t* ent = EDICT_NUM(e);
 		/* ignore ents without visible models */
-		if (ent->svflags & SVF_NOCLIENT)
-		{
+		if (ent->svflags & SVF_NOCLIENT) {
 			continue;
 		}
 
 		/* ignore ents without visible models unless they have an effect */
-		if (!ent->s.modelindex && !ent->s.effects && 
-			!ent->s.sound && !ent->s.event)
-		{
+		if (!ent->s.modelindex && !ent->s.effects && !ent->s.sound && !ent->s.event) {
 			continue;
 		}
 
 		/* ignore if not touching a PV leaf */
-		if (ent != clent)
-		{
+		if (ent != clent) {
 			/* check area */
-			if (!CM_AreasConnected(clientarea, ent->areanum))
-			{
+			if (!CM_AreasConnected(clientarea, ent->areanum)) {
 				/* doors can legally straddle two areas,
 				   so we may need to check another one */
-				if (!ent->areanum2 ||
-					!CM_AreasConnected(clientarea, ent->areanum2))
-				{
+				if (!ent->areanum2 || !CM_AreasConnected(clientarea, ent->areanum2)) {
 					continue; /* blocked by a door */
 				}
 			}
 
 			/* beams just check one point for PHS */
-			if (ent->s.renderfx & RF_BEAM)
-			{
+			if (ent->s.renderfx & RF_BEAM) {
 				l = ent->clusternums[0];
-
-				if (!(clientphs[l >> 3] & (1 << (l & 7))))
-				{
+				if (!(clientphs[l >> 3] & (1 << (l & 7)))) {
 					continue;
 				}
-			}
-			else
-			{
+			} else {
 				bitvector = fatpvs;
-
-				if (ent->num_clusters == -1)
-				{
+				if (ent->num_clusters == -1) {
 					/* too many leafs for individual check, go by headnode */
-					if (!CM_HeadnodeVisible(ent->headnode, bitvector))
-					{
+					if (!CM_HeadnodeVisible(ent->headnode, bitvector)) {
 						continue;
 					}
-
 					c_fullsend++;
-				}
-				else
-				{
+				} else {
 					/* check individual leafs */
-					for (i = 0; i < ent->num_clusters; i++)
-					{
+					for (i = 0; i < ent->num_clusters; i++) {
 						l = ent->clusternums[i];
-
-						if (bitvector[l >> 3] & (1 << (l & 7)))
-						{
+						if (bitvector[l >> 3] & (1 << (l & 7))) {
 							break;
 						}
 					}
 
-					if (i == ent->num_clusters)
-					{
+					if (i == ent->num_clusters) {
 						continue; /* not visible */
 					}
 				}
 
-				if (!ent->s.modelindex)
-				{
+				if (!ent->s.modelindex) {
 					/* don't send sounds if they 
 					   will be attenuated away */
 					vec3_t delta;
 					float len;
-
 					VectorSubtract(org, ent->s.origin, delta);
 					len = VectorLength(delta);
-
-					if (len > 400)
-					{
+					if (len > 400) {
 						continue;
 					}
 				}
@@ -637,11 +594,8 @@ SV_BuildClientFrame(client_t *client)
 		}
 
 		/* add it to the circular client_entities array */
-		state = &svs.client_entities[svs.next_client_entities %
-				svs.num_client_entities];
-
-		if (ent->s.number != e)
-		{
+		state = &svs.client_entities[svs.next_client_entities % svs.num_client_entities];
+		if (ent->s.number != e) {
 			Com_DPrintf("FIXING ENT->S.NUMBER!!!\n");
 			ent->s.number = e;
 		}
@@ -649,8 +603,7 @@ SV_BuildClientFrame(client_t *client)
 		*state = ent->s;
 
 		/* don't mark players missiles as solid */
-		if (ent->owner == client->edict)
-		{
+		if (ent->owner == client->edict) {
 			state->solid = 0;
 		}
 

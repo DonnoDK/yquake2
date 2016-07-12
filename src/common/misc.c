@@ -247,6 +247,7 @@ void Qcommon_Init(int argc, char **argv) {
 	NET_Init();
 	Netchan_Init();
 	SV_Init();
+
 #ifndef DEDICATED_ONLY
 	CL_Init();
 #endif
@@ -261,6 +262,7 @@ void Qcommon_Init(int argc, char **argv) {
 		}
 		Cbuf_Execute();
 	}
+
 #ifndef DEDICATED_ONLY
 	else
 	{
@@ -334,6 +336,7 @@ void Qcommon_Frame(int msec) {
     int time_before = host_speeds->value ? Sys_Milliseconds() : 0;
 #endif
 	SV_Frame(msec);
+
 #ifndef DEDICATED_ONLY
 	int time_between = host_speeds->value ? Sys_Milliseconds() : 0;
 

@@ -105,22 +105,16 @@ client_t* SV_ClientForString(const char* string, client_t* clients, int num_clie
 /*
  * Sets sv_client and sv_player to the player with idnum Cmd_Argv(1)
  */
-qboolean SV_SetPlayer(void) {
-	if (Cmd_Argc() < 2) {
-		return false;
-	}
-
-	const char* s = Cmd_Argv(1);
-	client_t *cl = SV_ClientForString(s, svs.clients, maxclients->value);
+qboolean SV_SetPlayer(const char* player) {
+	client_t *cl = SV_ClientForString(player, svs.clients, maxclients->value);
     if(!cl){
-        Com_Printf("Userid or slot %s is not on the server\n", s);
+        Com_Printf("Userid or slot %s is not on the server\n", player);
         return false;
     }
-
     sv_client = cl;
     sv_player = cl->edict;
     if(!cl->state){
-        Com_Printf("Client %s is not active\n", s);
+        Com_Printf("Client %s is not active\n", player);
         return false;
     }
     return true;
@@ -150,69 +144,48 @@ static void SV_DemoMap_f(int argc, const char** argv) {
  * Clears the archived maps, plays the inter.cin cinematic, then
  * goes to map jail.bsp.
  */
-void
-SV_GameMap_f(void)
-{
-	char *map;
-	int i;
-	client_t *cl;
-	qboolean *savedInuse;
-
-	if (Cmd_Argc() != 2)
-	{
+void SV_GameMap_f(int argc, const char** argv) {
+	if (argc != 2) {
 		Com_Printf("USAGE: gamemap <map>\n");
 		return;
 	}
 
-	Com_DPrintf("SV_GameMap(%s)\n", Cmd_Argv(1));
-
+	Com_DPrintf("SV_GameMap(%s)\n", argv[1]);
 	FS_CreatePath(va("%s/save/current/", FS_Gamedir()));
-
 	/* check for clearing the current savegame */
-	map = Cmd_Argv(1);
-
-	if (map[0] == '*')
-	{
+	const char* map = argv[1];
+	if (map[0] == '*') {
 		/* wipe all the *.sav files */
 		SV_WipeSavegame("current");
-	}
-	else
-	{
+	} else {
 		/* save the map just exited */
-		if (sv.state == ss_game)
-		{
+		if (sv.state == ss_game) {
 			/* clear all the client inuse flags before saving so that
 			   when the level is re-entered, the clients will spawn
 			   at spawn points instead of occupying body shells */
-			savedInuse = (qboolean*)malloc(maxclients->value * sizeof(qboolean));
-
-			for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-			{
+			qboolean* savedInuse = (qboolean*)malloc(maxclients->value * sizeof(qboolean));
+			for (int i = 0; i < maxclients->value; i++) {
+                client_t* cl = &svs.clients[i];
 				savedInuse[i] = cl->edict->inuse;
 				cl->edict->inuse = false;
 			}
 
 			SV_WriteLevelFile();
-
 			/* we must restore these for clients to transfer over correctly */
-			for (i = 0, cl = svs.clients; i < maxclients->value; i++, cl++)
-			{
+			for (int i = 0; i < maxclients->value; i++) {
+                client_t* cl = &svs.clients[i];
 				cl->edict->inuse = savedInuse[i];
 			}
-
 			free(savedInuse);
 		}
 	}
 
 	/* start up the next map */
-	SV_Map(false, Cmd_Argv(1), false);
-
+	SV_Map(false, argv[1], false);
 	/* archive server state */
 	Q_strlcpy(svs.mapcmd, Cmd_Argv(1), sizeof(svs.mapcmd));
-
 	/* copy off the level to the autosave slot */
-	if (!dedicated->value)
-	{
+	if (!dedicated->value) {
 		SV_WriteServerFile(true);
 		SV_CopySaveGame("current", "save0");
 	}
@@ -222,27 +195,18 @@ SV_GameMap_f(void)
  * Goes directly to a given map without any savegame archiving.
  * For development work
  */
-void
-SV_Map_f(void)
-{
-	char *map;
+void SV_Map_f(int argc, const char** argv) {
 	char expanded[MAX_QPATH];
-
-	if (Cmd_Argc() != 2)
-	{
+	if (argc != 2) {
 		Com_Printf("USAGE: map <mapname>\n");
 		return;
 	}
 
 	/* if not a pcx, demo, or cinematic, check to make sure the level exists */
-	map = Cmd_Argv(1);
-
-	if (!strstr(map, ".") && !strstr(map, "$") && (*map != '*'))
-	{
+	const char* map = argv[1];
+	if (!strstr(map, ".") && !strstr(map, "$") && (*map != '*')) {
 		Com_sprintf(expanded, sizeof(expanded), "maps/%s.bsp", map);
-
-		if (FS_LoadFile(expanded, NULL) == -1)
-		{
+		if (FS_LoadFile(expanded, NULL) == -1) {
 			Com_Printf("Can't find %s\n", expanded);
 			return;
 		}
@@ -250,34 +214,28 @@ SV_Map_f(void)
 
 	sv.state = ss_dead; /* don't save current level when changing */
 	SV_WipeSavegame("current");
-	SV_GameMap_f();
+	SV_GameMap_f(argc, argv);
 }
 
 /*
  * Kick a user off of the server
  */
-void
-SV_Kick_f(void)
-{
-	if (!svs.initialized)
-	{
+void SV_Kick_f(int argc, const char** argv) {
+	if (!svs.initialized) {
 		Com_Printf("No server running.\n");
 		return;
 	}
 
-	if (Cmd_Argc() != 2)
-	{
+	if (argc != 2) {
 		Com_Printf("Usage: kick <userid>\n");
 		return;
 	}
 
-	if (!SV_SetPlayer())
-	{
+	if (!SV_SetPlayer(argv[1])) {
 		return;
 	}
 
-	if ((sv_client->state == cs_spawned) && *sv_client->name)
-	{
+	if ((sv_client->state == cs_spawned) && *sv_client->name) {
 		SV_BroadcastPrintf(PRINT_HIGH, "%s was kicked\n", sv_client->name);
 	}
 
@@ -402,26 +360,20 @@ SV_Serverinfo_f(void)
 /*
  * Examine all a users info strings
  */
-void
-SV_DumpUser_f(void)
-{
-	if (!svs.initialized)
-	{
+void SV_DumpUser_f(int argc, const char** argv) {
+	if (!svs.initialized) {
 		Com_Printf("No server running.\n");
 		return;
 	}
 
-	if (Cmd_Argc() != 2)
-	{
+	if (argc != 2) {
 		Com_Printf("Usage: info <userid>\n");
 		return;
 	}
 
-	if (!SV_SetPlayer())
-	{
+	if (!SV_SetPlayer(argv[1])) {
 		return;
 	}
-
 	Com_Printf("userinfo\n");
 	Com_Printf("--------\n");
 	Info_Print(sv_client->userinfo);
@@ -431,59 +383,50 @@ SV_DumpUser_f(void)
  * Begins server demo recording.  Every entity and every message will be
  * recorded, but no playerinfo will be stored.  Primarily for demo merging.
  */
-void
-SV_ServerRecord_f(void)
-{
-	char name[MAX_OSPATH];
-	byte buf_data[32768];
-	sizebuf_t buf;
-	int len;
-	int i;
+void SV_ServerRecord_f(int argc, const char** argv) {
 
-	if (Cmd_Argc() != 2)
-	{
+	if (argc != 2) {
 		Com_Printf("serverrecord <demoname>\n");
 		return;
 	}
 
-	if (svs.demofile)
-	{
+	if (svs.demofile) {
 		Com_Printf("Already recording.\n");
 		return;
 	}
 
-	if (sv.state != ss_game)
-	{
+	if (sv.state != ss_game) {
 		Com_Printf("You must be in a level to record.\n");
 		return;
 	}
 
-	if (strstr(Cmd_Argv(1), "..") || 
-		strstr(Cmd_Argv(1), "/") || 
-		strstr(Cmd_Argv(1), "\\"))
+	if (strstr(argv[1], "..") || 
+		strstr(argv[1], "/") || 
+		strstr(argv[1], "\\"))
 	{
 		Com_Printf("Illegal filename.\n");
 		return;
 	}
 
 	/* open the demo file */
-	Com_sprintf(name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), Cmd_Argv(1));
+	char name[MAX_OSPATH];
+	Com_sprintf(name, sizeof(name), "%s/demos/%s.dm2", FS_Gamedir(), argv[1]);
 
 	Com_Printf("recording to %s.\n", name);
 	FS_CreatePath(name);
 	svs.demofile = fopen(name, "wb");
 
-	if (!svs.demofile)
-	{
+	if (!svs.demofile) {
 		Com_Printf("ERROR: couldn't open.\n");
 		return;
 	}
 
 	/* setup a buffer to catch all multicasts */
-	SZ_Init(&svs.demo_multicast, svs.demo_multicast_buf,
-			sizeof(svs.demo_multicast_buf));
+	SZ_Init(&svs.demo_multicast, svs.demo_multicast_buf, sizeof(svs.demo_multicast_buf));
 
 	/* write a single giant fake message with all the startup info */
+	sizebuf_t buf;
+	byte buf_data[32768];
 	SZ_Init(&buf, buf_data, sizeof(buf_data));
 
 	/* serverdata needs to go over for all types of servers
@@ -500,16 +443,12 @@ SV_ServerRecord_f(void)
 	/* send full levelname */
 	MSG_WriteString(&buf, sv.configstrings[CS_NAME]);
 
-	for (i = 0; i < MAX_CONFIGSTRINGS; i++)
-	{
-		if (sv.configstrings[i][0])
-		{
+	for (int i = 0; i < MAX_CONFIGSTRINGS; i++) {
+		if (sv.configstrings[i][0]) {
 			MSG_WriteByte(&buf, svc_configstring);
 			MSG_WriteShort(&buf, i);
 			MSG_WriteString(&buf, sv.configstrings[i]);
-
-			if (buf.cursize + 67 >= buf.maxsize)
-			{
+			if (buf.cursize + 67 >= buf.maxsize) {
 				Com_Printf("not enough buffer space available.\n");
 				fclose(svs.demofile);
 				svs.demofile = NULL;
@@ -520,7 +459,7 @@ SV_ServerRecord_f(void)
 
 	/* write it to the demo file */
 	Com_DPrintf("signon message length: %i\n", buf.cursize);
-	len = LittleLong(buf.cursize);
+	int len = LittleLong(buf.cursize);
 	fwrite(&len, 4, 1, svs.demofile);
 	fwrite(buf.data, buf.cursize, 1, svs.demofile);
 }
@@ -528,15 +467,11 @@ SV_ServerRecord_f(void)
 /*
  * Ends server demo recording
  */
-void
-SV_ServerStop_f(void)
-{
-	if (!svs.demofile)
-	{
+void SV_ServerStop_f(void) {
+	if (!svs.demofile) {
 		Com_Printf("Not doing a serverrecord.\n");
 		return;
 	}
-
 	fclose(svs.demofile);
 	svs.demofile = NULL;
 	Com_Printf("Recording completed.\n");
@@ -545,14 +480,10 @@ SV_ServerStop_f(void)
 /*
  * Kick everyone off, possibly in preparation for a new game
  */
-void
-SV_KillServer_f(void)
-{
-	if (!svs.initialized)
-	{
+void SV_KillServer_f(void) {
+	if (!svs.initialized) {
 		return;
 	}
-
 	SV_Shutdown("Server was killed.\n", false);
 	NET_Config(false);   /* close network sockets */
 }
@@ -560,15 +491,11 @@ SV_KillServer_f(void)
 /*
  * Let the game dll handle a command
  */
-void
-SV_ServerCommand_f(void)
-{
-	if (!ge)
-	{
+void SV_ServerCommand_f(void) {
+	if (!ge) {
 		Com_Printf("No game loaded.\n");
 		return;
 	}
-
 	ge->ServerCommand();
 }
 
@@ -576,14 +503,14 @@ void
 SV_InitOperatorCommands(void)
 {
 	Cmd_AddCommand("heartbeat", SV_Heartbeat_f);
-	Cmd_AddCommand("kick", SV_Kick_f);
+	Cmd_AddDelegate("kick", SV_Kick_f);
 	Cmd_AddCommand("status", SV_Status_f);
 	Cmd_AddCommand("serverinfo", SV_Serverinfo_f);
-	Cmd_AddCommand("dumpuser", SV_DumpUser_f);
+	Cmd_AddDelegate("dumpuser", SV_DumpUser_f);
 
-	Cmd_AddCommand("map", SV_Map_f);
+	Cmd_AddDelegate("map", SV_Map_f);
 	Cmd_AddDelegate("demomap", SV_DemoMap_f);
-	Cmd_AddCommand("gamemap", SV_GameMap_f);
+	Cmd_AddDelegate("gamemap", SV_GameMap_f);
 	Cmd_AddCommand("setmaster", SV_SetMaster_f);
 
 	if (dedicated->value)
@@ -591,7 +518,7 @@ SV_InitOperatorCommands(void)
 		Cmd_AddCommand("say", SV_ConSay_f);
 	}
 
-	Cmd_AddCommand("serverrecord", SV_ServerRecord_f);
+	Cmd_AddDelegate("serverrecord", SV_ServerRecord_f);
 	Cmd_AddCommand("serverstop", SV_ServerStop_f);
 
 	Cmd_AddCommand("save", SV_Savegame_f);

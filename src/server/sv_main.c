@@ -240,7 +240,6 @@ void SV_PrepWorldFrame(void) {
         /* TODO: refactor and dont depend on macro */
         /* NOTE: use the macro for now, as simply referring to index introduces bugs */
         edict_t* ent = ((edict_t *)((byte *)ge->edicts + ge->edict_size * (i)));
-        //edict_t* ent = EDICT_NUM(i);
 		/* events only last for a single message */
 		ent->s.event = 0;
 	}
