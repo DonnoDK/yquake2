@@ -120,7 +120,7 @@ typedef struct
 	   they connect, and changes are sent to all connected clients. */
 	void (*configstring)(int num, char *string);
 
-	void (*error)(char *fmt, ...);
+	void (*error)(const char *fmt, ...);
 
 	/* the *index functions create configstrings
 	   and some internal server state */
@@ -167,8 +167,8 @@ typedef struct
 	void (*FreeTags)(int tag);
 
 	/* console variable interaction */
-	cvar_t *(*cvar)(char *var_name, char *value, int flags);
-	cvar_t *(*cvar_set)(char *var_name, char *value);
+	cvar_t *(*cvar)(const char *var_name, const char *value, int flags);
+	cvar_t *(*cvar_set)(const char *var_name, const char *value);
 	cvar_t *(*cvar_forceset)(char *var_name, char *value);
 
 	/* ClientCommand and ServerCommand parameter access */

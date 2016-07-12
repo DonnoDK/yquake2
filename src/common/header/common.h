@@ -165,7 +165,7 @@ void COM_AddParm(char *parm);
 void COM_Init(void);
 void COM_InitArgv(int argc, char **argv);
 
-char *CopyString(char *in);
+char *CopyString(const char *in);
 
 /* ================================================================== */
 
@@ -436,13 +436,13 @@ void Cmd_ForwardToServer(void);
 
 extern cvar_t *cvar_vars;
 
-cvar_t *Cvar_Get(char *var_name, char *value, int flags);
+cvar_t *Cvar_Get(const char *var_name, const char *value, int flags);
 
 /* creates the variable if it doesn't exist, or returns the existing one */
 /* if it exists, the value will not be changed, but flags will be ORed in */
 /* that allows variables to be unarchived without needing bitflags */
 
-cvar_t *Cvar_Set(char *var_name, char *value);
+cvar_t *Cvar_Set(const char *var_name, const char *value);
 
 /* will create the variable if it doesn't exist */
 
@@ -720,10 +720,10 @@ void FS_CreatePath(char *path);
 
 void Com_BeginRedirect(int target, char *buffer, int buffersize, void (*flush));
 void Com_EndRedirect(void);
-void Com_Printf(char *fmt, ...);
-void Com_DPrintf(char *fmt, ...);
-void Com_MDPrintf(char *fmt, ...);
-void Com_Error(int code, char *fmt, ...);
+void Com_Printf(const char *fmt, ...);
+void Com_DPrintf(const char *fmt, ...);
+void Com_MDPrintf(const char *fmt, ...);
+void Com_Error(int code, const char *fmt, ...);
 void Com_Quit(void);
 
 int Com_ServerState(void);              /* this should have just been a cvar... */
@@ -770,7 +770,7 @@ void *Sys_GetGameAPI(void *parms);
 char *Sys_ConsoleInput(void);
 void Sys_ConsoleOutput(char *string);
 void Sys_SendKeyEvents(void);
-void Sys_Error(char *error, ...);
+void Sys_Error(const char *error, ...);
 void Sys_Quit(void);
 char *Sys_GetHomeDir(void);
 const char *Sys_GetBinaryDir(void);

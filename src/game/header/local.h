@@ -227,7 +227,7 @@ typedef struct
 
 typedef struct gitem_s
 {
-	char *classname; /* spawning name */
+	const char *classname; /* spawning name */
 	qboolean (*pickup)(struct edict_s *ent, struct edict_s *other);
 	void (*use)(struct edict_s *ent, struct gitem_s *item);
 	void (*drop)(struct edict_s *ent, struct gitem_s *item);
@@ -965,7 +965,7 @@ struct edict_s
 
 	/* only used locally in game, not by server */
 	char *message;
-	char *classname;
+	const char *classname;
 	int spawnflags;
 
 	float timestamp;

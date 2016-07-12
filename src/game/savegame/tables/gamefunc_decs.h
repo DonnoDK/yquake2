@@ -890,9 +890,9 @@ extern void CheckNeedPass ( void ) ;
 extern void EndDMLevel ( void ) ;
 extern edict_t * CreateTargetChangeLevel ( char * map ) ;
 extern void ClientEndServerFrames ( void ) ;
-extern void Com_Printf ( char * msg , ... ) ;
-extern void Com_Printfln ( char * msg , ... ) ;
-extern void Sys_Error ( char * error , ... ) ;
+extern void Com_Printf ( const char * msg , ... ) ;
+extern void Com_Printfln ( const char * msg , ... ) ;
+extern void Sys_Error ( const char * error , ... ) ;
 
 #ifdef __cplusplus
 extern "C" {

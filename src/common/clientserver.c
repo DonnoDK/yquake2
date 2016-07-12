@@ -72,7 +72,7 @@ Com_EndRedirect(void)
  * to the apropriate place.
  */
 void
-Com_Printf(char *fmt, ...)
+Com_Printf(const char *fmt, ...)
 {
 	va_list argptr;
 	char msg[MAXPRINTMSG];
@@ -135,9 +135,7 @@ Com_Printf(char *fmt, ...)
 /*
  * A Com_Printf that only shows up if the "developer" cvar is set
  */
-void
-Com_DPrintf(char *fmt, ...)
-{
+void Com_DPrintf(const char *fmt, ...) {
 	va_list argptr;
 	char msg[MAXPRINTMSG];
 
@@ -157,8 +155,7 @@ Com_DPrintf(char *fmt, ...)
  * A Com_Printf that only shows up when either the "modder" or "developer"
  * cvars is set
  */
-void
-Com_MDPrintf(char *fmt, ...)
+void Com_MDPrintf(const char *fmt, ...)
 {
 	va_list argptr;
 	char msg[MAXPRINTMSG];
@@ -180,7 +177,7 @@ Com_MDPrintf(char *fmt, ...)
  * do the apropriate things.
  */
 void
-Com_Error(int code, char *fmt, ...)
+Com_Error(int code, const char *fmt, ...)
 {
 	va_list argptr;
 	static char msg[MAXPRINTMSG];

@@ -46,8 +46,8 @@ void	VID_MenuInit(void);
 void	VID_MenuDraw(void);
 const char *VID_MenuKey(int);
 
-void VID_Printf(int print_level, char *fmt, ...);
-void VID_Error(int err_level, char *fmt, ...);
+void VID_Printf(int print_level, const char *fmt, ...);
+void VID_Error(int err_level, const char *fmt, ...);
 
 void VID_NewWindow(int width, int height);
 qboolean VID_GetModeInfo(int *width, int *height, int mode);

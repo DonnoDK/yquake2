@@ -310,9 +310,9 @@ char *Sys_FindNext(unsigned musthave, unsigned canthave);
 void Sys_FindClose(void);
 
 /* this is only here so the functions in shared source files can link */
-void Sys_Error(char *error, ...);
-void Com_Printf(char *msg, ...);
-void Com_Printfln(char *msg, ...);
+void Sys_Error(const char *error, ...);
+void Com_Printf(const char *msg, ...);
+void Com_Printfln(const char *msg, ...);
 
 /*
  * ==========================================================

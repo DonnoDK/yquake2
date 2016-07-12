@@ -150,7 +150,7 @@ PF_centerprintf(edict_t *ent, char *fmt, ...)
  * Abort the server with a game error
  */
 void
-PF_error(char *fmt, ...)
+PF_error(const char *fmt, ...)
 {
 	char msg[1024];
 	va_list argptr;

@@ -159,8 +159,7 @@ game_export_t * GetGameAPI(game_import_t *import)
  * this is only here so the functions
  * in shared source files can link
  */
-void
-Sys_Error(char *error, ...)
+void Sys_Error(const char *error, ...)
 {
 	va_list argptr;
 	char text[1024];
@@ -172,21 +171,17 @@ Sys_Error(char *error, ...)
 	gi.error("%s", text);
 }
 
-void
-Com_Printf(char *msg, ...)
-{
+void Com_Printf(const char *msg, ...) {
 	va_list argptr;
 	char text[1024];
-
 	va_start(argptr, msg);
 	vsprintf(text, msg, argptr);
 	va_end(argptr);
-
 	gi.dprintf("%s", text);
 }
 
 void
-Com_Printfln(char *msg, ...){
+Com_Printfln(const char *msg, ...){
     char *newline = "\n";
     char* newmsg = (char*)malloc(strlen(msg)+1+2);
     strcpy(newmsg, msg);
