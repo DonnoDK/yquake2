@@ -117,7 +117,7 @@
  */
 typedef struct
 {
-	char *funcStr;
+	const char *funcStr;
 	byte *funcPtr;
 } functionList_t;
 
@@ -128,7 +128,7 @@ typedef struct
  * */
 typedef struct
 {
-	char	*mmoveStr;
+	const char	*mmoveStr;
 	mmove_t *mmovePtr;
 } mmoveList_t;
 

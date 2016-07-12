@@ -729,7 +729,7 @@ M_Menu_Multiplayer_f(void)
  * KEYS MENU
  */
 
-char *bindnames[][2] =
+const char *bindnames[][2] =
 {
     {"+attack", "attack"},
     {"weapnext", "next weapon"},
@@ -765,7 +765,7 @@ static menuframework_s s_keys_menu;
 static menuaction_s s_keys_actions[NUM_BINDNAMES];
 
 static void
-M_UnbindCommand(char *command)
+M_UnbindCommand(const char *command)
 {
     int j;
     int l;
@@ -789,8 +789,7 @@ M_UnbindCommand(char *command)
     }
 }
 
-static void
-M_FindKeysForCommand(char *command, int *twokeys)
+static void M_FindKeysForCommand(const char *command, int *twokeys)
 {
     int count;
     int j;

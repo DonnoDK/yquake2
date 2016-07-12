@@ -877,7 +877,7 @@ SizeHUDString(char *string, int *w, int *h)
 }
 
 void
-DrawHUDStringScaled(char *string, int x, int y, int centerwidth, int xord, float factor)
+DrawHUDStringScaled(const char *string, int x, int y, int centerwidth, int xord, float factor)
 {
 	int margin;
 	char line[1024];
@@ -1025,7 +1025,7 @@ SCR_ExecuteLayoutString(char *s)
 {
 	int x, y;
 	int value;
-	char *token;
+	const char *token;
 	int width;
 	int index;
 	clientinfo_t *ci;

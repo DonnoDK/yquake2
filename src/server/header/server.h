@@ -198,9 +198,9 @@ extern edict_t *sv_player;
 void SV_FinalMessage(char *message, qboolean reconnect);
 void SV_DropClient(client_t *drop);
 
-int SV_ModelIndex(char *name);
-int SV_SoundIndex(char *name);
-int SV_ImageIndex(char *name);
+int SV_ModelIndex(const char *name);
+int SV_SoundIndex(const char *name);
+int SV_ImageIndex(const char *name);
 
 void SV_WriteClientdataToMessage(client_t *client, sizebuf_t *msg);
 
@@ -233,7 +233,7 @@ void SV_StartSound(vec3_t origin, edict_t *entity, int channel,
 		float timeofs);
 void SV_ClientPrintf(client_t *cl, int level, char *fmt, ...);
 void SV_BroadcastPrintf(int level, char *fmt, ...);
-void SV_BroadcastCommand(char *fmt, ...);
+void SV_BroadcastCommand(const char *fmt, ...);
 
 void SV_Nextserver(void);
 void SV_ExecuteClientMessage(client_t *cl);

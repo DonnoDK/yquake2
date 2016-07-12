@@ -137,12 +137,11 @@ StringToFilter(char *s, ipfilter_t *f)
 }
 
 qboolean
-SV_FilterPacket(char *from)
+SV_FilterPacket(const char *from)
 {
 	int i;
 	unsigned in;
 	byte m[4];
-	char *p;
 
 	if (!from)
 	{
@@ -150,7 +149,7 @@ SV_FilterPacket(char *from)
 	}
 
 	i = 0;
-	p = from;
+	const char* p = from;
 
 	while (*p && i < 4)
 	{

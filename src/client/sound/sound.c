@@ -167,7 +167,7 @@ S_LoadSound(sfx_t *s)
  * Returns the name of a sound
  */
 sfx_t *
-S_FindName(char *name, qboolean create)
+S_FindName(const char *name, qboolean create)
 {
 	int i;
 	sfx_t *sfx;
@@ -284,7 +284,7 @@ S_BeginRegistration(void)
  * Registers a sound
  */
 sfx_t *
-S_RegisterSound(char *name)
+S_RegisterSound(const char *name)
 {
 	sfx_t *sfx;
 

@@ -303,9 +303,9 @@ extern	netadr_t	net_from;
 extern	sizebuf_t	net_message;
 
 void DrawString (int x, int y, char *s);
-void DrawStringScaled(int x, int y, char *s, float factor);
+void DrawStringScaled(int x, int y, const char *s, float factor);
 void DrawAltString (int x, int y, char *s);	/* toggle high bit */
-void DrawAltStringScaled(int x, int y, char *s, float factor);
+void DrawAltStringScaled(int x, int y, const char *s, float factor);
 qboolean	CL_CheckOrDownloadFile (char *filename);
 
 void CL_AddNetgraph (void);
@@ -450,7 +450,7 @@ void CL_BaseMove (usercmd_t *cmd);
 void IN_CenterView (void);
 
 float CL_KeyState (kbutton_t *key);
-char *Key_KeynumToString (int keynum);
+const char *Key_KeynumToString (int keynum);
 
 void CL_WriteDemoMessage (void);
 void CL_Stop_f (void);

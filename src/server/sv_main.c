@@ -377,7 +377,7 @@ void Master_Shutdown(const netadr_t* masters, int num_masters) {
 void
 SV_UserinfoChanged(client_t *cl)
 {
-	char *val;
+	const char *val;
 	int i;
 
 	/* call prog code to allow overrides */

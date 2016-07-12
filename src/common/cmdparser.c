@@ -38,7 +38,7 @@ typedef struct opaque_cmd_s{
 
 typedef struct cmd_function_s {
 	struct cmd_function_s *next;
-	char *name;
+	const char *name;
 	xcommand_t function;
     delegate_t delegate;
 } cmd_function_t;
@@ -80,13 +80,13 @@ void Cbuf_Init(void){
 /*
  * Adds command text at the end of the buffer
  */
-void Cbuf_AddText(char *text) {
+void Cbuf_AddText(const char *text) {
 	int l = strlen(text);
 	if (cmd_text.cursize + l >= cmd_text.maxsize) {
 		Com_Printf("Cbuf_AddText: overflow\n");
 		return;
 	}
-	SZ_Write(&cmd_text, text, l);
+	SZ_Write(&cmd_text, (void*)text, l);
 }
 
 /*
@@ -522,7 +522,7 @@ void Cmd_TokenizeString(char *text, qboolean macroExpand) {
 	}
 }
 
-void Cmd_AddDelegate(char *cmd_name, delegate_t delegate) {
+void Cmd_AddDelegate(const char *cmd_name, delegate_t delegate) {
 	/* fail if the command is a variable name */
 	if (Cvar_VariableString(cmd_name)[0]) {
 		Cmd_RemoveCommand(cmd_name);
@@ -549,7 +549,7 @@ void Cmd_AddDelegate(char *cmd_name, delegate_t delegate) {
 }
 
 /* TODO: remove this function once all xcommand_ts have been refactored into delegate_ts */
-void Cmd_AddCommand(char *cmd_name, xcommand_t function) {
+void Cmd_AddCommand(const char *cmd_name, xcommand_t function) {
 	/* fail if the command is a variable name */
 	if (Cvar_VariableString(cmd_name)[0]) {
 		Cmd_RemoveCommand(cmd_name);
@@ -597,9 +597,8 @@ int qsort_strcomp(const void *s1, const void *s2) {
 	return strcmp(*(char **)s1, *(char **)s2);
 }
 
-char* Cmd_CompleteCommand(char *partial) {
+const char* Cmd_CompleteCommand(char *partial) {
     static char retval[256];
-	char *pmatch[1024];
 	int len = strlen(partial);
 	if (!len) {
 		return NULL;
@@ -620,6 +619,7 @@ char* Cmd_CompleteCommand(char *partial) {
         }
     }
 
+	const char *pmatch[1024];
 	for (int i = 0; i < 1024; i++) {
 		pmatch[i] = NULL;
 	}
@@ -679,7 +679,7 @@ char* Cmd_CompleteCommand(char *partial) {
 	return NULL;
 }
 
-qboolean Cmd_IsComplete(char *command) {
+qboolean Cmd_IsComplete(const char *command) {
 	/* check for exact match */
     if(Cmd_GetFunction(command, (opaque_cmd_t*)cmd_functions) ||
        Cmd_GetFunction(command, (opaque_cmd_t*)cvar_vars) ||

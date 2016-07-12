@@ -494,7 +494,7 @@ SV_ServerRecord_f(void)
 
 	/* 2 means server demo */
 	MSG_WriteByte(&buf, 2);   /* demos are always attract loops */
-	MSG_WriteString(&buf, (char *)Cvar_VariableString("gamedir"));
+	MSG_WriteString(&buf, (const char *)Cvar_VariableString("gamedir"));
 	MSG_WriteShort(&buf, -1);
 
 	/* send full levelname */

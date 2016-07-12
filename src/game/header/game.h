@@ -106,8 +106,8 @@ typedef struct
 {
 	/* special messages */
 	void (*bprintf)(int printlevel, char *fmt, ...);
-	void (*dprintf)(char *fmt, ...);
-	void (*cprintf)(edict_t *ent, int printlevel, char *fmt, ...);
+	void (*dprintf)(const char *fmt, ...);
+	void (*cprintf)(edict_t *ent, int printlevel, const char *fmt, ...);
 	void (*centerprintf)(edict_t *ent, char *fmt, ...);
 	void (*sound)(edict_t *ent, int channel, int soundindex, float volume,
 			float attenuation, float timeofs);
@@ -124,9 +124,9 @@ typedef struct
 
 	/* the *index functions create configstrings
 	   and some internal server state */
-	int (*modelindex)(char *name);
-	int (*soundindex)(char *name);
-	int (*imageindex)(char *name);
+	int (*modelindex)(const char *name);
+	int (*soundindex)(const char *name);
+	int (*imageindex)(const char *name);
 
 	void (*setmodel)(edict_t *ent, char *name);
 
@@ -178,7 +178,7 @@ typedef struct
 
 	/* add commands to the server console as if
 	   they were typed in for map changing, etc */
-	void (*AddCommandString)(char *text);
+	void (*AddCommandString)(const char *text);
 
 	void (*DebugGraph)(float value, int color);
 } game_import_t;

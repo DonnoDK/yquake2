@@ -50,11 +50,11 @@ qboolean menubound[K_LAST]; /* if true, can't be rebound while in menu */
 int key_repeats[K_LAST]; /* if > 1, it is autorepeating */
 qboolean keydown[K_LAST];
 
-qboolean Cmd_IsComplete(char *cmd);
+qboolean Cmd_IsComplete(const char *cmd);
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int keynum;
 } keyname_t;
 
@@ -168,37 +168,26 @@ keyname_t keynames[] = {
 
 /* ------------------------------------------------------------------ */
 
-void
-CompleteCommand(void)
-{
-	char *cmd, *s;
+void CompleteCommand(void) {
+	char* s = key_lines[edit_line] + 1;
 
-	s = key_lines[edit_line] + 1;
-
-	if ((*s == '\\') || (*s == '/'))
-	{
+	if ((*s == '\\') || (*s == '/')) {
 		s++;
 	}
 
-	cmd = Cmd_CompleteCommand(s);
-
-	if (cmd)
-	{
+	const char* cmd = Cmd_CompleteCommand(s);
+	if (cmd) {
 		key_lines[edit_line][1] = '/';
 		strcpy(key_lines[edit_line] + 2, cmd);
 		key_linepos = strlen(cmd) + 2;
 
-		if (Cmd_IsComplete(cmd))
-		{
+		if (Cmd_IsComplete(cmd)) {
 			key_lines[edit_line][key_linepos] = ' ';
 			key_linepos++;
 			key_lines[edit_line][key_linepos] = 0;
-		}
-		else
-		{
+		} else {
 			key_lines[edit_line][key_linepos] = 0;
 		}
-
 		return;
 	}
 }
@@ -598,28 +587,22 @@ Key_StringToKeynum(char *str)
  * Returns a string (either a single ascii char,
  * or a K_* name) for the given keynum.
  */
-char *
-Key_KeynumToString(int keynum)
-{
+const char * Key_KeynumToString(int keynum) {
 	keyname_t *kn;
 	static char tinystr[2] = {0};
 
-	if (keynum == -1)
-	{
+	if (keynum == -1) {
 		return "<KEY NOT FOUND>";
 	}
 
-	if ((keynum > 32) && (keynum < 127))
-	{
+	if ((keynum > 32) && (keynum < 127)) {
 		/* printable ascii */
 		tinystr[0] = keynum;
 		return tinystr;
 	}
 
-	for (kn = keynames; kn->name; kn++)
-	{
-		if (keynum == kn->keynum)
-		{
+	for (kn = keynames; kn->name; kn++) {
+		if (keynum == kn->keynum) {
 			return kn->name;
 		}
 	}

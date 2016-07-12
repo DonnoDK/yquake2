@@ -41,7 +41,7 @@ DrawString(int x, int y, char *s)
 }
 
 void
-DrawStringScaled(int x, int y, char *s, float factor)
+DrawStringScaled(int x, int y, const char *s, float factor)
 {
 	while (*s)
 	{
@@ -58,7 +58,7 @@ DrawAltString(int x, int y, char *s)
 }
 
 void
-DrawAltStringScaled(int x, int y, char *s, float factor)
+DrawAltStringScaled(int x, int y, const char *s, float factor)
 {
 	while (*s)
 	{

@@ -119,7 +119,7 @@ SV_BroadcastPrintf(int level, char *fmt, ...)
  * Sends text to all active clients
  */
 void
-SV_BroadcastCommand(char *fmt, ...)
+SV_BroadcastCommand(const char *fmt, ...)
 {
 	va_list argptr;
 	char string[1024];

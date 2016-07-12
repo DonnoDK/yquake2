@@ -933,41 +933,30 @@ char com_token[MAX_TOKEN_CHARS];
 /*
  * Parse a token out of a string
  */
-char *
-COM_Parse(char **data_p)
-{
+const char * COM_Parse(char **data_p) {
 	int c;
-	int len;
-	char *data;
-
-	data = *data_p;
-	len = 0;
+	char* data = *data_p;
+	int len = 0;
 	com_token[0] = 0;
 
-	if (!data)
-	{
+	if (!data) {
 		*data_p = NULL;
 		return "";
 	}
 
 skipwhite:
 
-	while ((c = *data) <= ' ')
-	{
-		if (c == 0)
-		{
+	while ((c = *data) <= ' ') {
+		if (c == 0) {
 			*data_p = NULL;
 			return "";
 		}
-
 		data++;
 	}
 
 	/* skip // comments */
-	if ((c == '/') && (data[1] == '/'))
-	{
-		while (*data && *data != '\n')
-		{
+	if ((c == '/') && (data[1] == '/')) {
+		while (*data && *data != '\n') {
 			data++;
 		}
 
@@ -975,21 +964,14 @@ skipwhite:
 	}
 
 	/* handle quoted strings specially */
-	if (c == '\"')
-	{
+	if (c == '\"') {
 		data++;
-
-		while (1)
-		{
+		while (1) {
 			c = *data++;
-
-			if ((c == '\"') || !c)
-			{
+			if ((c == '\"') || !c) {
 				goto done;
 			}
-
-			if (len < MAX_TOKEN_CHARS)
-			{
+			if (len < MAX_TOKEN_CHARS) {
 				com_token[len] = c;
 				len++;
 			}
@@ -997,27 +979,20 @@ skipwhite:
 	}
 
 	/* parse a regular word */
-	do
-	{
-		if (len < MAX_TOKEN_CHARS)
-		{
+	do {
+		if (len < MAX_TOKEN_CHARS) {
 			com_token[len] = c;
 			len++;
 		}
-
 		data++;
 		c = *data;
-	}
-	while (c > 32);
+	} while (c > 32);
 
 done:
-	if (len == MAX_TOKEN_CHARS)
-	{
+	if (len == MAX_TOKEN_CHARS) {
 		len = 0;
 	}
-
 	com_token[len] = 0;
-
 	*data_p = data;
 	return com_token;
 }
@@ -1050,7 +1025,7 @@ Q_stricmp(const char *s1, const char *s2)
 }
 
 int
-Q_strncasecmp(char *s1, char *s2, int n)
+Q_strncasecmp(const char *s1, const char *s2, int n)
 {
 	int c1, c2;
 
@@ -1088,23 +1063,18 @@ Q_strncasecmp(char *s1, char *s2, int n)
 }
 
 int
-Q_strcasecmp(char *s1, char *s2)
+Q_strcasecmp(const char *s1, const char *s2)
 {
 	return Q_strncasecmp(s1, s2, 99999);
 }
 
-void
-Com_sprintf(char *dest, int size, char *fmt, ...)
-{
-	int len;
+void Com_sprintf(char *dest, int size, const char *fmt, ...) {
 	va_list argptr;
-
 	va_start(argptr, fmt);
-	len = vsnprintf(dest, size, fmt, argptr);
+	int len = vsnprintf(dest, size, fmt, argptr);
 	va_end(argptr);
 
-	if (len >= size)
-	{
+	if (len >= size) {
 		Com_Printf("Com_sprintf: overflow\n");
 	}
 }
@@ -1172,9 +1142,7 @@ Q_strlcat(char *dst, const char *src, int size)
  * key and returns the associated value,
  * or an empty string.
  */
-char *
-Info_ValueForKey(char *s, char *key)
-{
+const char * Info_ValueForKey(char *s, char *key) {
 	char pkey[512];
 	static char value[2][512]; /* use two buffers so compares
 							     work without stomping on each other */
@@ -1183,52 +1151,36 @@ Info_ValueForKey(char *s, char *key)
 
 	valueindex ^= 1;
 
-	if (*s == '\\')
-	{
+	if (*s == '\\') {
 		s++;
 	}
 
-	while (1)
-	{
+	while (1) {
 		o = pkey;
-
-		while (*s != '\\')
-		{
-			if (!*s)
-			{
+		while (*s != '\\') {
+			if (!*s) {
 				return "";
 			}
-
 			*o++ = *s++;
 		}
-
 		*o = 0;
 		s++;
-
 		o = value[valueindex];
-
-		while (*s != '\\' && *s)
-		{
-			if (!*s)
-			{
+		while (*s != '\\' && *s) {
+			if (!*s) {
 				return "";
 			}
-
 			*o++ = *s++;
 		}
 
 		*o = 0;
-
-		if (!strcmp(key, pkey))
-		{
+		if (!strcmp(key, pkey)) {
 			return value[valueindex];
 		}
 
-		if (!*s)
-		{
+		if (!*s) {
 			return "";
 		}
-
 		s++;
 	}
 }

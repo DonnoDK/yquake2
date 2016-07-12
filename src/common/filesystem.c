@@ -94,7 +94,7 @@ typedef enum
 
 typedef struct
 {
-	char *suffix;
+	const char *suffix;
 	fsPackFormat_t format;
 } fsPackTypes_t;
 

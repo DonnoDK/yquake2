@@ -28,7 +28,7 @@
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	void (*spawn)(edict_t *ent);
 } spawn_t;
 

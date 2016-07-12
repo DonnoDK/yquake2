@@ -108,7 +108,7 @@ void MSG_WriteByte(sizebuf_t *sb, int c);
 void MSG_WriteShort(sizebuf_t *sb, int c);
 void MSG_WriteLong(sizebuf_t *sb, int c);
 void MSG_WriteFloat(sizebuf_t *sb, float f);
-void MSG_WriteString(sizebuf_t *sb, char *s);
+void MSG_WriteString(sizebuf_t *sb, const char *s);
 void MSG_WriteCoord(sizebuf_t *sb, float f);
 void MSG_WritePos(sizebuf_t *sb, vec3_t pos);
 void MSG_WriteAngle(sizebuf_t *sb, float f);
@@ -335,7 +335,7 @@ void Cbuf_Init(void);
 
 /* allocates an initial text buffer that will grow as needed */
 
-void Cbuf_AddText(char *text);
+void Cbuf_AddText(const char *text);
 
 /* as new commands are generated from the console or keybindings, */
 /* the text is added to the end of the command buffer. */
@@ -381,8 +381,8 @@ typedef void (*delegate_t)(int argc, const char** argv);
 
 void Cmd_Init(void);
 
-void Cmd_AddCommand(char *cmd_name, xcommand_t function);
-void Cmd_AddDelegate(char *cmd_name, delegate_t function);
+void Cmd_AddCommand(const char *cmd_name, xcommand_t function);
+void Cmd_AddDelegate(const char *cmd_name, delegate_t function);
 
 /* called by the init functions of other parts of the program to */
 /* register commands and functions to call for them. */
@@ -391,7 +391,7 @@ void Cmd_AddDelegate(char *cmd_name, delegate_t function);
 /* as a clc_stringcmd instead of executed locally */
 void Cmd_RemoveCommand(const char *cmd_name);
 
-char *Cmd_CompleteCommand(char *partial);
+const char *Cmd_CompleteCommand(char *partial);
 
 /* attempts to match a partial command for automatic command line completion */
 /* returns NULL if nothing fits */

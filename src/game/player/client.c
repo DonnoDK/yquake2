@@ -416,61 +416,45 @@ player_pain(edict_t *self /* unused */, edict_t *other /* unused */,
 	 * a pain callback */
 }
 
-qboolean
-IsFemale(edict_t *ent)
-{
-	char *info;
-
-	if (!ent)
-	{
+/* TODO: refactor IsFemale and IsNeutral. Duplication */
+qboolean IsFemale(edict_t *ent) {
+	if (!ent) {
 		return false;
 	}
 
-	if (!ent->client)
-	{
+	if (!ent->client) {
 		return false;
 	}
 
-	info = Info_ValueForKey(ent->client->pers.userinfo, "gender");
+	const char* info = Info_ValueForKey(ent->client->pers.userinfo, "gender");
 
-	if (strstr(info, "crakhor"))
-	{
+	if (strstr(info, "crakhor")) {
 		return true;
 	}
 
-	if ((info[0] == 'f') || (info[0] == 'F'))
-	{
+	if ((info[0] == 'f') || (info[0] == 'F')) {
 		return true;
 	}
 
 	return false;
 }
 
-qboolean
-IsNeutral(edict_t *ent)
-{
-	char *info;
-
-	if (!ent)
-	{
+qboolean IsNeutral(edict_t *ent) {
+	if (!ent) {
 		return false;
 	}
 
-	if (!ent->client)
-	{
+	if (!ent->client) {
 		return false;
 	}
 
-	info = Info_ValueForKey(ent->client->pers.userinfo, "gender");
+	const char* info = Info_ValueForKey(ent->client->pers.userinfo, "gender");
 
-	if (strstr(info, "crakhor"))
-	{
+	if (strstr(info, "crakhor")) {
 		return false;
 	}
 
-	if ((info[0] != 'f') && (info[0] != 'F') && (info[0] != 'm') &&
-		(info[0] != 'M'))
-	{
+	if ((info[0] != 'f') && (info[0] != 'F') && (info[0] != 'm') && (info[0] != 'M')) {
 		return true;
 	}
 
@@ -482,7 +466,7 @@ ClientObituary(edict_t *self, edict_t *inflictor /* unused */,
 	   	edict_t *attacker)
 {
 	int mod;
-	char *message;
+	const char *message;
 	char *message2;
 	qboolean ff;
 
@@ -1542,7 +1526,7 @@ spectator_respawn(edict_t *ent)
 	   make sure he doesn't exceed max_spectators */
 	if (ent->client->pers.spectator)
 	{
-		char *value = Info_ValueForKey(ent->client->pers.userinfo, "spectator");
+		const char *value = Info_ValueForKey(ent->client->pers.userinfo, "spectator");
 
 		if (*spectator_password->string &&
 			strcmp(spectator_password->string, "none") &&
@@ -1581,7 +1565,7 @@ spectator_respawn(edict_t *ent)
 	{
 		/* he was a spectator and wants to join the
 		   game he must have the right password */
-		char *value = Info_ValueForKey(ent->client->pers.userinfo, "password");
+		const char *value = Info_ValueForKey(ent->client->pers.userinfo, "password");
 
 		if (*password->string && strcmp(password->string, "none") &&
 			strcmp(password->string, value))
@@ -1931,10 +1915,7 @@ ClientBegin(edict_t *ent)
  * The game can override any of the settings in place
  * (forcing skins or names, etc) before copying it off.
  */
-void
-ClientUserinfoChanged(edict_t *ent, char *userinfo)
-{
-	char *s;
+void ClientUserinfoChanged(edict_t *ent, char *userinfo) {
 	int playernum;
 
 	if (!ent || !userinfo)
@@ -1949,7 +1930,7 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 	}
 
 	/* set name */
-	s = Info_ValueForKey(userinfo, "name");
+	const char* s = Info_ValueForKey(userinfo, "name");
 	Q_strlcpy(ent->client->pers.netname, s, sizeof(ent->client->pers.netname));
 
 	/* set spectator */
@@ -2015,15 +1996,13 @@ ClientUserinfoChanged(edict_t *ent, char *userinfo)
 qboolean
 ClientConnect(edict_t *ent, char *userinfo)
 {
-	char *value;
-
 	if (!ent || !userinfo)
 	{
 		return false;
 	}
 
 	/* check to see if they are on the banned IP list */
-	value = Info_ValueForKey(userinfo, "ip");
+	const char* value = Info_ValueForKey(userinfo, "ip");
 
 	if (SV_FilterPacket(value))
 	{

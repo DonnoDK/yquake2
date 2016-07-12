@@ -40,7 +40,7 @@ msurface_t *warpface;
 int skytexorder[6] = {0, 2, 1, 3, 4, 5};
 
 /* 3dstudio environment map names */
-char *suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
+const char *suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 
 float r_turbsin[] = {
 #include "constants/warpsin.h"

@@ -565,7 +565,7 @@ typedef enum
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int ofs;
 	fieldtype_t type;
 	int flags;
@@ -742,7 +742,7 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker,
 
 /* g_svcmds.c */
 void ServerCommand(void);
-qboolean SV_FilterPacket(char *from);
+qboolean SV_FilterPacket(const char *from);
 
 /* p_view.c */
 void ClientEndServerFrame(edict_t *ent);
