@@ -56,7 +56,7 @@ int Draw_GetPalette(void);
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int minimize, maximize;
 } glmode_t;
 
@@ -73,7 +73,7 @@ glmode_t modes[] = {
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int mode;
 } gltmode_t;
 
@@ -956,7 +956,7 @@ R_Upload8(byte *data, int width, int height, qboolean mipmap, qboolean is_sky)
  * This is also used as an entry point for the generated r_notexture
  */
 image_t *
-R_LoadPic(char *name, byte *pic, int width, int realwidth,
+R_LoadPic(const char *name, byte *pic, int width, int realwidth,
 		int height, int realheight, imagetype_t type, int bits)
 {
 	image_t *image;
@@ -1094,7 +1094,7 @@ R_LoadPic(char *name, byte *pic, int width, int realwidth,
  * Finds or loads the given image
  */
 image_t *
-R_FindImage(char *name, imagetype_t type)
+R_FindImage(const char *name, imagetype_t type)
 {
 	image_t *image;
 	int i, len;

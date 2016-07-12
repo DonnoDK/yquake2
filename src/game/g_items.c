@@ -101,7 +101,7 @@ FindItemByClassname(char *classname)
 }
 
 gitem_t *
-FindItem(char *pickup_name)
+FindItem(const char *pickup_name)
 {
 	int i;
 	gitem_t *it;
@@ -1458,10 +1458,7 @@ droptofloor(edict_t *ent)
  * This will be called for each item spawned in a level,
  * and for each item in each client's inventory.
  */
-void
-PrecacheItem(gitem_t *it)
-{
-	char *s, *start;
+void PrecacheItem(gitem_t *it) {
 	char data[MAX_QPATH];
 	int len;
 	gitem_t *ammo;
@@ -1503,7 +1500,7 @@ PrecacheItem(gitem_t *it)
 	}
 
 	/* parse the space seperated precache string for other items */
-	s = it->precaches;
+	const char* s = it->precaches;
 
 	if (!s || !s[0])
 	{
@@ -1512,7 +1509,7 @@ PrecacheItem(gitem_t *it)
 
 	while (*s)
 	{
-		start = s;
+		const char* start = s;
 
 		while (*s && *s != ' ')
 		{

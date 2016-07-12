@@ -691,7 +691,7 @@ FS_FRead(void *buffer, int size, int count, fileHandle_t f)
  * return the file length without loading.
  */
 int
-FS_LoadFile(char *path, void **buffer)
+FS_LoadFile(const char *path, void **buffer)
 {
 	byte *buf; /* Buffer. */
 	int size; /* File size. */

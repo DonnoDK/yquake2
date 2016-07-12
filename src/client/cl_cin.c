@@ -60,7 +60,7 @@ typedef struct
 cinematics_t cin;
 
 void
-SCR_LoadPCX(char *filename, byte **pic, byte **palette, int *width, int *height)
+SCR_LoadPCX(const char *filename, byte **pic, byte **palette, int *width, int *height)
 {
 	byte *raw;
 	pcx_t *pcx;

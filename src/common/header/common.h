@@ -450,9 +450,9 @@ cvar_t *Cvar_ForceSet(char *var_name, char *value);
 
 /* will set the variable even if NOSET or LATCH */
 
-cvar_t *Cvar_FullSet(char *var_name, char *value, int flags);
+cvar_t *Cvar_FullSet(const char *var_name, const char *value, int flags);
 
-void Cvar_SetValue(char *var_name, float value);
+void Cvar_SetValue(const char *var_name, float value);
 
 /* expands value to a string and calls Cvar_Set */
 
@@ -602,7 +602,7 @@ qboolean Netchan_CanReliable(netchan_t *chan);
 #include "files.h"
 
 cmodel_t *CM_LoadMap(char *name, qboolean clientload, unsigned *checksum);
-cmodel_t *CM_InlineModel(char *name);       /* *1, *2, etc */
+cmodel_t *CM_InlineModel(const char *name);       /* *1, *2, etc */
 
 int CM_NumClusters(void);
 int CM_NumInlineModels(void);
@@ -695,7 +695,7 @@ void FS_SetGamedir(char *dir);
 char *FS_Gamedir(void);
 char *FS_NextPath(char *prevpath);
 void FS_ExecAutoexec(void);
-int FS_LoadFile(char *path, void **buffer);
+int FS_LoadFile(const char *path, void **buffer);
 
 /* a null buffer will just return the file length without loading */
 /* a -1 length is not present */

@@ -315,15 +315,14 @@ int Draw_GetPalette(void);
 void R_ResampleTexture(unsigned *in, int inwidth, int inheight,
 		unsigned *out, int outwidth, int outheight);
 
-void LoadPCX(char *filename, byte **pic, byte **palette,
+void LoadPCX(const char *filename, byte **pic, byte **palette,
 		int *width, int *height);
-image_t *LoadWal(char *name);
+image_t *LoadWal(const char *name);
 qboolean LoadSTB(const char *origname, const char* type, byte **pic, int *width, int *height);
-void GetWalInfo(char *name, int *width, int *height);
-void GetPCXInfo(char *filename, int *width, int *height);
-image_t *R_LoadPic(char *name, byte *pic, int width, int realwidth,
-		int height, int realheight, imagetype_t type, int bits);
-image_t *R_FindImage(char *name, imagetype_t type);
+void GetWalInfo(const char *name, int *width, int *height);
+void GetPCXInfo(const char *filename, int *width, int *height);
+image_t *R_LoadPic(const char *name, byte *pic, int width, int realwidth, int height, int realheight, imagetype_t type, int bits);
+image_t *R_FindImage(const char *name, imagetype_t type);
 void R_TextureMode(char *string);
 void R_ImageList_f(void);
 

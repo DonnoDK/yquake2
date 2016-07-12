@@ -31,7 +31,7 @@ void CL_ParseDownload(void);
 
 int bitcounts[32]; /* just for protocol profiling */
 
-char *svc_strings[256] = {
+const char *svc_strings[256] = {
 	"svc_bad",
 
 	"svc_muzzleflash",
@@ -1219,11 +1219,8 @@ CL_ParseStartSoundPacket(void)
 			volume, attenuation, ofs);
 }
 
-void
-SHOWNET(char *s)
-{
-	if (cl_shownet->value >= 2)
-	{
+void SHOWNET(const char *s) {
+	if (cl_shownet->value >= 2) {
 		Com_Printf("%3i:%s\n", net_message.readcount - 1, s);
 	}
 }

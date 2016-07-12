@@ -467,7 +467,7 @@ ClientObituary(edict_t *self, edict_t *inflictor /* unused */,
 {
 	int mod;
 	const char *message;
-	char *message2;
+	const char *message2;
 	qboolean ff;
 
 	if (!self || !inflictor)

@@ -118,7 +118,7 @@ typedef struct
 	   and misc data like the sky definition and cdtrack.
 	   All of the current configstrings are sent to clients when
 	   they connect, and changes are sent to all connected clients. */
-	void (*configstring)(int num, char *string);
+	void (*configstring)(int num, const char *string);
 
 	void (*error)(const char *fmt, ...);
 
@@ -128,7 +128,7 @@ typedef struct
 	int (*soundindex)(const char *name);
 	int (*imageindex)(const char *name);
 
-	void (*setmodel)(edict_t *ent, char *name);
+	void (*setmodel)(edict_t *ent, const char *name);
 
 	/* collision detection */
 	trace_t (*trace)(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,

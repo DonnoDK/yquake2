@@ -39,9 +39,9 @@ static int m_main_cursor;
 /* Number of the frames of the spinning quake logo */
 #define NUM_CURSOR_FRAMES 15
 
-static char *menu_in_sound = "misc/menu1.wav";
-static char *menu_move_sound = "misc/menu2.wav";
-static char *menu_out_sound = "misc/menu3.wav";
+static const char *menu_in_sound = "misc/menu1.wav";
+static const char *menu_move_sound = "misc/menu2.wav";
+static const char *menu_out_sound = "misc/menu3.wav";
 
 void M_Menu_Main_f(void);
 static void M_Menu_Game_f(void);
@@ -4397,7 +4397,7 @@ M_Keydown(int key)
     {
         if ((s = m_keyfunc(key)) != 0)
         {
-            S_StartLocalSound((char *)s);
+            S_StartLocalSound((const char *)s);
         }
     }
 }

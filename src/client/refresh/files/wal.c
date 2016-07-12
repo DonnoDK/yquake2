@@ -27,7 +27,7 @@
 #include "../header/local.h"
 
 image_t *
-LoadWal(char *origname)
+LoadWal(const char *origname)
 {
 	miptex_t *mt;
 	int width, height, ofs;
@@ -62,7 +62,7 @@ LoadWal(char *origname)
 }
 
 void
-GetWalInfo(char *name, int *width, int *height)
+GetWalInfo(const char *name, int *width, int *height)
 {
 	miptex_t *mt;
 

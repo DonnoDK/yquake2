@@ -323,31 +323,21 @@ DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
 	gi.WriteString(string);
 }
 
-void
-HelpComputerMessage(edict_t *ent)
-{
+void HelpComputerMessage(edict_t *ent) {
 	char string[1024];
-	char *sk;
+	const char *sk;
 
-	if (!ent)
-	{
+	if (!ent) {
 		return;
 	}
 
-	if (skill->value == 0)
-	{
+	if (skill->value == 0) {
 		sk = "easy";
-	}
-	else if (skill->value == 1)
-	{
+	} else if (skill->value == 1) {
 		sk = "medium";
-	}
-	else if (skill->value == 2)
-	{
+	} else if (skill->value == 2) {
 		sk = "hard";
-	}
-	else
-	{
+	} else {
 		sk = "hard+";
 	}
 
@@ -372,22 +362,14 @@ HelpComputerMessage(edict_t *ent)
 	gi.WriteString(string);
 }
 
-void
-InventoryMessage(edict_t *ent)
-{
-        int i;
-
-        if (!ent)
-        {
-                return;
-        }
-
-        gi.WriteByte(svc_inventory);
-
-        for (i = 0; i < MAX_ITEMS; i++)
-        {
-                gi.WriteShort(ent->client->pers.inventory[i]);
-        }
+void InventoryMessage(edict_t *ent) {
+    if (!ent) {
+        return;
+    }
+    gi.WriteByte(svc_inventory);
+    for (int i = 0; i < MAX_ITEMS; i++) {
+        gi.WriteShort(ent->client->pers.inventory[i]);
+    }
 }
 
 

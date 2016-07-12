@@ -232,18 +232,18 @@ typedef struct gitem_s
 	void (*use)(struct edict_s *ent, struct gitem_s *item);
 	void (*drop)(struct edict_s *ent, struct gitem_s *item);
 	void (*weaponthink)(struct edict_s *ent);
-	char *pickup_sound;
-	char *world_model;
+	const char *pickup_sound;
+	const char *world_model;
 	int world_model_flags;
-	char *view_model;
+	const char *view_model;
 
 	/* client side info */
-	char *icon;
-	char *pickup_name; /* for printing on pickup */
+	const char *icon;
+	const char *pickup_name; /* for printing on pickup */
 	int count_width; /* number of digits to display by icon */
 
 	int quantity; /* for ammo how much, for weapons how much is used per shot */
-	char *ammo; /* for weapons */
+	const char *ammo; /* for weapons */
 	int flags; /* IT_* flags */
 
 	int weapmodel; /* weapon model index (for weapons) */
@@ -251,7 +251,7 @@ typedef struct gitem_s
 	void *info;
 	int tag;
 
-	char *precaches; /* string of all models, sounds, and images this item will use */
+	const char *precaches; /* string of all models, sounds, and images this item will use */
 } gitem_t;
 
 /* this structure is left intact through an entire game
@@ -581,7 +581,7 @@ void Cmd_Help_f(edict_t *ent);
 void PrecacheItem(gitem_t *it);
 void InitItems(void);
 void SetItemNames(void);
-gitem_t *FindItem(char *pickup_name);
+gitem_t *FindItem(const char *pickup_name);
 gitem_t *FindItemByClassname(char *classname);
 
 #define ITEM_INDEX(x) ((x) - itemlist)
@@ -678,9 +678,9 @@ void M_FlyCheck(edict_t *self);
 void M_CheckGround(edict_t *ent);
 
 /* g_misc.c */
-void ThrowHead(edict_t *self, char *gibname, int damage, int type);
+void ThrowHead(edict_t *self, const char *gibname, int damage, int type);
 void ThrowClientHead(edict_t *self, int damage);
-void ThrowGib(edict_t *self, char *gibname, int damage, int type);
+void ThrowGib(edict_t *self, const char *gibname, int damage, int type);
 void BecomeExplosion1(edict_t *self);
 
 /* g_ai.c */
@@ -700,7 +700,7 @@ qboolean visible(edict_t *self, edict_t *other);
 qboolean FacingIdeal(edict_t *self);
 
 /* g_weapon.c */
-void ThrowDebris(edict_t *self, char *modelname, float speed, vec3_t origin);
+void ThrowDebris(edict_t *self, const char *modelname, float speed, vec3_t origin);
 qboolean fire_hit(edict_t *self, vec3_t aim, int damage, int kick);
 void fire_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage,
 		int kick, int hspread, int vspread, int mod);

@@ -89,7 +89,7 @@ void Draw_CharScaled(int x, int y, int num, float scale) {
     Draw_GLTexturedQuad(x, y, scaledSize, scaledSize, fcol, frow, fcol + size, frow + size, draw_chars->texnum);
 }
 
-image_t * Draw_FindPic(char *name) {
+image_t * Draw_FindPic(const char *name) {
 	char fullname[MAX_QPATH];
 	if ((name[0] != '/') && (name[0] != '\\')) {
 		Com_sprintf(fullname, sizeof(fullname), "pics/%s.pcx", name);
@@ -128,7 +128,7 @@ void Draw_Pic(int x, int y, char *pic) {
 	Draw_PicScaled(x, y, pic, 1.0f);
 }
 
-void Draw_PicScaled(int x, int y, char *pic, float factor) {
+void Draw_PicScaled(int x, int y, const char *pic, float factor) {
 	image_t* gl = Draw_FindPic(pic);
 	if (!gl) {
 		VID_Printf(PRINT_ALL, "Can't find pic: %s\n", pic);

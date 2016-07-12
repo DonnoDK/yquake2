@@ -456,11 +456,11 @@ void CL_WriteDemoMessage (void);
 void CL_Stop_f (void);
 void CL_Record_f(int argc, const char** argv);
 
-extern	char *svc_strings[256];
+extern	const char *svc_strings[256];
 
 void CL_ParseServerMessage (sizebuf_t* message);
 void CL_LoadClientinfo (clientinfo_t *ci, char *s);
-void SHOWNET(char *s);
+void SHOWNET(const char *s);
 void CL_ParseClientinfo (int player);
 void CL_Download_f (void);
 

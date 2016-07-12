@@ -183,7 +183,7 @@ gib_die(edict_t *self, edict_t *inflictor /* unused */, edict_t *attacker /* unu
 }
 
 void
-ThrowGib(edict_t *self, char *gibname, int damage, int type)
+ThrowGib(edict_t *self, const char *gibname, int damage, int type)
 {
 	edict_t *gib;
 	vec3_t vd;
@@ -250,7 +250,7 @@ ThrowGib(edict_t *self, char *gibname, int damage, int type)
 }
 
 void
-ThrowHead(edict_t *self, char *gibname, int damage, int type)
+ThrowHead(edict_t *self, const char *gibname, int damage, int type)
 {
 	vec3_t vd;
 	float vscale;
@@ -368,7 +368,7 @@ debris_die(edict_t *self, edict_t *inflictor /* unused */, edict_t *attacker /* 
 }
 
 void
-ThrowDebris(edict_t *self, char *modelname, float speed, vec3_t origin)
+ThrowDebris(edict_t *self, const char *modelname, float speed, vec3_t origin)
 {
 	edict_t *chunk;
 	vec3_t v;

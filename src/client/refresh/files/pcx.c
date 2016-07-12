@@ -27,7 +27,7 @@
 #include "../header/local.h"
 
 void
-LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
+LoadPCX(const char *origname, byte **pic, byte **palette, int *width, int *height)
 {
 	byte *raw;
 	pcx_t *pcx;
@@ -135,7 +135,7 @@ LoadPCX(char *origname, byte **pic, byte **palette, int *width, int *height)
 }
 
 void
-GetPCXInfo(char *filename, int *width, int *height)
+GetPCXInfo(const char *filename, int *width, int *height)
 {
 	pcx_t *pcx;
 	byte *raw;

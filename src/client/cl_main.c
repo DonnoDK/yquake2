@@ -611,8 +611,8 @@ CL_WriteConfiguration(void)
 
 typedef struct
 {
-	char *name;
-	char *value;
+	const char *name;
+	const char *value;
 	cvar_t *var;
 } cheatvar_t;
 

@@ -166,7 +166,7 @@ PF_error(const char *fmt, ...)
  * Also sets mins and maxs for inline bmodels
  */
 void
-PF_setmodel(edict_t *ent, char *name)
+PF_setmodel(edict_t *ent, const char *name)
 {
 	int i;
 	cmodel_t *mod;
@@ -192,7 +192,7 @@ PF_setmodel(edict_t *ent, char *name)
 }
 
 void
-PF_Configstring(int index, char *val)
+PF_Configstring(int index, const char *val)
 {
 	if ((index < 0) || (index >= MAX_CONFIGSTRINGS))
 	{
