@@ -2421,14 +2421,11 @@ ClientThink(edict_t *ent, usercmd_t *ucmd)
  * in the world.
  */
 void ClientBeginServerFrame(edict_t *ent) {
-	gclient_t *client;
 	int buttonMask;
 	if (!ent || level.intermissiontime) {
 		return;
 	}
-
-	client = ent->client;
-
+	gclient_t* client = ent->client;
 	if (deathmatch->value && (client->pers.spectator != client->resp.spectator) &&
 		((level.time - client->respawn_time) >= 5))
 	{

@@ -106,37 +106,22 @@ SV_CheckVelocity(edict_t *ent)
  * Runs thinking code for
  * this frame if necessary
  */
-qboolean
-SV_RunThink(edict_t *ent)
-{
-	float thinktime;
-
-	if (!ent)
-	{
+qboolean SV_RunThink(edict_t *ent) {
+	if (!ent) {
 		return false;
 	}
 
-	thinktime = ent->nextthink;
-
-	if (thinktime <= 0)
-	{
-		return true;
-	}
-
-	if (thinktime > level.time + 0.001)
-	{
+	float thinktime = ent->nextthink;
+	if (thinktime <= 0 || thinktime > level.time + 0.001) {
 		return true;
 	}
 
 	ent->nextthink = 0;
-
-	if (!ent->think)
-	{
+	if (!ent->think) {
 		gi.error("NULL ent->think");
 	}
 
 	ent->think(ent);
-
 	return false;
 }
 
@@ -1230,21 +1215,16 @@ SV_Physics_Step(edict_t *ent)
 
 /* ================================================================== */
 
-void
-G_RunEntity(edict_t *ent)
-{
-	if (!ent)
-	{
+void G_RunEntity(edict_t *ent) {
+	if (!ent) {
 		return;
 	}
 
-	if (ent->prethink)
-	{
+	if (ent->prethink) {
 		ent->prethink(ent);
 	}
 
-	switch ((int)ent->movetype)
-	{
+	switch ((int)ent->movetype) {
 		case MOVETYPE_PUSH:
 		case MOVETYPE_STOP:
 			SV_Physics_Pusher(ent);

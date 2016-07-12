@@ -306,12 +306,11 @@ EndDMLevel(void)
 }
 
 void CheckNeedPass(void) {
-	int need;
 	/* if password or spectator_password has
 	   changed, update needpass as needed */
 	if (password->modified || spectator_password->modified) {
 		password->modified = spectator_password->modified = false;
-		need = 0;
+		int need = 0;
 		if (*password->string && Q_stricmp(password->string, "none")) {
 			need |= 1;
 		}
@@ -353,11 +352,7 @@ void CheckDMRules(void) {
     }
 }
 
-void
-ExitLevel(void)
-{
-	int i;
-	edict_t *ent;
+void ExitLevel(void) {
 	char command[256];
 
 	Com_sprintf(command, sizeof(command), "gamemap \"%s\"\n", level.changemap);
@@ -368,17 +363,13 @@ ExitLevel(void)
 	ClientEndServerFrames();
 
 	/* clear some things before going to next level */
-	for (i = 0; i < maxclients->value; i++)
-	{
-		ent = g_edicts + 1 + i;
-
-		if (!ent->inuse)
-		{
+	for (int i = 0; i < maxclients->value; i++) {
+		edict_t* ent = g_edicts + 1 + i;
+		if (!ent->inuse) {
 			continue;
 		}
 
-		if (ent->health > ent->client->pers.max_health)
-		{
+		if (ent->health > ent->client->pers.max_health) {
 			ent->health = ent->client->pers.max_health;
 		}
 	}

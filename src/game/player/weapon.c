@@ -215,18 +215,12 @@ Pickup_Weapon(edict_t *ent, edict_t *other)
  * The old weapon has been dropped all
  * the way, so make the new one current
  */
-void
-ChangeWeapon(edict_t *ent)
-{
-	int i;
-
-	if (!ent)
-	{
+void ChangeWeapon(edict_t *ent) {
+	if (!ent) {
 		return;
 	}
 
-	if (ent->client->grenade_time)
-	{
+	if (ent->client->grenade_time) {
 		ent->client->grenade_time = level.time;
 		ent->client->weapon_sound = 0;
 		weapon_grenade_fire(ent, false);
@@ -239,32 +233,15 @@ ChangeWeapon(edict_t *ent)
 	ent->client->machinegun_shots = 0;
 
 	/* set visible model */
-	if (ent->s.modelindex == 255)
-	{
-		if (ent->client->pers.weapon)
-		{
-			i = ((ent->client->pers.weapon->weapmodel & 0xff) << 8);
-		}
-		else
-		{
-			i = 0;
-		}
-
+	if (ent->s.modelindex == 255) {
+        int i = ent->client->pers.weapon ? ((ent->client->pers.weapon->weapmodel & 0x0ff) << 8) : 0;
 		ent->s.skinnum = (ent - g_edicts - 1) | i;
 	}
 
-	if (ent->client->pers.weapon && ent->client->pers.weapon->ammo)
-	{
-		ent->client->ammo_index =
-			ITEM_INDEX(FindItem(ent->client->pers.weapon->ammo));
-	}
-	else
-	{
-		ent->client->ammo_index = 0;
-	}
+    ent->client->ammo_index = ent->client->pers.weapon && ent->client->pers.weapon->ammo ?
+        ITEM_INDEX(FindItem(ent->client->pers.weapon->ammo)) : 0;
 
-	if (!ent->client->pers.weapon)
-	{
+	if (!ent->client->pers.weapon) {
 		/* dead */
 		ent->client->ps.gunindex = 0;
 		return;
@@ -272,103 +249,61 @@ ChangeWeapon(edict_t *ent)
 
 	ent->client->weaponstate = WEAPON_ACTIVATING;
 	ent->client->ps.gunframe = 0;
-	ent->client->ps.gunindex = gi.modelindex(
-			ent->client->pers.weapon->view_model);
+	ent->client->ps.gunindex = gi.modelindex(ent->client->pers.weapon->view_model);
 
 	ent->client->anim_priority = ANIM_PAIN;
-
-	if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
-	{
-		ent->s.frame = FRAME_crpain1;
-		ent->client->anim_end = FRAME_crpain4;
-	}
-	else
-	{
-		ent->s.frame = FRAME_pain301;
-		ent->client->anim_end = FRAME_pain304;
-	}
+    ent->s.frame          = ent->client->ps.pmove.pm_flags & PMF_DUCKED ? FRAME_crpain1 : FRAME_pain301;
+    ent->client->anim_end = ent->client->ps.pmove.pm_flags & PMF_DUCKED ? FRAME_crpain4 : FRAME_pain304;
 }
 
-void
-NoAmmoWeaponChange(edict_t *ent)
-{
-	if (ent->client->pers.inventory[ITEM_INDEX(FindItem("slugs"))] &&
-		ent->client->pers.inventory[ITEM_INDEX(FindItem("railgun"))])
-	{
-		ent->client->newweapon = FindItem("railgun");
-		return;
-	}
+void NoAmmoWeaponChange(edict_t *ent) {
+    typedef struct weapconf_s{
+        const char* ammo;
+        const char* weapon;
+    }weapconf_t;
+    weapconf_t confs[] = {
+        {"slugs"   , "railgun"},
+        {"cells"   , "hyperblaster"},
+        {"bullets" , "chaingun"},
+        {"bullets" , "machinegun"},
+        {"shells"  , "super shotgun"},
+        {"shells"  , "shotgun"}
+    };
 
-	if (ent->client->pers.inventory[ITEM_INDEX(FindItem("cells"))] &&
-		ent->client->pers.inventory[ITEM_INDEX(FindItem("hyperblaster"))])
-	{
-		ent->client->newweapon = FindItem("hyperblaster");
-		return;
-	}
-
-	if (ent->client->pers.inventory[ITEM_INDEX(FindItem("bullets"))] &&
-		ent->client->pers.inventory[ITEM_INDEX(FindItem("chaingun"))])
-	{
-		ent->client->newweapon = FindItem("chaingun");
-		return;
-	}
-
-	if (ent->client->pers.inventory[ITEM_INDEX(FindItem("bullets"))] &&
-		ent->client->pers.inventory[ITEM_INDEX(FindItem("machinegun"))])
-	{
-		ent->client->newweapon = FindItem("machinegun");
-		return;
-	}
-
-	if ((ent->client->pers.inventory[ITEM_INDEX(FindItem("shells"))] > 1) &&
-		ent->client->pers.inventory[ITEM_INDEX(FindItem("super shotgun"))])
-	{
-		ent->client->newweapon = FindItem("super shotgun");
-		return;
-	}
-
-	if (ent->client->pers.inventory[ITEM_INDEX(FindItem("shells"))] &&
-		ent->client->pers.inventory[ITEM_INDEX(FindItem("shotgun"))])
-	{
-		ent->client->newweapon = FindItem("shotgun");
-		return;
-	}
-
+    gclient_t* cl = ent->client;
+    for(int i = 0; i < 6; i++){
+        weapconf_t* conf = &confs[i];
+        if (cl->pers.inventory[ITEM_INDEX(FindItem(conf->ammo))] &&
+            cl->pers.inventory[ITEM_INDEX(FindItem(conf->weapon))]){
+            cl->newweapon = FindItem(conf->weapon);
+            return;
+        }
+    }
 	ent->client->newweapon = FindItem("blaster");
 }
 
 /*
  * Called by ClientBeginServerFrame and ClientThink
  */
-void
-Think_Weapon(edict_t *ent)
-{
-	if (!ent)
-	{
+void Think_Weapon(edict_t *ent) {
+	if (!ent) {
 		return;
 	}
 
 	/* if just died, put the weapon away */
-	if (ent->health < 1)
-	{
+	if (ent->health < 1) {
 		ent->client->newweapon = NULL;
 		ChangeWeapon(ent);
 	}
 
 	/* call active weapon think routine */
-	if (ent->client->pers.weapon && ent->client->pers.weapon->weaponthink)
-	{
+	if (ent->client->pers.weapon && ent->client->pers.weapon->weaponthink) {
 		is_quad = (ent->client->quad_framenum > level.framenum);
-
-		if (ent->client->silencer_shots)
-		{
+		if (ent->client->silencer_shots) {
 			is_silenced = MZ_SILENCED;
-		}
-		else
-		{
+		} else {
 			is_silenced = 0;
 		}
-
 		ent->client->pers.weapon->weaponthink(ent);
 	}
 }
