@@ -156,6 +156,7 @@ endif
 ifeq ($(OSTYPE), Darwin)
 CFLAGS := -O2 -fno-strict-aliasing -fomit-frame-pointer \
 		  -Wall -pipe -g -fwrapv
+		  #-w -pipe -g -fwrapv
 		  #-isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.5.sdk
 CFLAGS += $(OSX_ARCH)
 else
@@ -179,6 +180,8 @@ endif
 # undefined by default.
 ifeq ($(OSTYPE),Windows)
 CC := gcc
+else
+CC := clang
 endif
 
 # ----------
